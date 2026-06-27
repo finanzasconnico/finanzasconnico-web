@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinanzasconNico — Hacé que tu plata trabaje para vos</title>
+<meta name="description" content="Asesoramiento de inversión personalizado, 100% GRATIS. Regulado CNV bajo Balanz. +500 clientes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --petroleo-700: #0F3A34;
+  --petroleo-900: #07211D;
+  --jade:         #1C8C5F;
+  --ambar:        #DBA03C;
+  --crema:        #F7F3EA;
+  --success:      #1C8C5F;
+  --warning:      #D9892B;
+  --danger:       #C0453B;
+  --whatsapp:     #25D366;
+  --ink:          #102E2A;
+  --ink-soft:     #3C5752;
+  --ink-muted:    #6C817C;
+  --line:         #E5DDCE;
+  --font-display: 'Spectral', Georgia, serif;
+  --font-sans:    'Hanken Grotesk', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+  --bg:      #081917;
+  --surface: #0E2622;
+  --text:    #EAF1EE;
+  --border:  #1E3A34;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── UTILITIES ── */
+.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+.text-center { text-align: center; }
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+.color-crema { color: var(--crema); }
+.color-ambar { color: var(--ambar); }
+.color-jade { color: var(--jade); }
+.color-muted { color: var(--ink-muted); }
+
+/* ── FADE-UP ANIMATION ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── BTN WHATSAPP PRIMARY ── */
+.btn-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ambar);
+  color: var(--petroleo-900);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 16px 36px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.btn-wa:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.btn-wa:active { transform: translateY(0); }
+.btn-wa.large { font-size: 1.2rem; padding: 20px 48px; }
+
+/* ══════════════════════════════════════
+   1. LOGO + BADGE
+══════════════════════════════════════ */
+.logo-section {
+  text-align: center;
+  padding: 48px 24px 32px;
+}
+.logo-text {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--crema);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.logo-badge {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--jade);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  background: rgba(28,140,95,0.12);
+  border: 1px solid rgba(28,140,95,0.3);
+  padding: 5px 14px;
+  border-radius: 100px;
+}
+
+/* ══════════════════════════════════════
+   2. HERO — HEADLINE + VIDEO + CTA
+══════════════════════════════════════ */
+.hero {
+  text-align: center;
+  padding: 8px 24px 64px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5.5vw, 3.4rem);
+  font-weight: 700;
+  color: var(--crema);
+  line-height: 1.18;
+  max-width: 720px;
+  margin: 0 auto 20px;
+}
+.hero h1 em {
+  color: var(--ambar);
+  font-style: italic;
+}
+.hero-sub {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: var(--text);
+  opacity: 0.85;
+  max-width: 580px;
+  margin: 0 auto 36px;
+  font-weight: 300;
+}
+.video-placeholder {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  aspect-ratio: 16/9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+}
+.video-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(15,58,52,0.3), rgba(8,25,23,0.6));
+}
+.play-icon {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  background: var(--ambar);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  transition: transform 0.2s;
+}
+.video-placeholder:hover .play-icon { transform: scale(1.08); }
+.video-label {
+  position: relative;
+  color: rgba(234,241,238,0.75);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  max-width: 480px;
+  line-height: 1.4;
+  padding: 0 24px;
+}
+.scroll-indicator {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+.scroll-arrow {
+  font-size: 1.4rem;
+  color: var(--ambar);
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+/* ══════════════════════════════════════
+   3. MÉTRICAS
+══════════════════════════════════════ */
+.metrics {
+  padding: 64px 24px;
+  text-align: center;
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  max-width: 780px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.metric-item {
+  padding: 40px 24px;
+  border-right: 1px solid var(--border);
+}
+.metric-item:last-child { border-right: none; }
+.metric-number {
+  font-family: var(--font-mono);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 600;
+  color: var(--ambar);
+  line-height: 1.1;
+  display: block;
+  margin-bottom: 10px;
+}
+.metric-label {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text);
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+/* ══════════════════════════════════════
+   4. AGITATE
+══════════════════════════════════════ */
+.agitate {
+  padding: 64px 24px;
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.agitate-line {
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  margin-bottom: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+}
+.agitate-line .emoji { font-size: 1.4rem; flex-shrink: 0; }
+.agitate-close {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+  color: var(--ambar);
+  margin-top: 36px;
+}
+
+/* ══════════════════════════════════════
+   5. CÓMO FUNCIONA
+══════════════════════════════════════ */
+.how {
+  padding: 64px 24px;
+  text-align: center;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--crema);
+  margin-bottom: 48px;
+}
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  max-width: 780px;
+  margin: 0 auto 48px;
+}
+.step {
+  padding: 32px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.step-number {
+  font-family: var(--font-mono);
+  font-size: 3.5rem;
+  font-weight: 600;
+  color: var(--jade);
+  line-height: 1;
+  display: block;
+  margin-bottom: 16px;
+}
+.step h3 {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--crema);
+  margin-bottom: 8px;
+}
+.step p {
+  font-size: 0.88rem;
+  color: var(--text);
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════
+   6. QUIZ
+══════════════════════════════════════ */
+.quiz-section {
+  padding: 80px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, transparent, rgba(14,38,34,0.5), transparent);
+}
+.quiz-wrapper {
+  max-width: 620px;
+  margin: 0 auto;
+}
+.quiz-section .section-title { margin-bottom: 12px; }
+.quiz-subtitle {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  margin-bottom: 48px;
+}
+.quiz-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+.quiz-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.quiz-dot.active { background: var(--ambar); }
+.quiz-dot.done { background: var(--jade); }
+
+.quiz-question {
+  display: none;
+  animation: fadeIn 0.35s ease;
+}
+.quiz-question.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.quiz-question h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  font-weight: 600;
+  color: var(--crema);
+  margin-bottom: 28px;
+  line-height: 1.3;
+}
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.quiz-opt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  padding: 16px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  line-height: 1.4;
+}
+.quiz-opt:hover {
+  border-color: var(--ambar);
+  background: rgba(219,160,60,0.08);
+  transform: translateY(-2px);
+}
+.quiz-opt.selected {
+  border-color: var(--jade);
+  background: rgba(28,140,95,0.15);
+}
+.quiz-result {
+  display: none;
+  animation: fadeIn 0.5s ease;
+}
+.quiz-result.active { display: block; }
+.result-badge {
+  font-size: 4rem;
+  margin-bottom: 12px;
+}
+.result-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--crema);
+  margin-bottom: 12px;
+}
+.result-desc {
+  font-size: 1rem;
+  color: var(--text);
+  opacity: 0.8;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.result-cartera {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 32px;
+  font-size: 0.9rem;
+  color: var(--jade);
+  font-family: var(--font-mono);
+}
+
+/* ══════════════════════════════════════
+   7. TESTIMONIOS
+══════════════════════════════════════ */
+.testimonials {
+  padding: 80px 24px;
+  text-align: center;
+}
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto 20px;
+}
+.testimonial-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 22px;
+  text-align: left;
+}
+.stars {
+  color: var(--ambar);
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  letter-spacing: 2px;
+}
+.testimonial-text {
+  font-size: 0.92rem;
+  color: var(--text);
+  opacity: 0.85;
+  line-height: 1.6;
+  margin-bottom: 18px;
+  font-style: italic;
+}
+.testimonial-author {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--jade);
+}
+.testimonial-note {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-top: 24px;
+}
+
+/* ══════════════════════════════════════
+   8. CALCULADORA
+══════════════════════════════════════ */
+.calculator {
+  padding: 80px 24px;
+  text-align: center;
+}
+.calc-wrapper {
+  max-width: 680px;
+  margin: 0 auto;
+}
+.calc-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.calc-label {
+  font-size: 0.9rem;
+  color: var(--text);
+  opacity: 0.75;
+}
+.calc-prefix {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  color: var(--jade);
+}
+.calc-input {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--crema);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 18px;
+  width: 180px;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.calc-input:focus { border-color: var(--ambar); }
+.calc-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.calc-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+}
+.calc-result-label {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+.calc-result-value {
+  font-family: var(--font-mono);
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  font-weight: 600;
+  color: var(--jade);
+}
+.chart-container {
+  position: relative;
+  margin-bottom: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+.calc-legal {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════
+   9. CTA FINAL
+══════════════════════════════════════ */
+.cta-final {
+  background: var(--petroleo-900);
+  padding: 100px 24px;
+  text-align: center;
+}
+.cta-final h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 700;
+  color: var(--crema);
+  max-width: 640px;
+  margin: 0 auto 20px;
+  line-height: 1.2;
+}
+.cta-final-sub {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  color: var(--ambar);
+  margin-bottom: 44px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+.cta-small {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  margin-top: 16px;
+}
+
+/* ══════════════════════════════════════
+   10. FOOTER
+══════════════════════════════════════ */
+footer {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 48px 24px;
+  text-align: center;
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.footer-links a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--crema); }
+.footer-links .wa-link { color: var(--whatsapp); }
+.footer-legal {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  line-height: 1.6;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════
+   FLOATING WA BUTTON
+══════════════════════════════════════ */
+.wa-float {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  background: var(--whatsapp);
+  color: white;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 20px rgba(37,211,102,0.35);
+  text-decoration: none;
+  animation: float 3s ease-in-out infinite;
+  transition: transform 0.2s;
+}
+.wa-float:hover { transform: scale(1.1); }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ══════════════════════════════════════
+   DIVIDER
+══════════════════════════════════════ */
+.divider {
+  width: 48px;
+  height: 2px;
+  background: var(--border);
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 700px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  .metric-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .metric-item:last-child { border-bottom: none; }
+  .steps-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+  .quiz-options {
+    grid-template-columns: 1fr;
+  }
+  .calc-results {
+    grid-template-columns: 1fr;
+  }
+  .footer-links { gap: 16px; }
+  .wa-float { bottom: 20px; right: 20px; width: 52px; height: 52px; }
+}
+@media (max-width: 480px) {
+  .btn-wa.large { font-size: 1rem; padding: 16px 28px; }
+}
+</style>
+</head>
+<body class="theme-dark">
+
+<!-- ══════════ 1. LOGO ══════════ -->
+<header class="logo-section fade-up">
+  <div class="logo-text">FinanzasconNico</div>
+  <div class="logo-badge">Regulado CNV · Bajo Balanz · +500 clientes</div>
+</header>
+
+<!-- ══════════ 2. HERO ══════════ -->
+<section class="hero">
+  <div class="container">
+    <h1 class="fade-up">Hacé que tu plata trabaje para vos<br>— es <em>GRATIS</em></h1>
+    <p class="hero-sub fade-up">Acceso a los mejores rendimientos del mercado, con una cartera personalizada para vos.</p>
+
+    <div class="fade-up" id="heroVideo" style="max-width:400px;margin:0 auto 2rem;aspect-ratio:9/16;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <iframe
+        width="100%"
+        height="100%"
+        src="https://www.youtube.com/embed/KLrCwLPADe0"
+        title="FinanzasconNico — Invertí de forma simple y GRATIS"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        style="border-radius:inherit;">
+      </iframe>
+    </div>
+
+    <div class="fade-up">
+      <a class="btn-wa large" href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+tu+página+y+quiero+saber+cómo+empezar+a+invertir." target="_blank" rel="noopener">
+        💬 Quiero empezar — es GRATIS
+      </a>
+    </div>
+
+    <div class="scroll-indicator fade-up">
+      <div class="scroll-arrow">↓</div>
+      <span>Seguí leyendo</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 3. MÉTRICAS ══════════ -->
+<section class="metrics">
+  <div class="container">
+    <div class="metrics-grid fade-up">
+      <div class="metric-item">
+        <span class="metric-number">La mejor<br>tasa</span>
+        <span class="metric-label">Siempre buscamos el instrumento con el mayor rendimiento disponible para tu perfil</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-number" data-counter="500" data-prefix="+">+500</span>
+        <span class="metric-label">Inversores que ya ponen su dinero a trabajar</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-number">100%<br>GRATIS</span>
+        <span class="metric-label">El asesoramiento no te cuesta nada. Mi comisión la paga el mercado.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 4. AGITATE ══════════ -->
+<section>
+  <div class="agitate fade-up">
+    <div class="agitate-line">
+      <span class="emoji">😰</span>
+      <span>Tus pesos pierden valor todos los meses por la inflación</span>
+    </div>
+    <div class="agitate-line">
+      <span class="emoji">😤</span>
+      <span>El plazo fijo no alcanza para proteger tus ahorros</span>
+    </div>
+    <div class="agitate-line">
+      <span class="emoji">😕</span>
+      <span>No sabés por dónde empezar ni en quién confiar</span>
+    </div>
+    <p class="agitate-close">Para eso estoy yo.</p>
+  </div>
+</section>
+
+<!-- ══════════ 5. CÓMO FUNCIONA ══════════ -->
+<section class="how">
+  <div class="container">
+    <h2 class="section-title fade-up">Cómo funciona</h2>
+    <div class="steps-grid">
+      <div class="step fade-up">
+        <span class="step-number">01</span>
+        <h3>Me escribís por WhatsApp</h3>
+        <p>Una charla de 20 minutos, sin compromiso, para entender tu situación.</p>
+      </div>
+      <div class="step fade-up" style="transition-delay:0.1s">
+        <span class="step-number">02</span>
+        <h3>Analizamos tu perfil juntos</h3>
+        <p>Tus objetivos, tu capital, tu horizonte. Todo en cuenta.</p>
+      </div>
+      <div class="step fade-up" style="transition-delay:0.2s">
+        <span class="step-number">03</span>
+        <h3>Armamos tu cartera y operamos</h3>
+        <p>Yo ejecuto, vos confirmás. Simple.</p>
+      </div>
+    </div>
+    <div class="fade-up">
+      <a class="btn-wa" href="https://wa.me/5491123284509?text=Hola+Nico!+Quiero+empezar+a+invertir." target="_blank" rel="noopener">
+        💬 Empezar ahora
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 6. QUIZ ══════════ -->
+<section class="quiz-section">
+  <div class="quiz-wrapper fade-up">
+    <h2 class="section-title">¿Cuál es tu perfil?</h2>
+    <p class="quiz-subtitle">6 preguntas · Sin compromiso · Resultado inmediato</p>
+
+    <div class="quiz-progress" id="quizProgress">
+      <div class="quiz-dot active" id="dot-0"></div>
+      <div class="quiz-dot" id="dot-1"></div>
+      <div class="quiz-dot" id="dot-2"></div>
+      <div class="quiz-dot" id="dot-3"></div>
+      <div class="quiz-dot" id="dot-4"></div>
+      <div class="quiz-dot" id="dot-5"></div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="quiz-question active" id="q-0">
+      <h3>¿Cuál es tu objetivo?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(0,0,0)">Preservar mi capital</button>
+        <button class="quiz-opt" onclick="quizAnswer(0,1,1)">Generar renta periódica en USD</button>
+        <button class="quiz-opt" onclick="quizAnswer(0,2,2)">Hacer crecer mi capital a largo plazo</button>
+        <button class="quiz-opt" onclick="quizAnswer(0,3,3)">Aprovechar oportunidades</button>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-question" id="q-1">
+      <h3>¿Cuánto tiempo podés dejar invertido tu dinero?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(1,0,0)">Menos de 6 meses</button>
+        <button class="quiz-opt" onclick="quizAnswer(1,1,1)">6 meses a 1 año</button>
+        <button class="quiz-opt" onclick="quizAnswer(1,2,2)">1 a 3 años</button>
+        <button class="quiz-opt" onclick="quizAnswer(1,3,3)">Más de 3 años</button>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-question" id="q-2">
+      <h3>Si tu inversión baja un 15% en un mes, ¿qué hacés?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(2,0,0)">Vendo todo</button>
+        <button class="quiz-opt" onclick="quizAnswer(2,1,1)">Me preocupo mucho</button>
+        <button class="quiz-opt" onclick="quizAnswer(2,2,2)">Lo acepto si es temporal</button>
+        <button class="quiz-opt" onclick="quizAnswer(2,3,3)">Compro más</button>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-question" id="q-3">
+      <h3>¿Cuánto capital tenés disponible?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(3,0,0)">Hasta USD 20.000</button>
+        <button class="quiz-opt" onclick="quizAnswer(3,1,1)">USD 20k – 50k</button>
+        <button class="quiz-opt" onclick="quizAnswer(3,2,2)">USD 50k – 200k</button>
+        <button class="quiz-opt" onclick="quizAnswer(3,3,3)">Más de USD 200k</button>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-question" id="q-4">
+      <h3>¿Tenés experiencia invirtiendo?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(4,0,0)">Nunca invertí</button>
+        <button class="quiz-opt" onclick="quizAnswer(4,1,1)">Solo plazo fijo</button>
+        <button class="quiz-opt" onclick="quizAnswer(4,2,2)">Algo de experiencia</button>
+        <button class="quiz-opt" onclick="quizAnswer(4,3,3)">Varios años</button>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="quiz-question" id="q-5">
+      <h3>¿En qué moneda preferís?</h3>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="quizAnswer(5,0,0)">Solo pesos</button>
+        <button class="quiz-opt" onclick="quizAnswer(5,1,1)">Prefiero dólares</button>
+        <button class="quiz-opt" onclick="quizAnswer(5,2,2)">Me da igual</button>
+        <button class="quiz-opt" onclick="quizAnswer(5,3,3)">Mezcla de ambas</button>
+      </div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div class="quiz-result" id="quiz-result">
+      <div class="result-badge" id="result-icon"></div>
+      <div class="result-title" id="result-title"></div>
+      <p class="result-desc" id="result-desc"></p>
+      <div class="result-cartera" id="result-cartera"></div>
+      <a class="btn-wa large" id="result-cta" href="#" target="_blank" rel="noopener">
+        💬 Quiero que Nico arme mi cartera
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ 7. TESTIMONIOS ══════════ -->
+<section class="testimonials">
+  <div class="container">
+    <h2 class="section-title fade-up">Lo que dicen quienes ya empezaron</h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card fade-up">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Nunca había invertido. Nico me explicó todo desde cero y hoy tengo una cartera que me genera renta en dólares todos los meses."</p>
+        <div class="testimonial-author">M.L. · USD 50.000</div>
+      </div>
+      <div class="testimonial-card fade-up" style="transition-delay:0.1s">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Lo que más valoro es la claridad. Siempre sé dónde está mi plata y por qué."</p>
+        <div class="testimonial-author">R.G. · USD 70.000</div>
+      </div>
+      <div class="testimonial-card fade-up" style="transition-delay:0.2s">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Tenía los dólares guardados hace años. Hoy tengo una cartera diversificada que rinde bien."</p>
+        <div class="testimonial-author">S.P. · USD 200.000</div>
+      </div>
+    </div>
+    <p class="testimonial-note fade-up">Testimonios reales de clientes. Resultados pasados no garantizan rendimientos futuros.</p>
+  </div>
+</section>
+
+<!-- ══════════ 8. CALCULADORA ══════════ -->
+<section class="calculator">
+  <div class="calc-wrapper">
+    <h2 class="section-title fade-up">¿Cuánto podría rendir tu capital?</h2>
+    <div class="calc-input-row fade-up">
+      <span class="calc-label">Tu capital en USD</span>
+      <span class="calc-prefix">USD</span>
+      <input class="calc-input" type="number" id="calcCapital" value="100000" min="1000" max="10000000" oninput="updateCalc()">
+    </div>
+    <div class="calc-results fade-up">
+      <div class="calc-result-card">
+        <div class="calc-result-label">Renta mensual estimada</div>
+        <div class="calc-result-value" id="calcMonthly">USD 667</div>
+      </div>
+      <div class="calc-result-card">
+        <div class="calc-result-label">Renta anual estimada</div>
+        <div class="calc-result-value" id="calcAnnual">USD 8.000</div>
+      </div>
+    </div>
+    <div class="chart-container fade-up">
+      <canvas id="growthChart" height="220"></canvas>
+    </div>
+    <div class="fade-up">
+      <a class="btn-wa" id="calcCTA" href="https://wa.me/5491123284509?text=Hola+Nico!+Usé+la+calculadora+y+quiero+armar+una+cartera+con+USD+100.000." target="_blank" rel="noopener">
+        💬 Quiero armar esta cartera
+      </a>
+    </div>
+    <p class="calc-legal fade-up">Estimación con tasa conservadora del 8% anual. Los rendimientos pasados no garantizan resultados futuros.</p>
+  </div>
+</section>
+
+<!-- ══════════ 9. CTA FINAL ══════════ -->
+<section class="cta-final">
+  <div class="container">
+    <h2 class="fade-up">¿Cuándo es el mejor momento para empezar a invertir?</h2>
+    <span class="cta-final-sub fade-up">Hace un año. El segundo mejor momento es hoy.</span>
+    <div class="fade-up">
+      <a class="btn-wa large" href="https://wa.me/5491123284509?text=Hola+Nico!+Quiero+empezar+a+invertir+hoy." target="_blank" rel="noopener">
+        💬 Empezar ahora — es GRATIS
+      </a>
+      <p class="cta-small">Respondemos en menos de 24hs</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 10. FOOTER ══════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-links fade-up">
+      <a href="https://www.instagram.com/finanzasconnico_/" target="_blank" rel="noopener">Instagram @finanzasconnico_</a>
+      <a class="wa-link" href="https://wa.me/5491123284509" target="_blank" rel="noopener">💬 WhatsApp directo</a>
+      <a href="https://chat.whatsapp.com/D9VsYfjb75rElATtrA62XA" target="_blank" rel="noopener">Comunidad WA</a>
+      <a href="guia.html">→ Ir a la guía de inversión</a>
+    </div>
+    <p class="footer-legal fade-up">
+      Nicolás Strijland opera como Agente de Balanz Capital Valores S.A.U., regulado por la CNV.<br>
+      El asesoramiento es educativo y no garantiza rendimientos.
+    </p>
+  </div>
+</footer>
+
+<!-- FLOATING WA -->
+<a class="wa-float" href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+tu+página+y+quiero+saber+más." target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+
+<script>
+/* ── INTERSECTION OBSERVER — FADE-UP ── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+/* ── COUNTER ANIMATION ── */
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting && !e.target.dataset.counted) {
+      e.target.dataset.counted = '1';
+      const target = parseInt(e.target.dataset.counter);
+      const prefix = e.target.dataset.prefix || '';
+      const duration = 1500;
+      const step = 16;
+      const increment = target / (duration / step);
+      let current = 0;
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) { current = target; clearInterval(timer); }
+        e.target.textContent = prefix + Math.floor(current).toLocaleString('es-AR');
+      }, step);
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('[data-counter]').forEach(el => counterObserver.observe(el));
+
+/* ── QUIZ LOGIC ── */
+const quizAnswers = {};
+const quizLabels = [
+  ['Preservar mi capital','Generar renta en USD','Hacer crecer a largo plazo','Aprovechar oportunidades'],
+  ['Menos de 6 meses','6m–1 año','1–3 años','Más de 3 años'],
+  ['Vendo todo','Me preocupo mucho','Lo acepto si es temporal','Compro más'],
+  ['Hasta USD 20k','USD 20k–50k','USD 50k–200k','Más de USD 200k'],
+  ['Nunca invertí','Solo plazo fijo','Algo de experiencia','Varios años'],
+  ['Solo pesos','Prefiero dólares','Me da igual','Mezcla de ambas']
+];
+
+function quizAnswer(qIdx, optIdx, score) {
+  quizAnswers[qIdx] = { score, label: quizLabels[qIdx][optIdx] };
+
+  // visual feedback
+  const q = document.getElementById('q-' + qIdx);
+  q.querySelectorAll('.quiz-opt')[optIdx].classList.add('selected');
+
+  // update dots
+  const dot = document.getElementById('dot-' + qIdx);
+  dot.classList.remove('active');
+  dot.classList.add('done');
+
+  setTimeout(() => {
+    if (qIdx < 5) {
+      q.classList.remove('active');
+      const next = document.getElementById('q-' + (qIdx + 1));
+      next.classList.add('active');
+      const nextDot = document.getElementById('dot-' + (qIdx + 1));
+      if (nextDot) nextDot.classList.add('active');
+    } else {
+      q.classList.remove('active');
+      showResult();
+    }
+  }, 280);
+}
+
+function showResult() {
+  const totalScore = Object.values(quizAnswers).reduce((s, v) => s + v.score, 0);
+  const maxScore = 18; // 6 questions × max score 3
+  const pct = totalScore / maxScore;
+
+  let profile, icon, desc, cartera;
+  if (pct < 0.35) {
+    profile = 'Conservador'; icon = '🛡️';
+    desc = 'Tu prioridad es preservar el capital con bajo riesgo. Los instrumentos de renta fija en dólares y FCI money market son ideales para vos.';
+    cartera = '40% Letras USD · 30% ON grado inversión · 20% FCI money market · 10% liquidez';
+  } else if (pct < 0.65) {
+    profile = 'Moderado'; icon = '⚖️';
+    desc = 'Buscás un equilibrio entre rentabilidad y seguridad. Una cartera mixta de renta fija y algo de renta variable puede darte los mejores resultados.';
+    cartera = '35% ON corporativas · 25% Bonos soberanos · 25% Cedears · 15% FCI';
+  } else {
+    profile = 'Dinámico'; icon = '🚀';
+    desc = 'Tenés tolerancia al riesgo y buscás maximizar el crecimiento a largo plazo. Acciones, Cedears y activos de mayor volatilidad son para vos.';
+    cartera = '40% Cedears USA · 25% Acciones AR · 20% Bonos high yield · 15% FCI';
+  }
+
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-title').textContent = 'Tu perfil: ' + profile + ' ' + icon;
+  document.getElementById('result-desc').textContent = desc;
+  document.getElementById('result-cartera').textContent = cartera;
+
+  // Build WA message — all data pre-filled, zero extra work for the client
+  const a = quizAnswers;
+  const lines = [
+    `Hola Nico! Completé el perfil en tu web 📊`,
+    ``,
+    `🎯 Perfil: ${profile} ${icon}`,
+    `💰 Capital disponible: ${a[3] ? a[3].label : '–'}`,
+    `⏱ Plazo de inversión: ${a[1] ? a[1].label : '–'}`,
+    `📈 Objetivo: ${a[0] ? a[0].label : '–'}`,
+    `💵 Moneda: ${a[5] ? a[5].label : '–'}`,
+    `📊 Experiencia previa: ${a[4] ? a[4].label : '–'}`,
+    `😓 Tolerancia a la baja: ${a[2] ? a[2].label : '–'}`,
+    ``,
+    `Quiero que armemos mi cartera.`
+  ];
+  const msg = encodeURIComponent(lines.join('\n'));
+  document.getElementById('result-cta').href = `https://wa.me/5491123284509?text=${msg}`;
+
+  // show result, hide progress
+  document.getElementById('quizProgress').style.display = 'none';
+  document.getElementById('quiz-result').classList.add('active');
+}
+
+/* ── CALCULADORA ── */
+let growthChart;
+
+function formatUSD(n) {
+  return 'USD ' + Math.round(n).toLocaleString('en-US');
+}
+
+function updateCalc() {
+  const capital = parseFloat(document.getElementById('calcCapital').value) || 0;
+  const rate = 0.08;
+  const monthly = capital * rate / 12;
+  const annual = capital * rate;
+
+  document.getElementById('calcMonthly').textContent = formatUSD(monthly);
+  document.getElementById('calcAnnual').textContent = formatUSD(annual);
+
+  // Update WA link
+  const msg = encodeURIComponent(`Hola Nico! Usé la calculadora y quiero armar una cartera con ${formatUSD(capital)}.`);
+  document.getElementById('calcCTA').href = `https://wa.me/5491123284509?text=${msg}`;
+
+  updateChart(capital);
+}
+
+function buildChartData(capital) {
+  const years = Array.from({length: 11}, (_, i) => i);
+  const invested = years.map(y => capital * Math.pow(1.08, y));
+  const inflation = years.map(y => capital * Math.pow(0.97, y));
+  return { years: years.map(y => `Año ${y}`), invested, inflation };
+}
+
+function updateChart(capital) {
+  const data = buildChartData(capital);
+  if (growthChart) {
+    growthChart.data.datasets[0].data = data.invested;
+    growthChart.data.datasets[1].data = data.inflation;
+    growthChart.update();
+  }
+}
+
+function initChart() {
+  const ctx = document.getElementById('growthChart').getContext('2d');
+  const capital = parseFloat(document.getElementById('calcCapital').value) || 100000;
+  const data = buildChartData(capital);
+
+  growthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.years,
+      datasets: [
+        {
+          label: 'Capital al 8% anual',
+          data: data.invested,
+          borderColor: '#1C8C5F',
+          backgroundColor: 'rgba(28,140,95,0.08)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: '#1C8C5F',
+        },
+        {
+          label: 'Sin invertir (−3% inflación USD)',
+          data: data.inflation,
+          borderColor: '#C0453B',
+          backgroundColor: 'rgba(192,69,59,0.05)',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: '#C0453B',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#EAF1EE',
+            font: { family: "'Hanken Grotesk', sans-serif", size: 12 },
+            padding: 20,
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => formatUSD(ctx.parsed.y)
+          },
+          backgroundColor: '#0E2622',
+          borderColor: '#1E3A34',
+          borderWidth: 1,
+          titleColor: '#EAF1EE',
+          bodyColor: '#EAF1EE',
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1E3A34' },
+          ticks: { color: '#6C817C', font: { family: "'Hanken Grotesk', sans-serif", size: 11 } }
+        },
+        y: {
+          grid: { color: '#1E3A34' },
+          ticks: {
+            color: '#6C817C',
+            font: { family: "'IBM Plex Mono', monospace", size: 11 },
+            callback: v => formatUSD(v)
+          }
+        }
+      }
+    }
+  });
+}
+
+// Init on load
+window.addEventListener('load', () => {
+  initChart();
+  updateCalc();
+});
+</script>
+</body>
+</html>

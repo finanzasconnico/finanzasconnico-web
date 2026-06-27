@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía de inversión — FinanzasconNico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── VARIABLES ──────────────────────────────────────────────────── */
+    :root {
+      --petroleo-700: #0F3A34;
+      --petroleo-900: #07211D;
+      --jade:         #1C8C5F;
+      --ambar:        #DBA03C;
+      --crema:        #F7F3EA;
+      --success:      #1C8C5F;
+      --warning:      #D9892B;
+      --danger:       #C0453B;
+      --whatsapp:     #25D366;
+      --ink:          #102E2A;
+      --ink-soft:     #3C5752;
+      --ink-muted:    #6C817C;
+      --line:         #E5DDCE;
+      --font-display: 'Spectral', Georgia, serif;
+      --font-sans:    'Hanken Grotesk', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+    }
+
+    /* ─── RESET & BASE ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--crema);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button { cursor: pointer; border: none; background: none; font-family: var(--font-sans); }
+
+    /* ─── UTILITIES ──────────────────────────────────────────────────── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      color: var(--petroleo-700);
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      margin-bottom: 40px;
+    }
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-jade    { background: #d4f0e3; color: var(--jade); }
+    .badge-ambar   { background: #faecd0; color: var(--warning); }
+    .badge-danger  { background: #fbe0de; color: var(--danger); }
+    .badge-petro   { background: #d4e4e2; color: var(--petroleo-700); }
+    .badge-mono    { background: var(--line); color: var(--ink-soft); }
+
+    /* Fade-up animation */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── HEADER ─────────────────────────────────────────────────────── */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(247,243,234,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+      height: 64px;
+      display: flex;
+      align-items: center;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .logo-wrap { display: flex; flex-direction: column; line-height: 1.1; }
+    .logo-name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--petroleo-700);
+    }
+    .logo-tag {
+      font-size: 0.68rem;
+      color: var(--ink-muted);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .site-nav a {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--ink-soft);
+      transition: color 0.2s;
+    }
+    .site-nav a:hover { color: var(--petroleo-700); }
+    .btn-consultar {
+      background: var(--whatsapp);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 9px 18px;
+      border-radius: 8px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-consultar:hover { opacity: 0.9; }
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      padding: 4px;
+      background: none;
+      border: none;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--petroleo-700);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 64px;
+      left: 0; right: 0;
+      background: var(--crema);
+      border-bottom: 1px solid var(--line);
+      padding: 20px;
+      z-index: 99;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--ink-soft);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    /* ─── HERO ───────────────────────────────────────────────────────── */
+    .hero {
+      padding-top: 100px;
+      padding-bottom: 80px;
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .hero-text { }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--jade);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--jade);
+    }
+    .hero-headline {
+      font-family: var(--font-display);
+      font-size: clamp(1.9rem, 3.5vw, 2.8rem);
+      font-weight: 700;
+      color: var(--petroleo-700);
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 480px;
+    }
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn-primary {
+      background: var(--ambar);
+      color: var(--petroleo-900);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 13px 24px;
+      border-radius: 10px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 12px rgba(219,160,60,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(219,160,60,0.4); }
+    .btn-outline {
+      background: transparent;
+      color: var(--petroleo-700);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 13px 24px;
+      border-radius: 10px;
+      border: 2px solid var(--petroleo-700);
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-outline:hover { background: var(--petroleo-700); color: var(--crema); }
+
+    .video-placeholder {
+      background: var(--petroleo-700);
+      border-radius: 16px;
+      aspect-ratio: 16/9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.2s;
+    }
+    .video-placeholder:hover { opacity: 0.92; }
+    .video-placeholder::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(15,58,52,0) 40%, rgba(7,33,29,0.6) 100%);
+    }
+    .play-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--ambar);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 4px 24px rgba(219,160,60,0.5);
+    }
+    .play-icon svg { margin-left: 4px; }
+    .video-caption {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      color: rgba(247,243,234,0.75);
+      text-align: center;
+      max-width: 240px;
+      position: relative;
+      z-index: 1;
+      line-height: 1.4;
+    }
+
+    /* Small video placeholders */
+    .video-placeholder-sm {
+      background: var(--petroleo-700);
+      border-radius: 10px;
+      aspect-ratio: 16/9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      margin-top: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .video-placeholder-sm .play-icon { width: 40px; height: 40px; }
+    .video-placeholder-sm .play-icon svg { width: 14px; height: 14px; margin-left: 3px; }
+    .video-placeholder-sm .video-caption { font-size: 0.75rem; max-width: 180px; }
+
+    /* ─── SECTION DIVIDER ────────────────────────────────────────────── */
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 0;
+    }
+
+    /* ─── FLUJO INTERACTIVO ──────────────────────────────────────────── */
+    .section-flow {
+      padding: 80px 0;
+    }
+    .flow-wrapper {
+      background: #fff;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      padding: 40px;
+      max-width: 680px;
+      margin: 0 auto;
+      min-height: 420px;
+      position: relative;
+      overflow: hidden;
+    }
+    .flow-step {
+      display: none;
+      animation: stepIn 0.3s ease both;
+    }
+    .flow-step.active { display: block; }
+    @keyframes stepIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .step-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--jade);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .step-question {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--petroleo-700);
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+    .step-hint {
+      font-size: 0.9rem;
+      color: var(--ink-muted);
+      margin-bottom: 28px;
+    }
+    .choice-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .choice-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--crema);
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--ink);
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      text-align: left;
+    }
+    .choice-btn:hover {
+      border-color: var(--petroleo-700);
+      background: #fff;
+      transform: translateY(-2px);
+    }
+    .choice-emoji { font-size: 1.4rem; flex-shrink: 0; }
+    .choice-label { font-weight: 600; }
+    .choice-desc  { font-size: 0.82rem; color: var(--ink-muted); margin-top: 2px; }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--ink-muted);
+      margin-bottom: 20px;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+    }
+    .btn-back:hover { color: var(--petroleo-700); }
+
+    /* Progress dots */
+    .flow-progress {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+    .flow-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--line);
+      transition: background 0.3s;
+    }
+    .flow-dot.done { background: var(--jade); }
+    .flow-dot.active { background: var(--ambar); width: 20px; border-radius: 4px; }
+
+    /* Resultado */
+    .result-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .result-badge {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 999px;
+    }
+    .result-desc {
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+    }
+    .assets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .asset-card {
+      background: var(--crema);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .asset-ticker {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--petroleo-700);
+      margin-bottom: 2px;
+    }
+    .asset-name  { font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 6px; line-height: 1.3; }
+    .asset-pct {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--jade);
+      margin-bottom: 4px;
+    }
+    .asset-why { font-size: 0.72rem; color: var(--ink-muted); line-height: 1.4; }
+    .result-note {
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+    .result-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn-result-primary {
+      background: var(--ambar);
+      color: var(--petroleo-900);
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 11px 18px;
+      border-radius: 9px;
+      transition: opacity 0.2s;
+    }
+    .btn-result-primary:hover { opacity: 0.9; }
+    .btn-result-wa {
+      background: var(--whatsapp);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 11px 18px;
+      border-radius: 9px;
+      transition: opacity 0.2s;
+    }
+    .btn-result-wa:hover { opacity: 0.9; }
+
+    /* Cuenta sub-pantalla */
+    .cuenta-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .cuenta-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--petroleo-700);
+      color: var(--crema);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cuenta-step-text { font-size: 0.92rem; color: var(--ink-soft); padding-top: 4px; }
+    .cuenta-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .btn-balanz {
+      background: var(--ambar);
+      color: var(--petroleo-900);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 20px;
+      border-radius: 9px;
+      transition: opacity 0.2s;
+    }
+    .btn-balanz:hover { opacity: 0.9; }
+    .btn-continue {
+      background: var(--petroleo-700);
+      color: var(--crema);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 20px;
+      border-radius: 9px;
+      transition: opacity 0.2s;
+    }
+    .btn-continue:hover { opacity: 0.85; }
+
+    /* ─── INSTRUMENTOS ───────────────────────────────────────────────── */
+    .section-instruments {
+      padding: 80px 0;
+      background: #fff;
+    }
+    .instruments-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .instrument-card {
+      background: var(--crema);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .instrument-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(15,58,52,0.08);
+    }
+    .instr-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+    .instr-name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--petroleo-700);
+      line-height: 1.2;
+    }
+    .instr-emoji { font-size: 1.6rem; }
+    .instr-desc {
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .instr-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* ─── TUTORIALES ─────────────────────────────────────────────────── */
+    .section-tutorials {
+      padding: 80px 0;
+    }
+    .accordion { display: flex; flex-direction: column; gap: 10px; }
+    .accordion-item {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      cursor: pointer;
+      user-select: none;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .accordion-header:hover { background: var(--crema); }
+    .accordion-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .accordion-icon { font-size: 1.25rem; }
+    .accordion-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--petroleo-700);
+    }
+    .accordion-steps-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--line);
+      color: var(--ink-soft);
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .accordion-chevron {
+      width: 20px; height: 20px;
+      color: var(--ink-muted);
+      transition: transform 0.3s;
+      flex-shrink: 0;
+    }
+    .accordion-item.open .accordion-chevron { transform: rotate(180deg); }
+    .accordion-body {
+      display: none;
+      padding: 0 24px 24px;
+    }
+    .accordion-item.open .accordion-body { display: block; }
+    .tutorial-steps { list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 12px; }
+    .tutorial-steps li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      counter-increment: step;
+    }
+    .tutorial-steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--petroleo-700);
+      color: var(--crema);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tutorial-steps li span {
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      padding-top: 4px;
+      line-height: 1.5;
+    }
+    .tutorial-steps li span strong { color: var(--ink); }
+    .tutorial-note {
+      background: #faecd0;
+      border-left: 3px solid var(--ambar);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.84rem;
+      color: var(--warning);
+      margin-top: 16px;
+    }
+    .tutorial-important {
+      background: #fbe0de;
+      border-left: 3px solid var(--danger);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.84rem;
+      color: var(--danger);
+      margin-top: 12px;
+    }
+
+    /* ─── GLOSARIO ───────────────────────────────────────────────────── */
+    .section-glosario {
+      padding: 80px 0;
+      background: #fff;
+    }
+    .glosario-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .glosario-item {
+      background: var(--crema);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .glosario-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .glosario-header:hover { background: rgba(15,58,52,0.04); }
+    .glosario-term {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--petroleo-700);
+    }
+    .glosario-body {
+      display: none;
+      padding: 0 20px 16px;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+    .glosario-item.open .glosario-body { display: block; }
+    .glosario-item.open .accordion-chevron { transform: rotate(180deg); }
+
+    /* ─── CTA FINAL ──────────────────────────────────────────────────── */
+    .section-cta {
+      background: var(--petroleo-700);
+      padding: 80px 0;
+      text-align: center;
+    }
+    .cta-headline {
+      font-family: var(--font-display);
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      font-weight: 700;
+      color: var(--crema);
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .cta-sub {
+      font-size: 1.05rem;
+      color: rgba(247,243,234,0.7);
+      margin-bottom: 36px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn-wa-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--whatsapp);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 15px 32px;
+      border-radius: 12px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(37,211,102,0.3);
+    }
+    .btn-wa-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,211,102,0.4); }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────── */
+    .site-footer {
+      background: var(--petroleo-900);
+      padding: 48px 0 32px;
+    }
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .footer-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo .logo-name { color: var(--crema); }
+    .footer-logo .logo-tag  { color: rgba(247,243,234,0.5); }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .footer-links a {
+      font-size: 0.88rem;
+      color: rgba(247,243,234,0.65);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--crema); }
+    .footer-legal {
+      border-top: 1px solid rgba(247,243,234,0.1);
+      padding-top: 24px;
+      font-size: 0.78rem;
+      color: rgba(247,243,234,0.4);
+      line-height: 1.6;
+    }
+
+    /* ─── WHATSAPP FLOAT ─────────────────────────────────────────────── */
+    .wa-float {
+      position: fixed;
+      bottom: 28px;
+      right: 24px;
+      z-index: 200;
+      width: 56px; height: 56px;
+      background: var(--whatsapp);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 20px rgba(37,211,102,0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .wa-float:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(37,211,102,0.55); }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 36px; }
+      .instruments-grid { grid-template-columns: 1fr; }
+      .glosario-grid { grid-template-columns: 1fr; }
+      .site-nav { display: none; }
+      .hamburger { display: flex; }
+    }
+    @media (max-width: 600px) {
+      .flow-wrapper { padding: 24px 18px; }
+      .assets-grid { grid-template-columns: 1fr 1fr; }
+      .section-flow, .section-instruments, .section-tutorials, .section-glosario, .section-cta { padding: 56px 0; }
+      .hero { padding-top: 88px; padding-bottom: 56px; }
+      .accordion-header { padding: 16px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━ HEADER ━━━━━━━━━━━━━━ -->
+<header class="site-header">
+  <div class="container">
+    <div class="logo-wrap">
+      <span class="logo-name">FinanzasconNico</span>
+      <span class="logo-tag">Centro de aprendizaje</span>
+    </div>
+
+    <nav class="site-nav">
+      <a href="#empeza">Empezá acá</a>
+      <a href="#instrumentos">Instrumentos</a>
+      <a href="#tutoriales">Tutoriales</a>
+      <a href="#glosario">Glosario</a>
+      <a href="https://wa.me/5491123284509" target="_blank" class="btn-consultar">💬 Consultar con Nico</a>
+    </nav>
+
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#empeza"        onclick="closeMobileMenu()">Empezá acá</a>
+  <a href="#instrumentos"  onclick="closeMobileMenu()">Instrumentos</a>
+  <a href="#tutoriales"    onclick="closeMobileMenu()">Tutoriales</a>
+  <a href="#glosario"      onclick="closeMobileMenu()">Glosario</a>
+  <a href="https://wa.me/5491123284509" target="_blank" class="btn-consultar" style="text-align:center">💬 Consultar con Nico</a>
+</div>
+
+<!-- ━━━━━━━━━━━━━━ HERO ━━━━━━━━━━━━━━ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-text fade-up">
+        <div class="hero-eyebrow">Centro de aprendizaje</div>
+        <h1 class="hero-headline">Aprendé a invertir desde cero, con Nico de tu lado</h1>
+        <p class="hero-sub">Guías paso a paso, tutoriales en video y herramientas para que entiendas exactamente qué hacés con tu dinero.</p>
+        <div class="hero-buttons">
+          <a href="#empeza" class="btn-primary">🚀 Empezá el flujo guiado</a>
+          <a href="#instrumentos" class="btn-outline">📖 Ver instrumentos</a>
+        </div>
+      </div>
+
+      <div class="fade-up" style="transition-delay:0.1s">
+        <div id="videoGuia" style="max-width:400px;margin:0 auto;aspect-ratio:9/16;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/-btOUJHIHPs"
+            title="Bienvenido a la guía de inversión — FinanzasconNico"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius:inherit;">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ FLUJO INTERACTIVO ━━━━━━━━━━━━━━ -->
+<section class="section-flow" id="empeza">
+  <div class="container">
+    <div class="fade-up" style="text-align:center; margin-bottom:40px">
+      <h2 class="section-title">Empezá a invertir</h2>
+      <p class="section-sub">Respondé 3 preguntas y te armamos una cartera orientativa a tu medida.</p>
+    </div>
+
+    <div class="flow-wrapper fade-up">
+      <!-- Dots de progreso -->
+      <div class="flow-progress" id="flowProgress">
+        <div class="flow-dot active" id="dot0"></div>
+        <div class="flow-dot" id="dot1"></div>
+        <div class="flow-dot" id="dot2"></div>
+        <div class="flow-dot" id="dot3"></div>
+        <div class="flow-dot" id="dot4"></div>
+      </div>
+
+      <!-- PASO 1: ¿Tenés cuenta? -->
+      <div class="flow-step active" id="step-cuenta">
+        <div class="step-label">Paso 1 de 5</div>
+        <h3 class="step-question">¿Tenés cuenta en Balanz?</h3>
+        <p class="step-hint">Balanz es el bróker desde donde vas a operar.</p>
+        <div class="choice-grid">
+          <button class="choice-btn" onclick="flowGoMoneda()">
+            <span class="choice-emoji">✅</span>
+            <div>
+              <div class="choice-label">Sí, ya tengo cuenta</div>
+              <div class="choice-desc">Seguir al siguiente paso</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowShowAbrirCuenta()">
+            <span class="choice-emoji">🆕</span>
+            <div>
+              <div class="choice-label">No, quiero abrirla ahora</div>
+              <div class="choice-desc">Te guiamos en 3 pasos simples</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-PASO: Abrir cuenta -->
+      <div class="flow-step" id="step-abrir">
+        <button class="btn-back" onclick="flowBack('step-cuenta', 0)">← Volver atrás</button>
+        <div class="step-label">Cómo abrir tu cuenta</div>
+        <h3 class="step-question">Abrí tu cuenta en Balanz gratis</h3>
+        <div class="cuenta-steps">
+          <div class="cuenta-step">
+            <div class="step-num">1</div>
+            <p class="cuenta-step-text">Hacé clic en <strong>"Abrir cuenta gratis"</strong> y completá el formulario con tus datos personales (DNI, CUIL, email).</p>
+          </div>
+          <div class="cuenta-step">
+            <div class="step-num">2</div>
+            <p class="cuenta-step-text">Verificá tu identidad subiendo una foto de tu DNI y un selfie. El proceso toma menos de 10 minutos.</p>
+          </div>
+          <div class="cuenta-step">
+            <div class="step-num">3</div>
+            <p class="cuenta-step-text">Recibís el <strong>código de operación</strong> por email. Con eso ya podés ingresar y transferir fondos a tu comitente.</p>
+          </div>
+        </div>
+        <div style="max-width:640px; margin: 0 auto 20px; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+          <iframe
+            id="videoAbrirCuenta"
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/YTG86tmmJFw"
+            title="Cómo abrir una cuenta en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+        <div class="cuenta-btns">
+          <a href="https://www.balanz.com/abrir-cuenta-2.aspx?reference=nstrijland@balanz.com" target="_blank" class="btn-balanz">🏦 Abrir cuenta gratis</a>
+          <button class="btn-continue" onclick="flowGoMoneda()">Ya la abrí, seguir →</button>
+        </div>
+      </div>
+
+      <!-- PASO 2: ¿En qué moneda? -->
+      <div class="flow-step" id="step-moneda">
+        <button class="btn-back" onclick="flowBack('step-cuenta', 0)">← Volver atrás</button>
+        <div class="step-label">Paso 2 de 5</div>
+        <h3 class="step-question">¿En qué moneda querés invertir?</h3>
+        <p class="step-hint">Podés cambiar esto más adelante. La cartera se adapta a cada moneda.</p>
+        <div class="choice-grid">
+          <button class="choice-btn" onclick="flowSelectMoneda('pesos')">
+            <span class="choice-emoji">🇦🇷</span>
+            <div>
+              <div class="choice-label">Pesos argentinos</div>
+              <div class="choice-desc">FCI, LECAPs, acciones, cauciones</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectMoneda('usd')">
+            <span class="choice-emoji">💵</span>
+            <div>
+              <div class="choice-label">Dólares</div>
+              <div class="choice-desc">ONs, bonos, CEDEARs, fondos USD</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectMoneda('exterior')">
+            <span class="choice-emoji">🌍</span>
+            <div>
+              <div class="choice-label">Inversión al exterior</div>
+              <div class="choice-desc">Fondos internacionales vía Balanz Capital Valores</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 3: ¿Cuánto capital? (solo USD / exterior) -->
+      <div class="flow-step" id="step-capital">
+        <button class="btn-back" onclick="flowBack('step-moneda', 1)">← Volver atrás</button>
+        <div class="step-label">Paso 3 de 5</div>
+        <h3 class="step-question">¿Con cuánto capital?</h3>
+        <p class="step-hint">El monto cambia qué instrumentos tiene más sentido usar.</p>
+        <div class="choice-grid">
+          <button class="choice-btn" onclick="flowSelectCapital('bajo')">
+            <span class="choice-emoji">🌱</span>
+            <div>
+              <div class="choice-label">Menos de USD 10.000</div>
+              <div class="choice-desc">Ideal para empezar con liquidez</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectCapital('medio')">
+            <span class="choice-emoji">📈</span>
+            <div>
+              <div class="choice-label">USD 10.000 – 100.000</div>
+              <div class="choice-desc">Cartera más diversificada con ONs</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectCapital('alto')">
+            <span class="choice-emoji">🏦</span>
+            <div>
+              <div class="choice-label">Más de USD 100.000</div>
+              <div class="choice-desc">Estrategia institucional con mayor diversificación</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 4: ¿Qué perfil? (solo USD) -->
+      <div class="flow-step" id="step-perfil">
+        <button class="btn-back" onclick="flowBack('step-capital', 2)">← Volver atrás</button>
+        <div class="step-label">Paso 4 de 5</div>
+        <h3 class="step-question">¿Qué perfil inversión tenés?</h3>
+        <p class="step-hint">No hay respuesta correcta. Elegí lo que te haga dormir tranquilo/a.</p>
+        <div class="choice-grid">
+          <button class="choice-btn" onclick="flowSelectPerfil('conservador')">
+            <span class="choice-emoji">🛡️</span>
+            <div>
+              <div class="choice-label">Conservador</div>
+              <div class="choice-desc">Priorizo proteger el capital. Acepto menor rendimiento.</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectPerfil('moderado')">
+            <span class="choice-emoji">⚖️</span>
+            <div>
+              <div class="choice-label">Moderado</div>
+              <div class="choice-desc">Busco crecer pero sin asumir riesgo extremo.</div>
+            </div>
+          </button>
+          <button class="choice-btn" onclick="flowSelectPerfil('dinamico')">
+            <span class="choice-emoji">🚀</span>
+            <div>
+              <div class="choice-label">Dinámico</div>
+              <div class="choice-desc">Quiero máximo crecimiento. Tolero volatilidad.</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 5: Resultado -->
+      <div class="flow-step" id="step-resultado">
+        <button class="btn-back" onclick="flowBackFromResultado()">← Volver atrás</button>
+        <div class="step-label">Paso 5 de 5 — Cartera orientativa</div>
+        <div class="result-profile">
+          <span class="result-badge" id="resultBadge"></span>
+          <span class="result-desc" id="resultDesc"></span>
+        </div>
+        <div class="assets-grid" id="assetsGrid"></div>
+        <p class="result-note">⚠️ Cartera orientativa. Nico la ajusta a tu situación real — impuestos, timing de entrada, objetivos personales.</p>
+        <div class="result-actions">
+          <a href="#tutoriales" class="btn-result-primary">📖 Ver cómo comprar estos activos</a>
+          <a id="btnWaResult" href="#" target="_blank" class="btn-result-wa">💬 Que Nico arme mi cartera</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ INSTRUMENTOS ━━━━━━━━━━━━━━ -->
+<section class="section-instruments" id="instrumentos">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:40px">
+      <h2 class="section-title">Instrumentos disponibles</h2>
+      <p class="section-sub">Qué es cada cosa, para quién es y en qué moneda opera.</p>
+    </div>
+
+    <div class="instruments-grid">
+
+      <!-- 1. FCI Money Market -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div>
+            <div class="instr-name">FCI Money Market</div>
+          </div>
+          <div class="instr-emoji">💰</div>
+        </div>
+        <p class="instr-desc">Tu plata rinde todos los días sin hacer nada. Rescate al instante — tan líquido como una caja de ahorro, pero con mejor tasa.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-petro">Todos los perfiles</span>
+          <span class="badge badge-mono">ARS</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoFCIMM">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/olT8KcsCMzw"
+            title="Cómo suscribir un FCI en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 2. FCI Ahorro -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">FCI Ahorro</div></div>
+          <div class="instr-emoji">📈</div>
+        </div>
+        <p class="instr-desc">Crece más que el plazo fijo con liquidez en 24hs. Invierte en bonos y letras de corto plazo para maximizar el rendimiento en pesos.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-jade">Conservador</span>
+          <span class="badge badge-mono">ARS</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoFCIAhorro">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/olT8KcsCMzw"
+            title="Cómo suscribir un FCI en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 3. Obligaciones Negociables -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">Obligaciones Negociables</div></div>
+          <div class="instr-emoji">🏢</div>
+        </div>
+        <p class="instr-desc">Prestás plata a empresas líderes argentinas y te pagan en dólares cada 3 o 6 meses. Renta fija predecible con respaldo corporativo.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-jade">Conservador</span>
+          <span class="badge badge-mono">USD</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoONs">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/1UlTIxm8Ydk"
+            title="Cómo comprar Obligaciones Negociables en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 4. Bonos Soberanos -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">Bonos Soberanos</div></div>
+          <div class="instr-emoji">🇦🇷</div>
+        </div>
+        <p class="instr-desc">Deuda del Estado argentino. Mayor rendimiento que las ONs corporativas, con algo más de riesgo político y macro.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-ambar">Moderado</span>
+          <span class="badge badge-danger">Dinámico</span>
+          <span class="badge badge-mono">USD</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoBonos">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/0J9SGLMWqDM"
+            title="Cómo comprar Bonos en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 5. LECAPs -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">LECAPs</div></div>
+          <div class="instr-emoji">📋</div>
+        </div>
+        <p class="instr-desc">Letras del Tesoro a tasa fija en pesos. Sabés exactamente cuánto ganás de antemano — sin sorpresas.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-jade">Conservador</span>
+          <span class="badge badge-mono">ARS</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoLECAPs">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/w4lYIE6s0S8"
+            title="Cómo invertir en Letras en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 6. CEDEARs -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">CEDEARs</div></div>
+          <div class="instr-emoji">🌎</div>
+        </div>
+        <p class="instr-desc">Comprás en pesos y tu inversión sigue al dólar y a empresas globales como Apple, Amazon o el índice S&P 500.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-ambar">Moderado</span>
+          <span class="badge badge-danger">Dinámico</span>
+          <span class="badge badge-mono">ARS dolarizado</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoCEDEARs">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/FYsDq8IMS1I"
+            title="Cómo invertir en CEDEARs en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 7. Acciones argentinas -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">Acciones argentinas</div></div>
+          <div class="instr-emoji">📊</div>
+        </div>
+        <p class="instr-desc">Apostás al crecimiento de empresas locales como Galicia, YPF o Pampa. Mayor potencial de ganancia y mayor volatilidad.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-danger">Dinámico</span>
+          <span class="badge badge-mono">ARS</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoAcciones">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/W1gFMypOpa8"
+            title="Cómo invertir en Acciones en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 8. Cauciones -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">Cauciones</div></div>
+          <div class="instr-emoji">⚡</div>
+        </div>
+        <p class="instr-desc">Préstamo de 1 a 7 días dentro del mercado con tasa fija garantizada. Ideal para no dejar plata parada cuando esperás una oportunidad.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-jade">Conservador</span>
+          <span class="badge badge-mono">ARS / USD</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoCauciones">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/_krSipqWITM"
+            title="Cómo operar Cauciones en Balanz"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: inherit;">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- 9. Inversión exterior BCV -->
+      <div class="instrument-card fade-up">
+        <div class="instr-header">
+          <div><div class="instr-name">Inversión al exterior (BCV)</div></div>
+          <div class="instr-emoji">🌍</div>
+        </div>
+        <p class="instr-desc">Fondos internacionales de Balanz Capital Valores. Invertís en mercados globales sin riesgo argentino, operando desde Argentina.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-petro">Todos los perfiles</span>
+          <span class="badge badge-mono">USD</span>
+        </div>
+        <div class="video-placeholder-sm" id="videoBCV">
+          <div class="play-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="#07211D"/></svg>
+          </div>
+          <p class="video-caption">Tutorial: invertir al exterior con Balanz</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ TUTORIALES ━━━━━━━━━━━━━━ -->
+<section class="section-tutorials" id="tutoriales">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:40px">
+      <h2 class="section-title">Tutoriales paso a paso</h2>
+      <p class="section-sub">Cómo hacer cada operación en Balanz, sin saltear nada.</p>
+    </div>
+
+    <div class="accordion fade-up">
+
+      <!-- a) Suscribir FCI -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">💰</span>
+            <span class="accordion-title">Suscribir un FCI</span>
+            <span class="accordion-steps-badge">9 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/olT8KcsCMzw"
+              title="Cómo suscribir un FCI en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong> con tu usuario y contraseña.</span></li>
+            <li><span>Seleccioná <strong>Mercado</strong> en el menú izquierdo.</span></li>
+            <li><span>Seleccioná <strong>Fondos</strong> en el menú superior.</span></li>
+            <li><span>Buscá el fondo: <strong>BCMMA</strong> para Money Market, <strong>BCAHA</strong> para FCI Ahorro.</span></li>
+            <li><span>Presioná el botón <strong>Suscribir</strong>.</span></li>
+            <li><span>En "Cuenta de origen" elegí <strong>Comitente Balanz</strong>.</span></li>
+            <li><span>Ingresá el monto o tildá <strong>"Todo mi disponible"</strong>.</span></li>
+            <li><span>Tildá la declaración del reglamento e ingresá tu <strong>código de operación de 4 dígitos</strong>.</span></li>
+            <li><span>¡Listo! El fondo rinde desde ese momento.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Nota:</strong> BCMMA rescata T+0 (inmediato). BCAHA rescata T+1 (al día hábil siguiente).</div>
+        </div>
+      </div>
+
+      <!-- b) Comprar ON o Bono -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">🏢</span>
+            <span class="accordion-title">Comprar una ON o Bono</span>
+            <span class="accordion-steps-badge">9 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/1UlTIxm8Ydk"
+              title="Cómo comprar Obligaciones Negociables en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong>.</span></li>
+            <li><span>Seleccioná <strong>Mercado</strong>.</span></li>
+            <li><span>Elegí <strong>Corporativos</strong> (para ONs) o <strong>Bonos</strong> (para soberanos) en el menú superior.</span></li>
+            <li><span>Buscá el ticker con la lupa (ej: <strong>ESTRA1</strong>, <strong>GD30</strong>).</span></li>
+            <li><span>Presioná <strong>Comprar</strong>.</span></li>
+            <li><span>Elegí la moneda: <strong>Pesos</strong> o <strong>Dólares</strong>.</span></li>
+            <li><span>Ingresá el monto o la cantidad de nominales.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá.</span></li>
+            <li><span>¡Listo! El bono aparece en tu cartera.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Nota:</strong> Los cupones se pagan cada 3 o 6 meses según el instrumento. Consultá la hoja de condiciones del bono.</div>
+        </div>
+      </div>
+
+      <!-- c) Comprar CEDEAR -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">🌎</span>
+            <span class="accordion-title">Comprar un CEDEAR</span>
+            <span class="accordion-steps-badge">9 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/FYsDq8IMS1I"
+              title="Cómo invertir en CEDEARs en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong>.</span></li>
+            <li><span>Seleccioná <strong>Mercado</strong>.</span></li>
+            <li><span>Seleccioná <strong>Cedears</strong> en el menú superior.</span></li>
+            <li><span>Buscá el ticker con la lupa: <strong>SPY</strong>, <strong>QQQ</strong>, <strong>VEA</strong>, <strong>EWZ</strong>.</span></li>
+            <li><span>Presioná <strong>Comprar</strong>.</span></li>
+            <li><span>Elegí la moneda: <strong>Pesos</strong> (más liquidez), <strong>Dólares</strong> o <strong>USD Cable</strong>.</span></li>
+            <li><span>Ingresá el monto.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá.</span></li>
+            <li><span>¡Listo! El CEDEAR sigue el precio en Nueva York.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Horario de operación:</strong> lunes a viernes de 10:00 a 17:00hs.</div>
+        </div>
+      </div>
+
+      <!-- d) Rescatar FCI -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">↩️</span>
+            <span class="accordion-title">Rescatar un FCI</span>
+            <span class="accordion-steps-badge">9 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              id="videoRescateFCI"
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/RBwL8uFkLO8"
+              title="Cómo rescatar dinero de un FCI en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong>.</span></li>
+            <li><span>Seleccioná <strong>Cartera</strong> en el menú izquierdo.</span></li>
+            <li><span>Desplazate hacia abajo hasta <strong>Mis instrumentos</strong>.</span></li>
+            <li><span>Hacé clic en el fondo que querés rescatar.</span></li>
+            <li><span>Presioná el botón <strong>Rescatar</strong>.</span></li>
+            <li><span>Seleccioná la <strong>cuenta de destino</strong>: Comitente o cuenta bancaria.</span></li>
+            <li><span>Ingresá el monto o tildá <strong>"Todo mi disponible"</strong>.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá.</span></li>
+            <li><span>¡Listo! El rescate se acredita según el plazo de liquidación del fondo.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Nota:</strong> Cada fondo tiene su plazo de liquidación particular. BCMMA es T+0 (inmediato), BCAHA es T+1.</div>
+        </div>
+      </div>
+
+      <!-- e) Confirmar órdenes del asesor -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">✅</span>
+            <span class="accordion-title">Confirmar órdenes de Nico</span>
+            <span class="accordion-steps-badge">7 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div id="videoConformidad" style="max-width:360px; margin: 0 auto 1.5rem; aspect-ratio: 9/16; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/LRZME6Bnt_w"
+              title="Cómo confirmar órdenes de tu asesor en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Cuando Nico cargue una orden, recibís una <strong>notificación push</strong> (asegurate de tenerlas activadas).</span></li>
+            <li><span>Abrí la <strong>app de Balanz</strong> en tu celular.</span></li>
+            <li><span>En la pantalla de inicio, seleccioná <strong>Conformidad de órdenes</strong>.</span></li>
+            <li><span>Visualizás el listado de <strong>operaciones pendientes</strong>.</span></li>
+            <li><span>Presioná <strong>Conformidad</strong> en la operación a validar — o <strong>"Conformidad a todas"</strong> para aprobar todo junto.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá.</span></li>
+            <li><span>¡Listo! Las órdenes quedan confirmadas y se ejecutan en el mercado.</span></li>
+          </ol>
+          <div class="tutorial-important">🔔 <strong>IMPORTANTE:</strong> Tener siempre las notificaciones de Balanz activadas. Sin confirmación, las órdenes no se ejecutan.</div>
+        </div>
+      </div>
+
+      <!-- f) Cauciones colocadoras -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">⚡</span>
+            <span class="accordion-title">Operar cauciones colocadoras</span>
+            <span class="accordion-steps-badge">8 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/_krSipqWITM"
+              title="Cómo operar Cauciones en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong>.</span></li>
+            <li><span>Seleccioná <strong>Mercado</strong>.</span></li>
+            <li><span>Seleccioná <strong>Cauciones</strong> en el menú superior.</span></li>
+            <li><span>Buscá la caución por <strong>moneda</strong> (Pesos o Dólares) y <strong>plazo</strong> (24hs, 48hs, 72hs).</span></li>
+            <li><span>Presioná <strong>Colocar</strong>.</span></li>
+            <li><span>Ingresá el monto o tildá <strong>"Colocar todo mi disponible"</strong>.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá.</span></li>
+            <li><span>¡Listo! Tu dinero trabaja hasta el vencimiento del plazo.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Horario de operación:</strong> lunes a viernes de 11:30 a 16:45hs.</div>
+        </div>
+      </div>
+
+      <!-- g) Invertir en LECAPs -->
+      <div class="accordion-item" data-accordion>
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">📋</span>
+            <span class="accordion-title">Invertir en LECAPs</span>
+            <span class="accordion-steps-badge">8 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div style="max-width:640px; margin: 0 auto 1.5rem; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;">
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/w4lYIE6s0S8"
+              title="Cómo invertir en Letras en Balanz"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              style="border-radius: inherit;">
+            </iframe>
+          </div>
+          <ol class="tutorial-steps">
+            <li><span>Ingresá a <strong>balanz.com</strong>.</span></li>
+            <li><span>Seleccioná <strong>Mercado</strong>.</span></li>
+            <li><span>Seleccioná <strong>Letras</strong> en el menú superior.</span></li>
+            <li><span>Filtrá por tipo <strong>LETES</strong> y moneda <strong>Pesos</strong>.</span></li>
+            <li><span>Buscá la LECAP deseada. Consultá las TIRs en <a href="https://www.acuantoesta.com.ar/lecaps" target="_blank" style="color:var(--jade);text-decoration:underline">acuantoesta.com.ar/lecaps</a>.</span></li>
+            <li><span>Presioná <strong>Comprar</strong>.</span></li>
+            <li><span>Ingresá el monto. Activá <strong>Opciones avanzadas</strong> si querés poner un precio límite.</span></li>
+            <li><span>Ingresá tu <strong>código de operación de 4 dígitos</strong> y confirmá. ¡Listo!</span></li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ GLOSARIO ━━━━━━━━━━━━━━ -->
+<section class="section-glosario" id="glosario">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:40px">
+      <h2 class="section-title">Glosario</h2>
+      <p class="section-sub">Las palabras que vas a ver seguido, explicadas en castellano.</p>
+    </div>
+
+    <div class="glosario-grid fade-up" id="glosarioGrid">
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ CTA FINAL ━━━━━━━━━━━━━━ -->
+<section class="section-cta">
+  <div class="container fade-up">
+    <h2 class="cta-headline">¿Tenés alguna duda o querés que Nico revise tu situación?</h2>
+    <p class="cta-sub">Sin compromiso. Una consulta por WhatsApp puede clarificar todo.</p>
+    <a href="https://wa.me/5491123284509" target="_blank" class="btn-wa-cta">
+      💬 Consultar con Nico
+    </a>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━ FOOTER ━━━━━━━━━━━━━━ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-logo logo-wrap">
+          <span class="logo-name">FinanzasconNico</span>
+          <span class="logo-tag">Centro de aprendizaje · FinanzasconNico</span>
+        </div>
+        <div class="footer-links">
+          <a href="https://www.instagram.com/finanzasconnico_/" target="_blank">📸 Instagram @finanzasconnico_</a>
+          <a href="https://wa.me/5491123284509" target="_blank">💬 WhatsApp</a>
+          <a href="https://chat.whatsapp.com/D9VsYfjb75rElATtrA62XA" target="_blank">👥 Comunidad WA</a>
+          <a href="ventas.html">→ Ir a la página principal</a>
+        </div>
+      </div>
+      <div class="footer-legal">
+        Nicolás Strijland opera como Agente de Balanz Capital Valores S.A.U., regulado por la CNV. Contenido educativo, no constituye asesoramiento formal.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Botón flotante WhatsApp -->
+<a href="https://wa.me/5491123284509" target="_blank" class="wa-float" title="Consultar con Nico">💬</a>
+
+<!-- ━━━━━━━━━━━━━━ JAVASCRIPT ━━━━━━━━━━━━━━ -->
+<script>
+/* ─── HAMBURGER ──────────────────────────────────────────────────── */
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const mobileMenu   = document.getElementById('mobileMenu');
+hamburgerBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+function closeMobileMenu() { mobileMenu.classList.remove('open'); }
+
+/* ─── INTERSECTION OBSERVER (fade-up) ───────────────────────────── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+/* ─── ACCORDION (tutoriales) ─────────────────────────────────────── */
+function toggleAccordion(header) {
+  const item = header.parentElement;
+  const isOpen = item.classList.contains('open');
+  // Cerrar todos
+  document.querySelectorAll('.accordion-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* ─── GLOSARIO ───────────────────────────────────────────────────── */
+const glosarioTerms = [
+  { term: 'TIR', def: 'La tasa de retorno real de una inversión, expresada en porcentaje anual. Es el número que te dice cuánto ganás por año si mantenés el instrumento hasta el vencimiento.' },
+  { term: 'ON (Obligación Negociable)', def: 'Un bono emitido por una empresa privada. Al comprarlo le prestás plata a esa empresa y ella te paga intereses periódicos en dólares.' },
+  { term: 'FCI', def: 'Fondo Común de Inversión. Un fondo donde muchos inversores ponen dinero en conjunto y un equipo profesional lo administra. Podés entrar y salir cuando querás.' },
+  { term: 'CEDEAR', def: 'Un certificado que representa acciones de empresas extranjeras (Apple, Amazon, etc.) pero que cotiza en Argentina. Comprás en pesos y tu inversión sigue al dólar.' },
+  { term: 'MEP (Dólar MEP)', def: 'El tipo de cambio que surge de comprar un bono en pesos y venderlo en dólares dentro del mercado local. Es legal y más barato que el blue.' },
+  { term: 'CCL (Contado con Liquidación)', def: 'Similar al MEP pero la operación se liquida en el exterior. Se usa para transferir dólares afuera de Argentina de forma legal.' },
+  { term: 'Bono Soberano', def: 'Deuda emitida por el Estado argentino. Mayor rendimiento que los bonos corporativos, pero también mayor riesgo político y macro.' },
+  { term: 'Caución', def: 'Un préstamo de muy corto plazo (1 a 7 días) dentro del mercado de capitales. Prestás tu dinero a cambio de una tasa fija garantizada.' },
+  { term: 'LECAP', def: 'Letra de Capitalización del Tesoro. Un instrumento de corto plazo en pesos emitido por el gobierno con tasa fija. Sabés exactamente cuánto vas a ganar.' },
+  { term: 'Nominal', def: 'El valor de un bono expresado en su moneda original, sin considerar el precio de mercado. Cuando comprás 1000 nominales de un bono, estás comprando esa cantidad de "cara".' },
+  { term: 'Cupón', def: 'El pago periódico de intereses que hacen los bonos u ONs. Si una ON tiene cupón semestral del 4%, te paga un 4% de tu inversión cada 6 meses.' },
+  { term: 'Amortización', def: 'La devolución del capital que hace el emisor de un bono. Puede ser al vencimiento (todo junto) o en cuotas a lo largo del tiempo.' },
+  { term: 'Volatilidad', def: 'Qué tanto sube y baja el precio de un activo. Un activo muy volátil puede ganar o perder mucho en poco tiempo.' },
+  { term: 'Diversificación', def: 'Repartir el dinero en varios activos distintos para que si uno baja, los otros compensen. "No poner todos los huevos en la misma canasta."' },
+  { term: 'ALyC', def: 'Agente de Liquidación y Compensación. La categoría regulatoria de Balanz ante la CNV. Es la habilitación que permite operar en el mercado de capitales argentino.' },
+];
+
+const glosarioGrid = document.getElementById('glosarioGrid');
+glosarioTerms.forEach(t => {
+  const item = document.createElement('div');
+  item.className = 'glosario-item';
+  item.innerHTML = `
+    <div class="glosario-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="glosario-term">${t.term}</span>
+      <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="glosario-body">${t.def}</div>
+  `;
+  glosarioGrid.appendChild(item);
+});
+
+/* ─── FLUJO INTERACTIVO ──────────────────────────────────────────── */
+let flowState = { moneda: null, capital: null, perfil: null };
+const DOTS_COUNT = 5;
+
+function updateDots(activeIndex) {
+  for (let i = 0; i < DOTS_COUNT; i++) {
+    const d = document.getElementById('dot' + i);
+    d.className = 'flow-dot';
+    if (i < activeIndex)  d.classList.add('done');
+    if (i === activeIndex) d.classList.add('active');
+  }
+}
+
+function showStep(id, dotIndex) {
+  document.querySelectorAll('.flow-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  updateDots(dotIndex);
+}
+
+function flowGoMoneda()            { showStep('step-moneda', 1); }
+function flowShowAbrirCuenta()     { showStep('step-abrir', 0); }
+function flowBack(stepId, dotIdx)  { showStep(stepId, dotIdx); }
+
+function flowSelectMoneda(m) {
+  flowState.moneda = m;
+  if (m === 'pesos') {
+    buildResultado();
+  } else {
+    showStep('step-capital', 2);
+  }
+}
+
+function flowSelectCapital(c) {
+  flowState.capital = c;
+  if (flowState.moneda === 'exterior') {
+    // Para exterior preguntamos perfil también
+    showStep('step-perfil', 3);
+  } else {
+    showStep('step-perfil', 3);
+  }
+}
+
+function flowSelectPerfil(p) {
+  flowState.perfil = p;
+  buildResultado();
+}
+
+function flowBackFromResultado() {
+  if (flowState.moneda === 'pesos') {
+    showStep('step-moneda', 1);
+  } else if (!flowState.capital) {
+    showStep('step-moneda', 1);
+  } else {
+    showStep('step-perfil', 3);
+  }
+}
+
+/* ─── CARTERAS ───────────────────────────────────────────────────── */
+const CARTERAS = {
+  pesos: [
+    { ticker: 'BCMMA', name: 'FCI Money Market', pct: '40%', why: 'Liquidez inmediata, rinde desde el día 1' },
+    { ticker: 'BCAHA', name: 'FCI Ahorro',        pct: '30%', why: 'Crece más que plazo fijo, T+1' },
+    { ticker: 'LECAPs', name: 'Letras del Tesoro', pct: '20%', why: 'Tasa fija, rendimiento predecible' },
+    { ticker: 'Cauciones', name: 'Cauciones ARS', pct: '10%', why: 'Para el saldo a muy corto plazo' },
+  ],
+  usd_conservador_bajo: [
+    { ticker: 'ESTRA1',       name: 'ON Estrugamou',    pct: '50%', why: 'ON corporativa en USD, bajo riesgo' },
+    { ticker: 'BCAHA',        name: 'FCI Ahorro',        pct: '30%', why: 'Liquidez en ARS dolarizado' },
+    { ticker: 'Cauciones USD',name: 'Cauciones USD',    pct: '20%', why: 'Renta de corto plazo en dólares' },
+  ],
+  usd_conservador_alto: [
+    { ticker: 'ONs Corp.', name: 'ONs corporativas',  pct: '35%', why: 'Cupones en USD, riesgo acotado' },
+    { ticker: 'MRCAO',     name: 'Mercado Libre ON',  pct: '25%', why: 'Emisora de alta calidad crediticia' },
+    { ticker: 'TLCMO',     name: 'Telecom ON',         pct: '20%', why: 'Diversificación sectorial' },
+    { ticker: 'ESTRA1',    name: 'ON Estrugamou',     pct: '20%', why: 'Respaldo inmobiliario sólido' },
+  ],
+  usd_moderado_bajo: [
+    { ticker: 'SPY',   name: 'S&P 500 CEDEAR', pct: '40%', why: 'Las 500 empresas más grandes de EEUU' },
+    { ticker: 'BCMMA', name: 'FCI Money Market', pct: '35%', why: 'Colchón de liquidez en pesos' },
+    { ticker: 'VEA',   name: 'Europa/Asia CEDEAR', pct: '25%', why: 'Diversificación geográfica' },
+  ],
+  usd_moderado_alto: [
+    { ticker: 'SPY',       name: 'S&P 500 CEDEAR',  pct: '30%', why: 'Mercado americano de largo plazo' },
+    { ticker: 'ONs Corp.', name: 'ONs corporativas', pct: '30%', why: 'Renta fija en dólares' },
+    { ticker: 'VEA',       name: 'Europa/Asia',      pct: '20%', why: 'Exposición a mercados desarrollados' },
+    { ticker: 'GD30',      name: 'Bono soberano',    pct: '20%', why: 'Upside en la deuda argentina' },
+  ],
+  usd_dinamico_bajo: [
+    { ticker: 'QQQ', name: 'Nasdaq 100 CEDEAR',  pct: '45%', why: 'Las 100 tech más grandes del mundo' },
+    { ticker: 'SPY', name: 'S&P 500 CEDEAR',      pct: '35%', why: 'Base de mercado americano diversificado' },
+    { ticker: 'EWZ', name: 'Brasil ETF CEDEAR',   pct: '20%', why: 'Exposición a emergentes latinoamericanos' },
+  ],
+  usd_dinamico_alto: [
+    { ticker: 'QQQ',  name: 'Nasdaq 100 CEDEAR',   pct: '30%', why: 'Sector tecnológico global' },
+    { ticker: 'GD30', name: 'Bono soberano ARG',    pct: '25%', why: 'Alta volatilidad, potencial de apreciación' },
+    { ticker: 'GGAL', name: 'Galicia CEDEAR',       pct: '25%', why: 'Principal banco argentino, upside local' },
+    { ticker: 'SPY',  name: 'S&P 500 CEDEAR',       pct: '20%', why: 'Ancla estable de la cartera' },
+  ],
+  exterior_conservador: [
+    { ticker: 'Balanz Income',         name: 'Balanz Income Fund',          pct: '40%', why: 'Renta fija internacional de alta calidad' },
+    { ticker: 'Balanz Short Duration', name: 'Balanz Short Duration',       pct: '35%', why: 'Baja duration, protección ante suba de tasas' },
+    { ticker: 'SPY',                   name: 'S&P 500 CEDEAR',              pct: '25%', why: 'Componente de equity americano' },
+  ],
+  exterior_moderado: [
+    { ticker: 'Balanz Balanced',  name: 'Balanz Balanced',      pct: '30%', why: 'Mix equilibrado de acciones y bonos' },
+    { ticker: 'SPY',              name: 'S&P 500 CEDEAR',        pct: '30%', why: 'Exposure al mercado americano' },
+    { ticker: 'Balanz LATAM',     name: 'Balanz LATAM Fund',     pct: '20%', why: 'Diversificación regional' },
+    { ticker: 'VEA',              name: 'Europa/Asia ETF',       pct: '20%', why: 'Mercados desarrollados fuera de EEUU' },
+  ],
+  exterior_dinamico: [
+    { ticker: 'Balanz Global Equity', name: 'Balanz Global Equity', pct: '35%', why: 'Acciones globales de alta convicción' },
+    { ticker: 'QQQ',                  name: 'Nasdaq 100 CEDEAR',    pct: '30%', why: 'Concentración en tech de crecimiento' },
+    { ticker: 'Balanz Crypto',        name: 'Balanz Crypto Fund',   pct: '20%', why: 'Exposure a activos digitales' },
+    { ticker: 'EWZ',                  name: 'Brasil ETF',           pct: '15%', why: 'Emergentes latinoamericanos' },
+  ],
+};
+
+const PERFIL_CONFIG = {
+  conservador: { label: 'Conservador 🛡️', badgeClass: 'badge-jade',   desc: 'Priorizás proteger el capital. Tasa fija y activos de bajo riesgo.' },
+  moderado:    { label: 'Moderado ⚖️',    badgeClass: 'badge-ambar',  desc: 'Buscás crecer sin asumir volatilidad extrema.' },
+  dinamico:    { label: 'Dinámico 🚀',    badgeClass: 'badge-danger', desc: 'Apuntás al máximo crecimiento. Tolerás oscilaciones fuertes.' },
+  pesos:       { label: 'Pesos 🇦🇷',       badgeClass: 'badge-petro',  desc: 'Cartera en pesos con instrumentos de renta fija local.' },
+};
+
+function getCarteraKey() {
+  const { moneda, capital, perfil } = flowState;
+  if (moneda === 'pesos') return 'pesos';
+  const capSuffix = (capital === 'bajo') ? 'bajo' : 'alto';
+  if (moneda === 'exterior') return `exterior_${perfil || 'moderado'}`;
+  return `usd_${perfil}_${capSuffix}`;
+}
+
+function buildResultado() {
+  const key = getCarteraKey();
+  const assets = CARTERAS[key] || CARTERAS['pesos'];
+  const cfg = flowState.moneda === 'pesos' ? PERFIL_CONFIG.pesos : PERFIL_CONFIG[flowState.perfil || 'moderado'];
+
+  // Badge y descripción
+  document.getElementById('resultBadge').className = `result-badge ${cfg.badgeClass}`;
+  document.getElementById('resultBadge').textContent = cfg.label;
+  document.getElementById('resultDesc').textContent = cfg.desc;
+
+  // Cards de activos
+  renderAssets(assets);
+
+  // Botón WhatsApp con mensaje precargado
+  const perfilText = flowState.moneda === 'pesos' ? 'Pesos' : (flowState.perfil || 'exterior') + ' ' + flowState.moneda;
+  const activos = assets.map(a => `${a.ticker} ${a.pct}`).join(', ');
+  const waMsg = encodeURIComponent(`Hola Nico! Usé el flujo guiado y me salió el perfil ${perfilText}. Activos: ${activos}. ¿Podés revisar si esta cartera se adapta a mi situación?`);
+  document.getElementById('btnWaResult').href = `https://wa.me/5491123284509?text=${waMsg}`;
+
+  showStep('step-resultado', 4);
+}
+
+function renderAssets(assets) {
+  const grid = document.getElementById('assetsGrid');
+  grid.innerHTML = '';
+  assets.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'asset-card';
+    card.innerHTML = `
+      <div class="asset-ticker">${a.ticker}</div>
+      <div class="asset-name">${a.name}</div>
+      <div class="asset-pct">${a.pct}</div>
+      <div class="asset-why">${a.why}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Intentar cargar ONs desde ons.json si el perfil lo requiere
+  const key = getCarteraKey();
+  if (key.includes('conservador') && flowState.moneda === 'usd') {
+    loadONs(grid);
+  }
+}
+
+function loadONs(container) {
+  fetch('ons.json')
+    .then(r => r.json())
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        const header = document.createElement('p');
+        header.style.cssText = 'grid-column:1/-1;font-size:0.8rem;color:var(--ink-muted);margin:8px 0 4px;font-weight:600;';
+        header.textContent = '📊 ONs disponibles en mercado (actualizado)';
+        container.appendChild(header);
+        data.slice(0, 4).forEach(on => {
+          const card = document.createElement('div');
+          card.className = 'asset-card';
+          card.innerHTML = `
+            <div class="asset-ticker">${on.ticker || on.symbol || '—'}</div>
+            <div class="asset-name">${on.name || on.empresa || ''}</div>
+            <div class="asset-pct" style="color:var(--jade)">${on.tir ? on.tir + '%' : ''}</div>
+            <div class="asset-why">${on.vencimiento ? 'Vto: ' + on.vencimiento : ''}</div>
+          `;
+          container.appendChild(card);
+        });
+      }
+    })
+    .catch(() => { /* Fallback silencioso — los assets hardcodeados ya están en pantalla */ });
+}
+</script>
+</body>
+</html>
