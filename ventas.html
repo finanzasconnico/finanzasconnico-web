@@ -716,26 +716,28 @@ footer {
 <!-- ══════════ 2. HERO ══════════ -->
 <section class="hero">
   <div class="container">
-    <div class="fade-up" style="margin-bottom:28px;">
-      <img src="nico.jpg" alt="Nicolás Strijland — FinanzasconNico"
-        style="width:110px;height:110px;border-radius:50%;object-fit:cover;object-position:center top;border:3px solid var(--ambar);box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-      <p style="margin-top:10px;font-size:0.85rem;color:var(--ink-muted);">Nicolás Strijland · Asesor de inversiones</p>
+    <div class="fade-up" style="margin-bottom:28px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div style="width:110px;height:110px;border-radius:50%;overflow:hidden;border:3px solid var(--ambar);box-shadow:0 8px 32px rgba(0,0,0,0.4);flex-shrink:0;">
+        <img src="nico.jpg" alt="Nicolás Strijland"
+          style="width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block;">
+      </div>
+      <p style="font-size:0.85rem;color:var(--ink-muted);">Nicolás Strijland · Asesor de inversiones</p>
     </div>
     <h1 class="fade-up">Hacé que tu plata trabaje para vos<br>— es <em>GRATIS</em></h1>
     <p class="hero-sub fade-up">Acceso a los mejores rendimientos del mercado, con una cartera personalizada para vos.</p>
 
-    <div class="fade-up" id="heroVideo" style="max-width:400px;margin:0 auto 2rem;aspect-ratio:9/16;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-      <iframe
-        width="100%"
-        height="100%"
-        src="https://www.youtube.com/embed/KLrCwLPADe0"
-        title="FinanzasconNico — Invertí de forma simple y GRATIS"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-        style="border-radius:inherit;">
-      </iframe>
-    </div>
+    <a id="heroVideo" href="https://www.youtube.com/shorts/KLrCwLPADe0" target="_blank" rel="noopener"
+      class="fade-up"
+      style="display:block;max-width:340px;margin:0 auto 2rem;aspect-ratio:9/16;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;text-decoration:none;">
+      <img src="https://img.youtube.com/vi/KLrCwLPADe0/hqdefault.jpg" alt="Ver video"
+        style="width:100%;height:100%;object-fit:cover;display:block;">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+        <div style="width:68px;height:68px;background:var(--ambar);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="#07211D"/></svg>
+        </div>
+        <span style="color:#fff;font-family:var(--font-sans);font-size:0.88rem;text-align:center;padding:0 20px;line-height:1.4;">▶ Mirá cómo funciona FinanzasconNico<br><span style="opacity:0.7;font-size:0.78rem;">Abre en YouTube</span></span>
+      </div>
+    </a>
 
     <div class="fade-up">
       <a class="btn-wa large" href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+tu+página+y+quiero+saber+cómo+empezar+a+invertir." target="_blank" rel="noopener">
