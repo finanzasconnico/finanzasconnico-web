@@ -1352,7 +1352,7 @@
       </div>
 
       <!-- 6. CEDEARs -->
-      <div class="instrument-card fade-up">
+      <div class="instrument-card fade-up" style="grid-column:1/-1">
         <div class="instr-header">
           <div><div class="instr-name">CEDEARs</div></div>
           <div class="instr-emoji">🌎</div>
@@ -1375,10 +1375,21 @@
             style="border-radius: inherit;">
           </iframe>
         </div>
+
+        <div class="on-live-block">
+          <div class="on-live-title">🏆 Top 5 CEDEARs por potencial hoy</div>
+          <div class="on-live-sub">Según el precio objetivo promedio de los analistas que cubren cada empresa. Los precios están en USD porque así cotiza la empresa detrás del CEDEAR — tu CEDEAR en pesos sigue ese mismo % de suba o baja.</div>
+          <div id="topCedearsBox" class="on-loading">Cargando datos del mercado…</div>
+          <div id="cedearExampleBox"></div>
+          <div class="on-disclaimer">
+            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El consenso de analistas puede cambiar y no garantiza resultados.
+            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+los+CEDEARs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+          </div>
+        </div>
       </div>
 
       <!-- 7. Acciones argentinas -->
-      <div class="instrument-card fade-up">
+      <div class="instrument-card fade-up" style="grid-column:1/-1">
         <div class="instr-header">
           <div><div class="instr-name">Acciones argentinas</div></div>
           <div class="instr-emoji">📊</div>
@@ -1399,6 +1410,17 @@
             allowfullscreen
             style="border-radius: inherit;">
           </iframe>
+        </div>
+
+        <div class="on-live-block">
+          <div class="on-live-title">🏆 Top 5 acciones argentinas por potencial hoy</div>
+          <div class="on-live-sub">Mismo criterio que los CEDEARs: precio objetivo promedio de los analistas que cubren cada empresa, en pesos.</div>
+          <div id="topAccionesBox" class="on-loading">Cargando datos del mercado…</div>
+          <div id="accionExampleBox"></div>
+          <div class="on-disclaimer">
+            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El consenso de analistas puede cambiar y no garantiza resultados.
+            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+acciones+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+          </div>
         </div>
       </div>
 
@@ -2183,6 +2205,94 @@ function renderModelosPublicos(modelos) {
     </div>`).join('');
 }
 fetchModelosPublicos().then(renderModelosPublicos);
+
+/* ─── CEDEARs / Acciones — top potencial según precio objetivo de analistas ─── */
+async function fetchTopPorObjetivo(monedaFiltro, n) {
+  const r = await fetch('https://suit-fcn.vercel.app/data/precios_objetivo.xlsx', { cache: 'no-store' });
+  if (!r.ok) throw new Error('No se pudo leer precios objetivo');
+  const buf = await r.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[1]) continue;
+    if (row[4] !== monedaFiltro) continue;
+    const rec = String(row[9] || '').toLowerCase();
+    if (rec !== 'buy' && rec !== 'strong_buy') continue;
+    const nAnalistas = parseFloat(row[8]) || 0;
+    if (nAnalistas < 3) continue;
+    const precioActual = parseFloat(row[3]);
+    const precioObjetivo = parseFloat(row[5]);
+    if (!precioActual || !precioObjetivo) continue;
+    out.push({
+      ticker: row[0],
+      empresa: row[2],
+      precioActual,
+      precioObjetivo,
+      upside: (precioObjetivo - precioActual) / precioActual,
+      nAnalistas,
+      recomendacion: rec
+    });
+  }
+  out.sort((a, b) => b.upside - a.upside);
+  return out.slice(0, n);
+}
+function renderTopObjetivoTable(boxId, items, simbolo) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  if (!items.length) { box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento.</p>'; return; }
+  box.innerHTML = `
+    <div class="top-ons-table-wrap">
+    <table class="top-ons-table">
+      <thead><tr><th>Ticker</th><th>Empresa</th><th>Precio</th><th>Objetivo</th><th>Potencial</th><th>Analistas</th></tr></thead>
+      <tbody>
+        ${items.map(o => `
+          <tr>
+            <td class="mono">${o.ticker}</td>
+            <td>${o.empresa}</td>
+            <td class="mono">${simbolo}${o.precioActual.toFixed(2)}</td>
+            <td class="mono">${simbolo}${o.precioObjetivo.toFixed(2)}</td>
+            <td class="tir-val">+${(o.upside * 100).toFixed(1)}%</td>
+            <td>${o.nAnalistas}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+function renderObjetivoExample(boxId, o, simbolo, tipoLabel) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  if (!o) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="on-example-box">
+      <strong>Así se lee ${o.ticker} (${o.empresa})</strong> — ${tipoLabel} con mayor potencial hoy según el consenso de analistas:<br><br>
+      <strong>Precio actual ${simbolo}${o.precioActual.toFixed(2)}</strong>: lo que cuesta hoy.<br>
+      <strong>Precio objetivo ${simbolo}${o.precioObjetivo.toFixed(2)}</strong>: el promedio de lo que ${o.nAnalistas} analistas creen que va a valer, mirando los próximos 12 meses.<br>
+      <strong>Potencial +${(o.upside * 100).toFixed(1)}%</strong>: la diferencia entre el precio objetivo y el precio actual — cuánto podría subir si los analistas tienen razón (también podría no cumplirse).<br>
+      <strong>Recomendación ${o.recomendacion === 'strong_buy' ? 'Compra fuerte' : 'Compra'}</strong>: la posición promedio de esos analistas sobre la acción hoy.
+    </div>`;
+}
+async function initTopEquities() {
+  try {
+    const cedears = await fetchTopPorObjetivo('USD', 5);
+    renderTopObjetivoTable('topCedearsBox', cedears, 'US$');
+    renderObjetivoExample('cedearExampleBox', cedears[0], 'US$', 'el CEDEAR');
+  } catch (e) {
+    const box = document.getElementById('topCedearsBox');
+    if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento. Probá recargar la página.</p>';
+  }
+  try {
+    const acciones = await fetchTopPorObjetivo('ARS', 5);
+    renderTopObjetivoTable('topAccionesBox', acciones, '$');
+    renderObjetivoExample('accionExampleBox', acciones[0], '$', 'la acción');
+  } catch (e) {
+    const box = document.getElementById('topAccionesBox');
+    if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento. Probá recargar la página.</p>';
+  }
+}
+initTopEquities();
 
 // Video modal (reproduce el video en la misma página, sin salir a YouTube)
 function openVideoModal(videoId){
