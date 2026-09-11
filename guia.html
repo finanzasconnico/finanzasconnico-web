@@ -624,6 +624,48 @@
     }
     .top-ons-table td.mono { font-family: var(--font-mono); }
     .top-ons-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
+    .on-sector { font-size: 0.68rem; color: var(--ink-muted); margin-top: 2px; }
+
+    /* ─── CARTERAS MODELO ────────────────────────────────────────────── */
+    .section-models { padding: 80px 0; background: var(--crema); }
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 22px;
+    }
+    .model-card-pub {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+    }
+    .model-card-pub-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+    .model-tag-pub {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .model-tag-pub.conservadora { background: #d4f0e3; color: var(--jade); }
+    .model-tag-pub.moderada     { background: #faecd0; color: var(--warning); }
+    .model-tag-pub.agresiva     { background: #fbe0de; color: var(--danger); }
+    .model-tag-pub.custom       { background: var(--line); color: var(--ink-soft); }
+    .model-tir-pub { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; color: var(--jade); white-space: nowrap; }
+    .model-name-pub { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--petroleo-700); margin-bottom: 6px; }
+    .model-desc-pub { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.5; }
+    .model-assets-pub { display: flex; flex-wrap: wrap; gap: 6px; }
+    .model-asset-pill-pub {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: var(--crema);
+      border: 1px solid var(--line);
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: var(--ink-soft);
+    }
     .on-example-box {
       background: #fff;
       border: 1px solid var(--line);
@@ -1410,6 +1452,24 @@
 
 <hr class="section-divider" />
 
+<!-- ━━━━━━━━━━━━━━ CARTERAS MODELO ━━━━━━━━━━━━━━ -->
+<section class="section-models" id="carteras-modelo">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:32px">
+      <h2 class="section-title">Carteras modelo</h2>
+      <p class="section-sub">Así combino estos instrumentos entre sí, según cuánto riesgo estés dispuesto a tolerar. Son ejemplos reales del equipo — no la cartera personalizada que armaríamos para vos.</p>
+    </div>
+    <div class="models-grid fade-up" id="modelsGridPub">
+      <p class="on-loading">Cargando carteras…</p>
+    </div>
+    <div class="on-disclaimer fade-up" style="margin-top:16px;text-align:center">
+      📌 Contenido educativo e ilustrativo. Cada cartera real se ajusta a tu situación, plazo e impuestos. <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+carteras+modelo+de+la+gu%C3%ADa+y+quiero+una+armada+para+mi+situaci%C3%B3n." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Armemos la tuya →</a>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
 <!-- ━━━━━━━━━━━━━━ TUTORIALES ━━━━━━━━━━━━━━ -->
 <section class="section-tutorials" id="tutoriales">
   <div class="container">
@@ -2021,6 +2081,7 @@ async function fetchTopONs(n) {
     out.push({
       ticker: row[1],
       emisor: row[2],
+      precioMEP: parseFloat(row[3]),
       vencimiento: excelSerialToDate(row[4]),
       tir,
       duration: parseFloat(row[6]),
@@ -2040,15 +2101,16 @@ function renderTopOnsTable(ons) {
   box.innerHTML = `
     <div class="top-ons-table-wrap">
     <table class="top-ons-table">
-      <thead><tr><th>Ticker</th><th>Emisor</th><th>TIR</th><th>Vencimiento</th><th>Sector</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Emisor</th><th>Precio</th><th>TIR</th><th>Vencimiento</th><th>Cobra en</th></tr></thead>
       <tbody>
         ${ons.map(o => `
           <tr>
             <td class="mono">${o.ticker}</td>
-            <td>${o.emisor}</td>
+            <td>${o.emisor}<div class="on-sector">${o.sector || ''}</div></td>
+            <td class="mono">${o.precioMEP ? 'US$ ' + o.precioMEP.toFixed(3) : '—'}</td>
             <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
             <td>${formatVto(o.vencimiento)}</td>
-            <td>${o.sector || '—'}</td>
+            <td>${o.mesCupon || '—'}</td>
           </tr>`).join('')}
       </tbody>
     </table>
@@ -2061,8 +2123,10 @@ function renderOnExample(o) {
   box.innerHTML = `
     <div class="on-example-box">
       <strong>Así se lee ${o.ticker} (${o.emisor})</strong> — la ON con mejor TIR hoy entre las de máxima calidad (AAA):<br><br>
+      <strong>Precio ${o.precioMEP ? 'US$ ' + o.precioMEP.toFixed(3) : '—'}</strong>: lo que pagás hoy por cada dólar de valor nominal del bono (puede ser más o menos de US$1, según cuán buscada esté esa ON).<br>
       <strong>TIR ${(o.tir * 100).toFixed(2)}%</strong>: el rendimiento anual en dólares si la comprás hoy y la mantenés hasta el vencimiento, cobrando todos los cupones.<br>
-      <strong>Cupón ${o.cupon ? (o.cupon * 100).toFixed(2) + '%' : '—'}</strong>: la renta anual que paga la empresa sobre el valor nominal, cobrada en cuotas (${o.mesCupon || 'según el bono'}).<br>
+      <strong>Cupón ${o.cupon ? (o.cupon * 100).toFixed(2) + '%' : '—'}</strong>: la renta anual que paga la empresa sobre el valor nominal.<br>
+      <strong>Cobra en ${o.mesCupon || 'según el bono'}</strong>: los meses del año en que te paga esa renta.<br>
       <strong>Vencimiento ${formatVto(o.vencimiento)}</strong>: cuándo te devuelven el capital prestado.<br>
       <strong>Calificación AAA</strong>: la máxima calidad crediticia disponible hoy en el mercado argentino.
     </div>`;
@@ -2078,6 +2142,47 @@ async function initTopOns() {
   }
 }
 initTopOns();
+
+/* ─── CARTERAS MODELO — mismas 3 carteras del equipo que usa el Armador ─── */
+const MODELOS_FALLBACK = [
+  { id: 'model-cons', name: 'Conservadora', tag: 'conservadora', desc: 'Renta fija en USD, alta calidad crediticia, liquidar total.', tir: '7.07%',
+    assets: [{ ticker: 'VSCXO', pct: 20 }, { ticker: 'PLC4O', pct: 20 }, { ticker: 'CICBO', pct: 15 }, { ticker: 'PQCSO', pct: 15 }, { ticker: 'SPY', pct: 15 }, { ticker: 'DIA', pct: 10 }, { ticker: 'VEA', pct: 5 }] },
+  { id: 'model-mod', name: 'Moderada', tag: 'moderada', desc: 'Mix de renta fija y variable con mayor exposición a mercados internacionales.', tir: '8.20%',
+    assets: [{ ticker: 'VSCXO', pct: 15 }, { ticker: 'TSC4O', pct: 15 }, { ticker: 'IRCPO', pct: 15 }, { ticker: 'SPY', pct: 25 }, { ticker: 'QQQ', pct: 15 }, { ticker: 'EWZ', pct: 15 }] },
+  { id: 'model-agr', name: 'Agresiva', tag: 'agresiva', desc: 'Alta exposición a renta variable y CEDEARs de alto crecimiento.', tir: '20.61%',
+    assets: [{ ticker: 'SPY', pct: 30 }, { ticker: 'QQQ', pct: 25 }, { ticker: 'NVDA', pct: 15 }, { ticker: 'MELI', pct: 10 }, { ticker: 'PAMP', pct: 10 }, { ticker: 'META', pct: 10 }] }
+];
+async function fetchModelosPublicos() {
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b/6a0bd4d56610dd3ae86a39cb/latest', {
+      headers: { 'X-Access-Key': '$2a$10$2FgZZQxokMCjkekkADQgL.SmdggeViLZl..NipmtWn4AtcmK.8lyq' }
+    });
+    const d = await r.json();
+    const stored = d && d.record && d.record.modelos;
+    return (stored && stored.length) ? stored : MODELOS_FALLBACK;
+  } catch (e) {
+    return MODELOS_FALLBACK;
+  }
+}
+function renderModelosPublicos(modelos) {
+  const grid = document.getElementById('modelsGridPub');
+  if (!grid) return;
+  // Solo mostramos los 3 modelos "oficiales" del equipo, no cualquier modelo custom guardado por error.
+  const oficiales = modelos.filter(m => ['conservadora', 'moderada', 'agresiva'].includes(m.tag)).slice(0, 3);
+  const lista = oficiales.length ? oficiales : MODELOS_FALLBACK;
+  grid.innerHTML = lista.map(m => `
+    <div class="model-card-pub">
+      <div class="model-card-pub-header">
+        <span class="model-tag-pub ${m.tag || 'custom'}">${m.name}</span>
+        <span class="model-tir-pub">${m.tir}</span>
+      </div>
+      <div class="model-desc-pub">${m.desc || ''}</div>
+      <div class="model-assets-pub">
+        ${(m.assets || []).map(a => `<span class="model-asset-pill-pub">${a.ticker} ${a.pct}%</span>`).join('')}
+      </div>
+    </div>`).join('');
+}
+fetchModelosPublicos().then(renderModelosPublicos);
 
 // Video modal (reproduce el video en la misma página, sin salir a YouTube)
 function openVideoModal(videoId){
