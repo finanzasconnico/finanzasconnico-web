@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* ─── VARIABLES ──────────────────────────────────────────────────── */
     :root {
@@ -595,6 +596,47 @@
     }
     .instr-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 
+    /* Bloque "en vivo" dentro de un instrument-card (top picks + ejemplo real) */
+    .on-live-block {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px dashed var(--line);
+    }
+    .on-live-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--petroleo-700);
+      margin-bottom: 4px;
+    }
+    .on-live-sub { font-size: 0.78rem; color: var(--ink-muted); margin-bottom: 12px; }
+    .on-loading { font-size: 0.8rem; color: var(--ink-muted); padding: 10px 0; }
+    .top-ons-table-wrap { overflow-x: auto; }
+    .top-ons-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 480px; }
+    .top-ons-table th, .top-ons-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+    .top-ons-table th {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+    .top-ons-table td.mono { font-family: var(--font-mono); }
+    .top-ons-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
+    .on-example-box {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 14px 0 4px;
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      line-height: 1.75;
+    }
+    .on-example-box strong { color: var(--petroleo-700); }
+    .on-disclaimer { font-size: 0.72rem; color: var(--ink-muted); margin-top: 10px; line-height: 1.5; }
+
     /* ─── TUTORIALES ─────────────────────────────────────────────────── */
     .section-tutorials {
       padding: 80px 0;
@@ -1181,7 +1223,7 @@
       </div>
 
       <!-- 3. Obligaciones Negociables -->
-      <div class="instrument-card fade-up">
+      <div class="instrument-card fade-up" style="grid-column:1/-1">
         <div class="instr-header">
           <div><div class="instr-name">Obligaciones Negociables</div></div>
           <div class="instr-emoji">🏢</div>
@@ -1202,6 +1244,17 @@
             allowfullscreen
             style="border-radius: inherit;">
           </iframe>
+        </div>
+
+        <div class="on-live-block">
+          <div class="on-live-title">🏆 Top 5 ONs AAA hoy (ordenadas por TIR)</div>
+          <div class="on-live-sub">Se actualiza solo, tomando los mismos datos de mercado que uso para armar carteras — no hace falta que cargues nada.</div>
+          <div id="topOnsBox" class="on-loading">Cargando datos del mercado…</div>
+          <div id="onExampleBox"></div>
+          <div class="on-disclaimer">
+            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. Tu perfil, plazo e impuestos cambian qué te conviene a vos.
+            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+ONs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+          </div>
         </div>
       </div>
 
@@ -1920,29 +1973,111 @@ function renderAssets(assets) {
 }
 
 function loadONs(container) {
-  fetch('ons.json')
-    .then(r => r.json())
-    .then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        const header = document.createElement('p');
-        header.style.cssText = 'grid-column:1/-1;font-size:0.8rem;color:var(--ink-muted);margin:8px 0 4px;font-weight:600;';
-        header.textContent = '📊 ONs disponibles en mercado (actualizado)';
-        container.appendChild(header);
-        data.slice(0, 4).forEach(on => {
-          const card = document.createElement('div');
-          card.className = 'asset-card';
-          card.innerHTML = `
-            <div class="asset-ticker">${on.ticker || on.symbol || '—'}</div>
-            <div class="asset-name">${on.name || on.empresa || ''}</div>
-            <div class="asset-pct" style="color:var(--jade)">${on.tir ? on.tir + '%' : ''}</div>
-            <div class="asset-why">${on.vencimiento ? 'Vto: ' + on.vencimiento : ''}</div>
-          `;
-          container.appendChild(card);
-        });
-      }
+  fetchTopONs(4)
+    .then(ons => {
+      if (!ons.length) return;
+      const header = document.createElement('p');
+      header.style.cssText = 'grid-column:1/-1;font-size:0.8rem;color:var(--ink-muted);margin:8px 0 4px;font-weight:600;';
+      header.textContent = '📊 ONs disponibles en mercado (actualizado)';
+      container.appendChild(header);
+      ons.forEach(on => {
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        card.innerHTML = `
+          <div class="asset-ticker">${on.ticker}</div>
+          <div class="asset-name">${on.emisor}</div>
+          <div class="asset-pct" style="color:var(--jade)">${(on.tir * 100).toFixed(2)}%</div>
+          <div class="asset-why">Vto: ${formatVto(on.vencimiento)}</div>
+        `;
+        container.appendChild(card);
+      });
     })
     .catch(() => { /* Fallback silencioso — los assets hardcodeados ya están en pantalla */ });
 }
+
+/* ─── TOP ONs AAA — en vivo, leídas directo del Monitor público del Suite ─── */
+function excelSerialToDate(serial) {
+  if (!serial || isNaN(serial)) return null;
+  return new Date(Math.round((serial - 25569) * 86400 * 1000));
+}
+function formatVto(d) {
+  return d ? d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '—';
+}
+async function fetchTopONs(n) {
+  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-store' });
+  if (!r.ok) throw new Error('No se pudo leer el monitor');
+  const buf = await r.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets['Corporativos'];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  // Tabla "Bonos AAA Cable" ya viene filtrada por calificación y ordenada por TIR
+  // desde el propio Excel del Monitor — arranca en la fila 5 (índice 0-based).
+  const out = [];
+  for (let i = 5; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row[1] === '') break;
+    const tir = parseFloat(row[5]);
+    if (!tir || isNaN(tir)) continue;
+    out.push({
+      ticker: row[1],
+      emisor: row[2],
+      vencimiento: excelSerialToDate(row[4]),
+      tir,
+      duration: parseFloat(row[6]),
+      cupon: parseFloat(row[8]),
+      mesCupon: row[9],
+      calificacion: row[12],
+      sector: row[14]
+    });
+  }
+  out.sort((a, b) => b.tir - a.tir);
+  return out.slice(0, n);
+}
+function renderTopOnsTable(ons) {
+  const box = document.getElementById('topOnsBox');
+  if (!box) return;
+  if (!ons.length) { box.innerHTML = '<p class="on-loading">No pudimos traer datos del mercado en este momento.</p>'; return; }
+  box.innerHTML = `
+    <div class="top-ons-table-wrap">
+    <table class="top-ons-table">
+      <thead><tr><th>Ticker</th><th>Emisor</th><th>TIR</th><th>Vencimiento</th><th>Sector</th></tr></thead>
+      <tbody>
+        ${ons.map(o => `
+          <tr>
+            <td class="mono">${o.ticker}</td>
+            <td>${o.emisor}</td>
+            <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
+            <td>${formatVto(o.vencimiento)}</td>
+            <td>${o.sector || '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+function renderOnExample(o) {
+  const box = document.getElementById('onExampleBox');
+  if (!box) return;
+  if (!o) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="on-example-box">
+      <strong>Así se lee ${o.ticker} (${o.emisor})</strong> — la ON con mejor TIR hoy entre las de máxima calidad (AAA):<br><br>
+      <strong>TIR ${(o.tir * 100).toFixed(2)}%</strong>: el rendimiento anual en dólares si la comprás hoy y la mantenés hasta el vencimiento, cobrando todos los cupones.<br>
+      <strong>Cupón ${o.cupon ? (o.cupon * 100).toFixed(2) + '%' : '—'}</strong>: la renta anual que paga la empresa sobre el valor nominal, cobrada en cuotas (${o.mesCupon || 'según el bono'}).<br>
+      <strong>Vencimiento ${formatVto(o.vencimiento)}</strong>: cuándo te devuelven el capital prestado.<br>
+      <strong>Calificación AAA</strong>: la máxima calidad crediticia disponible hoy en el mercado argentino.
+    </div>`;
+}
+async function initTopOns() {
+  try {
+    const ons = await fetchTopONs(5);
+    renderTopOnsTable(ons);
+    renderOnExample(ons[0]);
+  } catch (e) {
+    const box = document.getElementById('topOnsBox');
+    if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos del mercado en este momento. Probá recargar la página.</p>';
+  }
+}
+initTopOns();
 
 // Video modal (reproduce el video en la misma página, sin salir a YouTube)
 function openVideoModal(videoId){
