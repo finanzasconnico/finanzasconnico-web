@@ -1326,6 +1326,29 @@
         </div>
       </div>
 
+      <!-- 4b. Dólar MEP y CCL -->
+      <div class="instrument-card fade-up" style="grid-column:1/-1">
+        <div class="instr-header">
+          <div><div class="instr-name">Dólar MEP y Dólar Cable (CCL)</div></div>
+          <div class="instr-emoji">💵</div>
+        </div>
+        <p class="instr-desc">No son instrumentos para invertir, son la forma legal de pasar pesos a dólares (o al revés) comprando y vendiendo un bono en dos puntas distintas. MEP te deja los dólares en tu cuenta acá; Cable te los deja en una cuenta en el exterior.</p>
+        <div class="instr-badges" style="margin-bottom:12px">
+          <span class="badge badge-mono">Conversión, no inversión</span>
+        </div>
+
+        <div class="on-live-block" style="margin-top:0;padding-top:0;border-top:none">
+          <div class="on-live-title">💱 Cotización en vivo</div>
+          <div class="on-live-sub">Mismos tipos de cambio que uso todos los días para operar — se actualizan solos.</div>
+          <div id="fxBox" class="on-loading">Cargando cotizaciones…</div>
+          <div id="fxExampleBox"></div>
+          <div class="on-disclaimer">
+            📌 Contenido educativo e ilustrativo. Las cotizaciones cambian todo el día — este es un valor de referencia, no el tipo de cambio exacto al momento de operar.
+            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+d%C3%B3lar+MEP+o+Cable." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+          </div>
+        </div>
+      </div>
+
       <!-- 5. LECAPs -->
       <div class="instrument-card fade-up">
         <div class="instr-header">
@@ -2085,11 +2108,17 @@ function excelSerialToDate(serial) {
 function formatVto(d) {
   return d ? d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '—';
 }
-async function fetchTopONs(n) {
+let _monitorWbCache = null;
+async function getMonitorWorkbook() {
+  if (_monitorWbCache) return _monitorWbCache;
   const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-store' });
   if (!r.ok) throw new Error('No se pudo leer el monitor');
   const buf = await r.arrayBuffer();
-  const wb = XLSX.read(buf, { type: 'array' });
+  _monitorWbCache = XLSX.read(buf, { type: 'array' });
+  return _monitorWbCache;
+}
+async function fetchTopONs(n) {
+  const wb = await getMonitorWorkbook();
   const ws = wb.Sheets['Corporativos'];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
   // Tabla "Bonos AAA Cable" ya viene filtrada por calificación y ordenada por TIR
@@ -2352,6 +2381,75 @@ function renderAccionExample(o) {
     </div>`;
 }
 initTopEquities();
+
+/* ─── Dólar MEP / CCL — cotización en vivo desde el Monitor ─────────── */
+async function fetchFX() {
+  const wb = await getMonitorWorkbook();
+  const ws = wb.Sheets['FX'];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const map = {};
+  for (let i = 6; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row[0] === '') continue;
+    map[row[0]] = {
+      nombre: row[0],
+      ultimo: parseFloat(row[3]),
+      varPct: parseFloat(row[5]),
+      brechaOficial: parseFloat(row[7])
+    };
+  }
+  return map;
+}
+function renderFX(fx) {
+  const box = document.getElementById('fxBox');
+  if (!box) return;
+  const filas = [
+    { key: 'A3500', label: 'Oficial (A3500)' },
+    { key: 'BLUE', label: 'Blue' },
+    { key: 'MEP (AL30)', label: 'MEP' },
+    { key: 'CCL (AL30)', label: 'Cable (CCL)' }
+  ].map(f => (fx[f.key] ? Object.assign({}, fx[f.key], { label: f.label }) : null)).filter(Boolean);
+  if (!filas.length) { box.innerHTML = '<p class="on-loading">No pudimos traer la cotización en este momento.</p>'; return; }
+  box.innerHTML = `
+    <div class="top-ons-table-wrap">
+    <table class="top-ons-table">
+      <thead><tr><th>Tipo de cambio</th><th>Último</th><th>Var. hoy</th><th>Brecha vs Oficial</th></tr></thead>
+      <tbody>
+        ${filas.map(f => `
+          <tr>
+            <td>${f.label}</td>
+            <td class="mono">$${f.ultimo.toFixed(2)}</td>
+            <td class="mono" style="color:${f.varPct >= 0 ? 'var(--jade)' : 'var(--danger)'}">${f.varPct >= 0 ? '+' : ''}${(f.varPct * 100).toFixed(2)}%</td>
+            <td class="mono">${isNaN(f.brechaOficial) ? '—' : (f.brechaOficial >= 0 ? '+' : '') + (f.brechaOficial * 100).toFixed(1) + '%'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+function renderFXExample(fx) {
+  const box = document.getElementById('fxExampleBox');
+  if (!box) return;
+  const mep = fx['MEP (AL30)'], oficial = fx['A3500'];
+  if (!mep) { box.innerHTML = ''; return; }
+  const brecha = oficial ? ((mep.ultimo / oficial.ultimo - 1) * 100).toFixed(1) : null;
+  box.innerHTML = `
+    <div class="on-example-box">
+      <strong>Así funciona</strong>: comprás un bono en pesos (por ejemplo AL30) y lo vendés en dólares al mismo tiempo. La relación entre lo que pagaste en pesos y lo que recibiste en dólares es el "dólar implícito" de esa operación.<br><br>
+      <strong>Dólar MEP hoy: $${mep.ultimo.toFixed(2)}</strong>${brecha ? ` — un ${brecha}% más caro que el dólar oficial ($${oficial.ultimo.toFixed(2)}).` : '.'}<br>
+      <strong>MEP vs Cable</strong>: el Cable (CCL) suele cotizar un poco más caro que el MEP porque incluye el paso extra de mandar los dólares afuera — se usa cuando necesitás los dólares en una cuenta en el exterior, no acá.
+    </div>`;
+}
+async function initFX() {
+  try {
+    const fx = await fetchFX();
+    renderFX(fx);
+    renderFXExample(fx);
+  } catch (e) {
+    const box = document.getElementById('fxBox');
+    if (box) box.innerHTML = '<p class="on-loading">No pudimos traer la cotización en este momento. Probá recargar la página.</p>';
+  }
+}
+initFX();
 
 // Video modal (reproduce el video en la misma página, sin salir a YouTube)
 function openVideoModal(videoId){
