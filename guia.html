@@ -1413,8 +1413,8 @@
         </div>
 
         <div class="on-live-block">
-          <div class="on-live-title">🏆 Top 5 acciones argentinas por potencial hoy</div>
-          <div class="on-live-sub">Mismo criterio que los CEDEARs: precio objetivo promedio de los analistas que cubren cada empresa, en pesos.</div>
+          <div class="on-live-title">🏆 Top 5 acciones argentinas — mejor suba del año</div>
+          <div class="on-live-sub">Acá no hay suficiente cobertura de analistas como en los CEDEARs, así que el criterio es distinto: mejor suba en los últimos 12 meses, solo entre empresas que dan ganancia y generan caja.</div>
           <div id="topAccionesBox" class="on-loading">Cargando datos del mercado…</div>
           <div id="accionExampleBox"></div>
           <div class="on-disclaimer">
@@ -2284,13 +2284,72 @@ async function initTopEquities() {
     if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento. Probá recargar la página.</p>';
   }
   try {
-    const acciones = await fetchTopPorObjetivo('ARS', 5);
-    renderTopObjetivoTable('topAccionesBox', acciones, '$');
-    renderObjetivoExample('accionExampleBox', acciones[0], '$', 'la acción');
+    const acciones = await fetchTopAccionesLocal(5);
+    renderTopAccionesTable(acciones);
+    renderAccionExample(acciones[0]);
   } catch (e) {
     const box = document.getElementById('topAccionesBox');
     if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento. Probá recargar la página.</p>';
   }
+}
+
+/* Acciones argentinas: casi no tienen cobertura de analistas (precio objetivo
+   no sirve acá), así que el criterio es distinto — mejor suba en 12 meses,
+   filtrado a empresas que dan ganancia y generan caja (NI_pos / FCF_pos). */
+async function fetchTopAccionesLocal(n) {
+  const r = await fetch('https://suit-fcn.vercel.app/data/valuacion_multiplos.xlsx', { cache: 'no-store' });
+  if (!r.ok) throw new Error('No se pudo leer valuación por múltiplos');
+  const buf = await r.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row[4] !== 'ARS') continue;
+    const ret12 = parseFloat(row[31]);
+    const niPos = parseFloat(row[34]);
+    const fcfPos = parseFloat(row[35]);
+    if (isNaN(ret12) || !(niPos >= 0.5) || !(fcfPos >= 0.5)) continue;
+    const precioActual = parseFloat(row[5]);
+    if (!precioActual) continue;
+    out.push({ ticker: row[0], empresa: row[2], precioActual, pe: parseFloat(row[6]), ret12 });
+  }
+  out.sort((a, b) => b.ret12 - a.ret12);
+  return out.slice(0, n);
+}
+function renderTopAccionesTable(items) {
+  const box = document.getElementById('topAccionesBox');
+  if (!box) return;
+  if (!items.length) { box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento.</p>'; return; }
+  box.innerHTML = `
+    <div class="top-ons-table-wrap">
+    <table class="top-ons-table">
+      <thead><tr><th>Ticker</th><th>Empresa</th><th>Precio</th><th>P/E</th><th>Suba 12m</th></tr></thead>
+      <tbody>
+        ${items.map(o => `
+          <tr>
+            <td class="mono">${o.ticker}</td>
+            <td>${o.empresa}</td>
+            <td class="mono">$${o.precioActual.toFixed(2)}</td>
+            <td class="mono">${o.pe ? o.pe.toFixed(1) + 'x' : '—'}</td>
+            <td class="tir-val">+${(o.ret12 * 100).toFixed(1)}%</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+function renderAccionExample(o) {
+  const box = document.getElementById('accionExampleBox');
+  if (!box) return;
+  if (!o) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="on-example-box">
+      <strong>Así se lee ${o.ticker} (${o.empresa})</strong> — la acción con mejor suba en los últimos 12 meses entre las que dan ganancia y generan caja:<br><br>
+      <strong>Precio $${o.precioActual.toFixed(2)}</strong>: lo que cuesta hoy.<br>
+      <strong>P/E ${o.pe ? o.pe.toFixed(1) + 'x' : '—'}</strong>: cuántas veces la ganancia anual de la empresa estás pagando por la acción — más bajo suele significar más "barata" en relación a lo que gana.<br>
+      <strong>Suba 12m +${(o.ret12 * 100).toFixed(1)}%</strong>: cuánto subió su precio en el último año. Acá no usamos precio objetivo de analistas como en CEDEARs porque casi no hay cobertura de analistas sobre acciones argentinas.
+    </div>`;
 }
 initTopEquities();
 
