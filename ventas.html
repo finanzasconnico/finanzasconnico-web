@@ -707,6 +707,44 @@ footer {
   display:none;position:fixed;inset:0;background:rgba(4,12,10,0.92);
   z-index:9999;align-items:center;justify-content:center;padding:24px;
 }
+.fb-trigger{
+  position:fixed;bottom:28px;left:28px;z-index:998;
+  width:48px;height:48px;border-radius:50%;background:var(--petroleo-700);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+  box-shadow:0 6px 20px rgba(7,33,29,0.35);cursor:pointer;border:none;transition:transform 0.2s;
+}
+.fb-trigger:hover{ transform:scale(1.08); }
+@media (max-width:768px){ .fb-trigger{ bottom:20px;left:20px;width:44px;height:44px;font-size:1.15rem; } }
+.fb-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(7,33,29,0.55);
+  z-index:9999;align-items:center;justify-content:center;padding:20px;
+}
+.fb-modal-overlay.open{ display:flex; }
+.fb-modal-box{
+  background:var(--crema);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;
+  position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.fb-modal-close{
+  position:absolute;top:14px;right:14px;background:none;border:none;font-size:1.1rem;
+  color:var(--ink-muted);cursor:pointer;
+}
+.fb-title{ font-family:var(--font-display);font-size:1.05rem;color:var(--petroleo-700);margin-bottom:14px;padding-right:20px; }
+.fb-emojis{ display:flex;gap:10px;margin-bottom:14px; }
+.fb-emoji{
+  flex:1;font-size:1.4rem;padding:10px 0;border-radius:10px;border:1px solid var(--line);
+  background:#fff;cursor:pointer;transition:transform 0.15s, border-color 0.15s;
+}
+.fb-emoji:hover{ transform:scale(1.08); }
+.fb-emoji.active{ border-color:var(--jade);background:#d4f0e3; }
+.fb-textarea{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-family:var(--font-sans);font-size:0.85rem;color:var(--ink);resize:vertical;margin-bottom:14px;
+}
+.fb-submit{
+  width:100%;background:var(--jade);color:#fff;font-weight:600;padding:11px;border:none;
+  border-radius:9px;cursor:pointer;font-size:0.9rem;
+}
+.fb-submit:hover{ opacity:0.9; }
 .video-modal-overlay.open{display:flex;}
 .video-modal-box{width:100%;max-width:360px;aspect-ratio:9/16;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .video-modal-box iframe{width:100%;height:100%;border:0;display:block;}
@@ -1016,12 +1054,69 @@ footer {
 <!-- FLOATING WA -->
 <a class="wa-float" href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+tu+página+y+quiero+saber+más." target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
 
+<!-- FEEDBACK -->
+<button class="fb-trigger" onclick="abrirFeedback()" aria-label="Dejar feedback">📝</button>
+<div class="fb-modal-overlay" id="fbModalOverlay" onclick="if(event.target===this) cerrarFeedback()">
+  <div class="fb-modal-box">
+    <button class="fb-modal-close" onclick="cerrarFeedback()">✕</button>
+    <div id="fbFormView">
+      <div class="fb-title">¿Cómo te resultó la página?</div>
+      <div class="fb-emojis">
+        <button type="button" class="fb-emoji" data-val="1" onclick="fbSetRating(1,this)">😕</button>
+        <button type="button" class="fb-emoji" data-val="2" onclick="fbSetRating(2,this)">😐</button>
+        <button type="button" class="fb-emoji" data-val="3" onclick="fbSetRating(3,this)">🙂</button>
+        <button type="button" class="fb-emoji" data-val="4" onclick="fbSetRating(4,this)">😄</button>
+      </div>
+      <textarea id="fbComment" class="fb-textarea" rows="4" placeholder="Contanos qué mejorarías, qué no entendiste, o lo que se te ocurra (opcional)..."></textarea>
+      <button class="fb-submit" onclick="enviarFeedback()">Enviar</button>
+    </div>
+    <div id="fbThanksView" style="display:none;text-align:center;padding:18px 0;">
+      <div style="font-size:2rem;">🙌</div>
+      <p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── INTERSECTION OBSERVER — FADE-UP ── */
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
 }, { threshold: 0.12 });
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+/* ── FEEDBACK (Supabase, mismo proyecto que fcn-bajas — solo INSERT, sin lectura) ── */
+const FB_SUPABASE_URL = 'https://wixbbcziostbtqfmphcc.supabase.co';
+const FB_SUPABASE_KEY = 'sb_publishable_olGxTFFfHuoZ-wzxQbq5_Q_1JfYE2yw';
+let fbRating = null;
+function abrirFeedback(){ document.getElementById('fbModalOverlay').classList.add('open'); }
+function cerrarFeedback(){
+  document.getElementById('fbModalOverlay').classList.remove('open');
+  document.getElementById('fbFormView').style.display = 'block';
+  document.getElementById('fbThanksView').style.display = 'none';
+  document.getElementById('fbComment').value = '';
+  fbRating = null;
+  document.querySelectorAll('.fb-emoji').forEach(b => b.classList.remove('active'));
+}
+function fbSetRating(v, btn){
+  fbRating = v;
+  document.querySelectorAll('.fb-emoji').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function enviarFeedback(){
+  const comment = document.getElementById('fbComment').value.trim();
+  if (!fbRating && !comment) { alert('Elegí una carita o escribí un comentario.'); return; }
+  try {
+    await fetch(FB_SUPABASE_URL + '/rest/v1/website_feedback', {
+      method: 'POST',
+      headers: { 'apikey': FB_SUPABASE_KEY, 'Authorization': 'Bearer ' + FB_SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ page: location.pathname, rating: fbRating, comment: comment || null })
+    });
+  } catch (e) { /* no frustramos al usuario con un error técnico visible */ }
+  document.getElementById('fbFormView').style.display = 'none';
+  document.getElementById('fbThanksView').style.display = 'block';
+  setTimeout(cerrarFeedback, 2200);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedback(); });
 
 /* ── COUNTER ANIMATION ── */
 const counterObserver = new IntersectionObserver((entries) => {
