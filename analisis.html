@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Análisis avanzado — FinanzasconNico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --petroleo-700: #0F3A34;
+  --petroleo-900: #07211D;
+  --jade:         #1C8C5F;
+  --ambar:        #DBA03C;
+  --crema:        #F7F3EA;
+  --danger:       #C0453B;
+  --whatsapp:     #25D366;
+  --ink:          #102E2A;
+  --ink-soft:     #3C5752;
+  --ink-muted:    #6C817C;
+  --line:         #E5DDCE;
+  --font-display: 'Spectral', Georgia, serif;
+  --font-sans:    'Hanken Grotesk', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--crema); color: var(--ink); font-size: 16px; line-height: 1.5; }
+a { color: inherit; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+header.site-header { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; }
+header.site-header .container { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; min-width: 0; }
+.logo-text { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--petroleo-700); }
+.logo-badge { font-size: 0.68rem; color: var(--ink-muted); }
+.header-links { display: flex; gap: 16px; align-items: center; font-size: 0.85rem; flex-wrap: wrap; }
+.header-links a { text-decoration: none; color: var(--ink-soft); }
+.header-links a:hover { color: var(--jade); }
+.badge-adv { font-family: var(--font-mono); font-size: 0.65rem; background: var(--petroleo-700); color: #fff; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.hero-adv { padding: 40px 0 28px; }
+.hero-adv h1 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2rem); color: var(--petroleo-700); margin-bottom: 8px; }
+.hero-adv p { font-size: 0.95rem; color: var(--ink-soft); max-width: 640px; }
+
+.tool-section { padding: 24px 0 48px; }
+.tool-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
+.tool-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.tool-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--petroleo-700); }
+.tool-sub { font-size: 0.85rem; color: var(--ink-muted); margin-bottom: 18px; }
+
+.monitor-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.calif-btn {
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; padding: 7px 14px;
+  border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer;
+}
+.calif-btn.active { background: var(--petroleo-700); color: #fff; border-color: var(--petroleo-700); }
+.monitor-count { font-size: 0.78rem; color: var(--ink-muted); margin-left: auto; }
+
+.data-table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 720px; }
+.data-table th, .data-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.data-table th {
+  font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--ink-muted); font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap;
+}
+.data-table th:hover { color: var(--petroleo-700); }
+.data-table th.sorted::after { content: ' ▾'; }
+.data-table th.sorted.asc::after { content: ' ▴'; }
+.data-table td.mono { font-family: var(--font-mono); }
+.data-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
+.data-table tr:hover td { background: var(--crema); }
+.row-sector { font-size: 0.68rem; color: var(--ink-muted); }
+.ticker-link { color: var(--petroleo-700); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+.ticker-link:hover { color: var(--jade); }
+.loading-msg { font-size: 0.85rem; color: var(--ink-muted); padding: 20px 0; text-align: center; }
+
+.disclaimer-bar { background: var(--petroleo-900); color: rgba(247,243,234,0.7); font-size: 0.72rem; text-align: center; padding: 12px 20px; }
+.disclaimer-bar strong { color: rgba(247,243,234,0.95); }
+
+.wa-float {
+  position: fixed; bottom: 28px; right: 28px; z-index: 998; background: var(--whatsapp); color: #fff;
+  width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; text-decoration: none; box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+}
+@media (max-width: 640px) {
+  .data-table { min-width: 620px; }
+  .monitor-count { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <div>
+      <div class="logo-text">FinanzasconNico</div>
+      <div class="logo-badge">Análisis avanzado</div>
+    </div>
+    <div class="header-links">
+      <span class="badge-adv">Para inversores con experiencia</span>
+      <a href="guia.html">← Volver a la guía</a>
+      <a href="ventas.html">Página principal</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero-adv">
+  <div class="container">
+    <h1>Análisis avanzado</h1>
+    <p>Las mismas herramientas que uso todos los días para armar carteras, en versión de solo lectura — para que investigues por tu cuenta. Si ya sabés lo básico de invertir, esto es para vos.</p>
+  </div>
+</section>
+
+<section class="tool-section">
+  <div class="container">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">📊 Monitor de Obligaciones Negociables</div>
+      </div>
+      <div class="tool-sub">Todo el universo de ONs que sigo, agrupado por calificación crediticia. Tocá cualquier columna para ordenar.</div>
+      <div class="monitor-controls">
+        <button class="calif-btn active" data-calif="AAA" onclick="setMonitorCalif('AAA', this)">AAA</button>
+        <button class="calif-btn" data-calif="AA" onclick="setMonitorCalif('AA', this)">AA</button>
+        <button class="calif-btn" data-calif="A" onclick="setMonitorCalif('A', this)">A</button>
+        <button class="calif-btn" data-calif="menorA" onclick="setMonitorCalif('menorA', this)">Menor a A</button>
+        <span class="monitor-count" id="monitorCount"></span>
+      </div>
+      <div id="monitorTableBox" class="data-table-wrap">
+        <p class="loading-msg">Cargando el monitor…</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="disclaimer-bar">
+  📌 Contenido informativo para apoyar tu propio análisis — <strong>no es una recomendación de inversión</strong>. Los datos se actualizan periódicamente y pueden no reflejar el precio exacto al momento de operar. Antes de operar, hacé tu propia verificación.
+</div>
+
+<a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+el+an%C3%A1lisis+avanzado." target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp">💬</a>
+
+<script>
+/* ── Deep-link a Balanz (mismo formato ya usado en Valuación por Múltiplos) ── */
+function linkBalanz(ticker) {
+  try {
+    const p = { data: { requierelogin: '1', namespace: 'Core.Business.DetalleInstrumento', ticker: String(ticker).toUpperCase(), panel: '7', plazo: '24hs', idPlazo: 1 } };
+    return 'https://clientes.balanz.com/link?data=' + btoa(JSON.stringify(p));
+  } catch (e) { return ''; }
+}
+function tickerLink(ticker) {
+  const url = linkBalanz(ticker);
+  return url ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${ticker}</a>` : ticker;
+}
+function excelSerialToDate(serial) {
+  if (!serial || isNaN(serial)) return null;
+  return new Date(Math.round((serial - 25569) * 86400 * 1000));
+}
+function formatVto(d) {
+  return d ? d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '—';
+}
+
+/* ── Monitor de ONs: las 4 tablas de "Corporativos" (AAA/AA/A/<A), ya
+   filtradas y con su propio precio (Cable para AAA, MEP para el resto —
+   así viene armado en el Excel del Monitor). ── */
+const MONITOR_TABLAS = {
+  AAA:    { titulo: 'Bonos AAA Cable', simboloDolar: 'Cable' },
+  AA:     { titulo: 'Bonos AA', simboloDolar: 'MEP' },
+  A:      { titulo: 'Bonos A', simboloDolar: 'MEP' },
+  menorA: { titulo: 'Bonos <A', simboloDolar: 'MEP' }
+};
+let monitorWb = null;
+let monitorDataCache = {};
+let monitorCalifActual = 'AAA';
+let monitorSortCol = 'tir';
+let monitorSortAsc = false;
+
+async function getMonitorWorkbook() {
+  if (monitorWb) return monitorWb;
+  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-store' });
+  if (!r.ok) throw new Error('No se pudo leer el monitor');
+  const buf = await r.arrayBuffer();
+  monitorWb = XLSX.read(buf, { type: 'array' });
+  return monitorWb;
+}
+
+function parseTabla(rows, tituloBuscado) {
+  let inicio = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i] && rows[i][1] === tituloBuscado) { inicio = i + 2; break; } // +1 título, +1 encabezado
+  }
+  if (inicio === -1) return [];
+  const out = [];
+  for (let i = inicio; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row[1] === '') break;
+    const tir = parseFloat(row[5]);
+    if (isNaN(tir)) continue;
+    out.push({
+      ticker: row[1], emisor: row[2], precio: parseFloat(row[3]),
+      vencimiento: excelSerialToDate(row[4]), tir, duration: parseFloat(row[6]),
+      cupon: parseFloat(row[8]), mesCupon: row[9], calificacion: row[12], sector: row[14]
+    });
+  }
+  return out;
+}
+
+async function fetchMonitorCalif(calif) {
+  if (monitorDataCache[calif]) return monitorDataCache[calif];
+  const wb = await getMonitorWorkbook();
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets['Corporativos'], { header: 1, defval: '' });
+  const data = parseTabla(rows, MONITOR_TABLAS[calif].titulo);
+  monitorDataCache[calif] = data;
+  return data;
+}
+
+function renderMonitorTable(data) {
+  const box = document.getElementById('monitorTableBox');
+  const countEl = document.getElementById('monitorCount');
+  if (!data.length) {
+    box.innerHTML = '<p class="loading-msg">No hay datos para esta calificación en este momento.</p>';
+    countEl.textContent = '';
+    return;
+  }
+  const sorted = data.slice().sort((a, b) => {
+    let va = a[monitorSortCol], vb = b[monitorSortCol];
+    if (va instanceof Date) va = va.getTime();
+    if (vb instanceof Date) vb = vb.getTime();
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return monitorSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return monitorSortAsc ? va - vb : vb - va;
+  });
+  countEl.textContent = sorted.length + ' ONs';
+  const simbolo = MONITOR_TABLAS[monitorCalifActual].simboloDolar;
+  const col = (key, label) => `<th class="${monitorSortCol === key ? 'sorted' + (monitorSortAsc ? ' asc' : '') : ''}" onclick="setMonitorSort('${key}')">${label}</th>`;
+  box.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        ${col('ticker', 'Ticker')}${col('emisor', 'Emisor')}${col('precio', 'Precio (' + simbolo + ')')}
+        ${col('tir', 'TIR')}${col('duration', 'Duration')}${col('vencimiento', 'Vencimiento')}
+        ${col('mesCupon', 'Cobra en')}${col('calificacion', 'Calif.')}
+      </tr></thead>
+      <tbody>
+        ${sorted.map(o => `
+          <tr>
+            <td class="mono">${tickerLink(o.ticker)}</td>
+            <td>${o.emisor}<div class="row-sector">${o.sector || ''}</div></td>
+            <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
+            <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
+            <td class="mono">${o.duration ? o.duration.toFixed(2) : '—'}</td>
+            <td>${formatVto(o.vencimiento)}</td>
+            <td>${o.mesCupon || '—'}</td>
+            <td class="mono">${o.calificacion || '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function loadMonitor() {
+  document.getElementById('monitorTableBox').innerHTML = '<p class="loading-msg">Cargando el monitor…</p>';
+  try {
+    const data = await fetchMonitorCalif(monitorCalifActual);
+    renderMonitorTable(data);
+  } catch (e) {
+    document.getElementById('monitorTableBox').innerHTML = '<p class="loading-msg">No pudimos traer datos del mercado en este momento. Probá recargar la página.</p>';
+  }
+}
+function setMonitorCalif(calif, btn) {
+  monitorCalifActual = calif;
+  document.querySelectorAll('.calif-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadMonitor();
+}
+function setMonitorSort(col) {
+  if (monitorSortCol === col) { monitorSortAsc = !monitorSortAsc; }
+  else { monitorSortCol = col; monitorSortAsc = false; }
+  renderMonitorTable(monitorDataCache[monitorCalifActual] || []);
+}
+loadMonitor();
+</script>
+</body>
+</html>
