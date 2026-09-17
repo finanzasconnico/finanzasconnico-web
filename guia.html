@@ -567,6 +567,7 @@
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 24px;
+      min-width: 0; /* si no, un grid item con contenido ancho (tabla) empuja toda la página */
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .instrument-card:hover {
@@ -626,6 +627,33 @@
     .top-ons-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
     .on-sector { font-size: 0.68rem; color: var(--ink-muted); margin-top: 2px; }
 
+    /* ─── EXPLICACIÓN DE ACTIVOS (accordion propio, no comparte estado con Tutoriales) ─── */
+    .section-explicacion { padding: 80px 0; background: #fff; }
+    .activo-item { border: 1px solid var(--line); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .activo-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px; cursor: pointer; background: var(--crema);
+    }
+    .activo-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 20px; }
+    .activo-item.open .activo-body { max-height: 700px; padding: 18px 20px 22px; }
+    .activo-item.open .accordion-chevron { transform: rotate(180deg); }
+    .activo-def { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; margin-bottom: 4px; }
+
+    /* ─── LO MEJOR DE HOY (dashboard) ────────────────────────────────── */
+    .section-mejorhoy { padding: 80px 0; background: var(--crema); }
+    .mejorhoy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 22px;
+    }
+    .mejorhoy-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      min-width: 0;
+    }
+
     /* ─── CARTERAS MODELO ────────────────────────────────────────────── */
     .section-models { padding: 80px 0; background: var(--crema); }
     .models-grid {
@@ -638,6 +666,7 @@
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 22px;
+      min-width: 0;
     }
     .model-card-pub-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
     .model-tag-pub {
@@ -1265,7 +1294,7 @@
       </div>
 
       <!-- 3. Obligaciones Negociables -->
-      <div class="instrument-card fade-up" style="grid-column:1/-1">
+      <div class="instrument-card fade-up">
         <div class="instr-header">
           <div><div class="instr-name">Obligaciones Negociables</div></div>
           <div class="instr-emoji">🏢</div>
@@ -1286,17 +1315,6 @@
             allowfullscreen
             style="border-radius: inherit;">
           </iframe>
-        </div>
-
-        <div class="on-live-block">
-          <div class="on-live-title">🏆 Top 5 ONs AAA hoy (ordenadas por TIR)</div>
-          <div class="on-live-sub">Se actualiza solo, tomando los mismos datos de mercado que uso para armar carteras — no hace falta que cargues nada.</div>
-          <div id="topOnsBox" class="on-loading">Cargando datos del mercado…</div>
-          <div id="onExampleBox"></div>
-          <div class="on-disclaimer">
-            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. Tu perfil, plazo e impuestos cambian qué te conviene a vos.
-            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+ONs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
-          </div>
         </div>
       </div>
 
@@ -1327,7 +1345,7 @@
       </div>
 
       <!-- 4b. Dólar MEP y CCL -->
-      <div class="instrument-card fade-up" style="grid-column:1/-1">
+      <div class="instrument-card fade-up">
         <div class="instr-header">
           <div><div class="instr-name">Dólar MEP y Dólar Cable (CCL)</div></div>
           <div class="instr-emoji">💵</div>
@@ -1335,17 +1353,6 @@
         <p class="instr-desc">No son instrumentos para invertir, son la forma legal de pasar pesos a dólares (o al revés) comprando y vendiendo un bono en dos puntas distintas. MEP te deja los dólares en tu cuenta acá; Cable te los deja en una cuenta en el exterior.</p>
         <div class="instr-badges" style="margin-bottom:12px">
           <span class="badge badge-mono">Conversión, no inversión</span>
-        </div>
-
-        <div class="on-live-block" style="margin-top:0;padding-top:0;border-top:none">
-          <div class="on-live-title">💱 Cotización en vivo</div>
-          <div class="on-live-sub">Mismos tipos de cambio que uso todos los días para operar — se actualizan solos.</div>
-          <div id="fxBox" class="on-loading">Cargando cotizaciones…</div>
-          <div id="fxExampleBox"></div>
-          <div class="on-disclaimer">
-            📌 Contenido educativo e ilustrativo. Las cotizaciones cambian todo el día — este es un valor de referencia, no el tipo de cambio exacto al momento de operar.
-            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+d%C3%B3lar+MEP+o+Cable." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
-          </div>
         </div>
       </div>
 
@@ -1375,7 +1382,7 @@
       </div>
 
       <!-- 6. CEDEARs -->
-      <div class="instrument-card fade-up" style="grid-column:1/-1">
+      <div class="instrument-card fade-up">
         <div class="instr-header">
           <div><div class="instr-name">CEDEARs</div></div>
           <div class="instr-emoji">🌎</div>
@@ -1398,21 +1405,10 @@
             style="border-radius: inherit;">
           </iframe>
         </div>
-
-        <div class="on-live-block">
-          <div class="on-live-title">🏆 Top 5 CEDEARs por potencial hoy</div>
-          <div class="on-live-sub">Según el precio objetivo promedio de los analistas que cubren cada empresa. Los precios están en USD porque así cotiza la empresa detrás del CEDEAR — tu CEDEAR en pesos sigue ese mismo % de suba o baja.</div>
-          <div id="topCedearsBox" class="on-loading">Cargando datos del mercado…</div>
-          <div id="cedearExampleBox"></div>
-          <div class="on-disclaimer">
-            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El consenso de analistas puede cambiar y no garantiza resultados.
-            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+los+CEDEARs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
-          </div>
-        </div>
       </div>
 
       <!-- 7. Acciones argentinas -->
-      <div class="instrument-card fade-up" style="grid-column:1/-1">
+      <div class="instrument-card fade-up">
         <div class="instr-header">
           <div><div class="instr-name">Acciones argentinas</div></div>
           <div class="instr-emoji">📊</div>
@@ -1433,17 +1429,6 @@
             allowfullscreen
             style="border-radius: inherit;">
           </iframe>
-        </div>
-
-        <div class="on-live-block">
-          <div class="on-live-title">🏆 Top 5 acciones argentinas — mejor suba del año</div>
-          <div class="on-live-sub">Acá no hay suficiente cobertura de analistas como en los CEDEARs, así que el criterio es distinto: mejor suba en los últimos 12 meses, solo entre empresas que dan ganancia y generan caja.</div>
-          <div id="topAccionesBox" class="on-loading">Cargando datos del mercado…</div>
-          <div id="accionExampleBox"></div>
-          <div class="on-disclaimer">
-            📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El desempeño pasado no garantiza resultados futuros.
-            <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+acciones+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
-          </div>
         </div>
       </div>
 
@@ -1491,6 +1476,110 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ EXPLICACIÓN DE ACTIVOS ━━━━━━━━━━━━━━ -->
+<section class="section-explicacion" id="explicacion-activos">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:32px">
+      <h2 class="section-title">Explicación de activos</h2>
+      <p class="section-sub">Qué es cada instrumento en criollo, con un ejemplo real de hoy — para que entiendas exactamente qué comprás.</p>
+    </div>
+    <div class="fade-up">
+      <div class="activo-item" data-activo>
+        <div class="activo-header" onclick="toggleActivo(this)">
+          <div class="accordion-title-wrap"><span class="accordion-icon">🏢</span><span class="accordion-title">¿Qué es una Obligación Negociable (ON)?</span></div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="activo-body">
+          <p class="activo-def">Una ON es un bono privado: una empresa te pide prestado y firma el compromiso de devolverte el capital en una fecha fija (vencimiento), pagándote una renta periódica (cupón) mientras tanto. A diferencia de un plazo fijo, cotiza en el mercado — su precio puede moverse antes del vencimiento, aunque si la mantenés hasta el final cobrás lo pactado.</p>
+          <div id="onExampleBox"></div>
+        </div>
+      </div>
+      <div class="activo-item" data-activo>
+        <div class="activo-header" onclick="toggleActivo(this)">
+          <div class="accordion-title-wrap"><span class="accordion-icon">🌎</span><span class="accordion-title">¿Qué es un CEDEAR?</span></div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="activo-body">
+          <p class="activo-def">Un CEDEAR es un certificado que representa una acción extranjera (o un índice) pero cotiza en pesos en el mercado local. Comprás en pesos, pero tu resultado sigue el precio en dólares de la empresa de atrás — es una forma de dolarizarte comprando algo conocido, sin sacar el dinero de Argentina.</p>
+          <div id="cedearExampleBox"></div>
+        </div>
+      </div>
+      <div class="activo-item" data-activo>
+        <div class="activo-header" onclick="toggleActivo(this)">
+          <div class="accordion-title-wrap"><span class="accordion-icon">📊</span><span class="accordion-title">¿Qué es una acción argentina?</span></div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="activo-body">
+          <p class="activo-def">Una acción es una porción de una empresa que cotiza en la bolsa local. Ganás si la empresa vale más con el tiempo (sube el precio) o si reparte dividendos. Es más volátil que un bono: no tiene vencimiento ni devolución garantizada del capital.</p>
+          <div id="accionExampleBox"></div>
+        </div>
+      </div>
+      <div class="activo-item" data-activo>
+        <div class="activo-header" onclick="toggleActivo(this)">
+          <div class="accordion-title-wrap"><span class="accordion-icon">💵</span><span class="accordion-title">¿Qué son el Dólar MEP y el Dólar Cable?</span></div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="activo-body">
+          <p class="activo-def">MEP y Cable no son para invertir — son la forma legal de pasar pesos a dólares (o al revés) operando un mismo bono en dos puntas. La diferencia está en dónde termina la plata: MEP la deja en tu cuenta acá, Cable (CCL) la deja en una cuenta en el exterior.</p>
+          <div id="fxExampleBox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ━━━━━━━━━━━━━━ LO MEJOR DE HOY ━━━━━━━━━━━━━━ -->
+<section class="section-mejorhoy" id="lo-mejor-de-hoy">
+  <div class="container">
+    <div class="fade-up" style="margin-bottom:32px">
+      <h2 class="section-title">Lo mejor de hoy</h2>
+      <p class="section-sub">Datos en vivo, tomados de los mismos archivos que uso para armar carteras — se actualizan solos, no hace falta que cargues nada.</p>
+    </div>
+    <div class="mejorhoy-grid fade-up">
+      <div class="mejorhoy-card">
+        <div class="on-live-title">🏆 Top 5 ONs AAA hoy (ordenadas por TIR)</div>
+        <div class="on-live-sub">Bonos corporativos de máxima calidad crediticia.</div>
+        <div id="topOnsBox" class="on-loading">Cargando datos del mercado…</div>
+        <div class="on-disclaimer">
+          📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. Tu perfil, plazo e impuestos cambian qué te conviene a vos.
+          <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+ONs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+        </div>
+      </div>
+      <div class="mejorhoy-card">
+        <div class="on-live-title">🏆 Mejor CEDEAR por rubro</div>
+        <div class="on-live-sub">Una empresa reconocida por sector, entre las que tienen mejor potencial según el consenso de analistas.</div>
+        <div id="topCedearsBox" class="on-loading">Cargando datos del mercado…</div>
+        <div class="on-disclaimer">
+          📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El consenso de analistas puede cambiar y no garantiza resultados.
+          <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+los+CEDEARs+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+        </div>
+      </div>
+      <div class="mejorhoy-card">
+        <div class="on-live-title">🏆 Top 5 acciones argentinas — mejor suba del año</div>
+        <div class="on-live-sub">Casi no hay cobertura de analistas en acciones locales, así que el criterio es distinto: mejor suba en 12 meses entre las empresas rentables.</div>
+        <div id="topAccionesBox" class="on-loading">Cargando datos del mercado…</div>
+        <div class="on-disclaimer">
+          📌 Contenido educativo e ilustrativo — no es una recomendación de inversión personalizada. El desempeño pasado no garantiza resultados futuros.
+          <a href="https://wa.me/5491123284509?text=Hola+Nico!+Vi+las+acciones+de+la+gu%C3%ADa+y+quiero+que+revisemos+mi+caso." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+        </div>
+      </div>
+      <div class="mejorhoy-card">
+        <div class="on-live-title">💱 Cotización en vivo — Dólar MEP y Cable</div>
+        <div class="on-live-sub">Mismos tipos de cambio que uso todos los días para operar.</div>
+        <div id="fxBox" class="on-loading">Cargando cotizaciones…</div>
+        <div class="on-disclaimer">
+          📌 Contenido educativo e ilustrativo. Las cotizaciones cambian todo el día — este es un valor de referencia, no el tipo de cambio exacto al momento de operar.
+          <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+d%C3%B3lar+MEP+o+Cable." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1868,6 +1957,14 @@ function toggleAccordion(header) {
   if (!isOpen) item.classList.add('open');
 }
 
+/* Acordeón propio de "Explicación de activos" — no cierra el de Tutoriales ni viceversa */
+function toggleActivo(header) {
+  const item = header.parentElement;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.activo-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
 /* ─── GLOSARIO ───────────────────────────────────────────────────── */
 const glosarioTerms = [
   { term: 'TIR', def: 'La tasa de retorno real de una inversión, expresada en porcentaje anual. Es el número que te dice cuánto ganás por año si mantenés el instrumento hasta el vencimiento.' },
@@ -2236,78 +2333,101 @@ function renderModelosPublicos(modelos) {
 fetchModelosPublicos().then(renderModelosPublicos);
 
 /* ─── CEDEARs / Acciones — top potencial según precio objetivo de analistas ─── */
-async function fetchTopPorObjetivo(monedaFiltro, n) {
-  const r = await fetch('https://suit-fcn.vercel.app/data/precios_objetivo.xlsx', { cache: 'no-store' });
-  if (!r.ok) throw new Error('No se pudo leer precios objetivo');
-  const buf = await r.arrayBuffer();
-  const wb = XLSX.read(buf, { type: 'array' });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-  const out = [];
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row || !row[1]) continue;
-    if (row[4] !== monedaFiltro) continue;
+const RUBROS_CEDEARS = [
+  { key: 'Technology', label: 'Tecnología' },
+  { key: 'Financial Services', label: 'Finanzas' },
+  { key: 'Healthcare', label: 'Salud' },
+  { key: 'Consumer', label: 'Consumo' },
+  { key: 'Energy', label: 'Energía' }
+];
+function rubroDe(sectorRaw) {
+  if (sectorRaw === 'Consumer Cyclical' || sectorRaw === 'Consumer Defensive') return 'Consumer';
+  return sectorRaw;
+}
+/* CEDEARs: una por rubro, entre empresas bien cubiertas por analistas (>=15) —
+   evita que ganen microcaps con potencial explosivo pero poco reconocidas. */
+async function fetchTopCedearsPorRubro() {
+  const [rObj, rMult] = await Promise.all([
+    fetch('https://suit-fcn.vercel.app/data/precios_objetivo.xlsx', { cache: 'no-store' }),
+    fetch('https://suit-fcn.vercel.app/data/valuacion_multiplos.xlsx', { cache: 'no-store' })
+  ]);
+  if (!rObj.ok || !rMult.ok) throw new Error('No se pudo leer datos de mercado');
+  const [bufObj, bufMult] = await Promise.all([rObj.arrayBuffer(), rMult.arrayBuffer()]);
+  const wbObj = XLSX.read(bufObj, { type: 'array' });
+  const wbMult = XLSX.read(bufMult, { type: 'array' });
+  const rowsObj = XLSX.utils.sheet_to_json(wbObj.Sheets[wbObj.SheetNames[0]], { header: 1, defval: '' });
+  const rowsMult = XLSX.utils.sheet_to_json(wbMult.Sheets[wbMult.SheetNames[0]], { header: 1, defval: '' });
+  const sectorPorTicker = {};
+  for (let i = 1; i < rowsMult.length; i++) {
+    const row = rowsMult[i];
+    if (row && row[0]) sectorPorTicker[row[0]] = row[3];
+  }
+  const candidatos = [];
+  for (let i = 1; i < rowsObj.length; i++) {
+    const row = rowsObj[i];
+    if (!row || !row[1] || row[4] !== 'USD') continue;
     const rec = String(row[9] || '').toLowerCase();
     if (rec !== 'buy' && rec !== 'strong_buy') continue;
     const nAnalistas = parseFloat(row[8]) || 0;
-    if (nAnalistas < 3) continue;
+    if (nAnalistas < 15) continue;
     const precioActual = parseFloat(row[3]);
     const precioObjetivo = parseFloat(row[5]);
     if (!precioActual || !precioObjetivo) continue;
-    out.push({
-      ticker: row[0],
-      empresa: row[2],
-      precioActual,
-      precioObjetivo,
+    const rubro = rubroDe(sectorPorTicker[row[0]]);
+    if (!rubro) continue;
+    candidatos.push({
+      ticker: row[0], empresa: row[2], precioActual, precioObjetivo,
       upside: (precioObjetivo - precioActual) / precioActual,
-      nAnalistas,
-      recomendacion: rec
+      nAnalistas, recomendacion: rec, rubro
     });
   }
-  out.sort((a, b) => b.upside - a.upside);
-  return out.slice(0, n);
+  const out = [];
+  RUBROS_CEDEARS.forEach(r => {
+    const delRubro = candidatos.filter(c => c.rubro === r.key).sort((a, b) => b.upside - a.upside);
+    if (delRubro.length) out.push(Object.assign({}, delRubro[0], { rubroLabel: r.label }));
+  });
+  return out;
 }
-function renderTopObjetivoTable(boxId, items, simbolo) {
-  const box = document.getElementById(boxId);
+function renderCedearsTable(items) {
+  const box = document.getElementById('topCedearsBox');
   if (!box) return;
   if (!items.length) { box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento.</p>'; return; }
   box.innerHTML = `
     <div class="top-ons-table-wrap">
     <table class="top-ons-table">
-      <thead><tr><th>Ticker</th><th>Empresa</th><th>Precio</th><th>Objetivo</th><th>Potencial</th><th>Analistas</th></tr></thead>
+      <thead><tr><th>Rubro</th><th>Ticker</th><th>Empresa</th><th>Precio</th><th>Objetivo</th><th>Potencial</th></tr></thead>
       <tbody>
         ${items.map(o => `
           <tr>
+            <td>${o.rubroLabel}</td>
             <td class="mono">${o.ticker}</td>
             <td>${o.empresa}</td>
-            <td class="mono">${simbolo}${o.precioActual.toFixed(2)}</td>
-            <td class="mono">${simbolo}${o.precioObjetivo.toFixed(2)}</td>
+            <td class="mono">US$${o.precioActual.toFixed(2)}</td>
+            <td class="mono">US$${o.precioObjetivo.toFixed(2)}</td>
             <td class="tir-val">+${(o.upside * 100).toFixed(1)}%</td>
-            <td>${o.nAnalistas}</td>
           </tr>`).join('')}
       </tbody>
     </table>
     </div>`;
 }
-function renderObjetivoExample(boxId, o, simbolo, tipoLabel) {
-  const box = document.getElementById(boxId);
+function renderCedearExample(o) {
+  const box = document.getElementById('cedearExampleBox');
   if (!box) return;
   if (!o) { box.innerHTML = ''; return; }
   box.innerHTML = `
     <div class="on-example-box">
-      <strong>Así se lee ${o.ticker} (${o.empresa})</strong> — ${tipoLabel} con mayor potencial hoy según el consenso de analistas:<br><br>
-      <strong>Precio actual ${simbolo}${o.precioActual.toFixed(2)}</strong>: lo que cuesta hoy.<br>
-      <strong>Precio objetivo ${simbolo}${o.precioObjetivo.toFixed(2)}</strong>: el promedio de lo que ${o.nAnalistas} analistas creen que va a valer, mirando los próximos 12 meses.<br>
-      <strong>Potencial +${(o.upside * 100).toFixed(1)}%</strong>: la diferencia entre el precio objetivo y el precio actual — cuánto podría subir si los analistas tienen razón (también podría no cumplirse).<br>
-      <strong>Recomendación ${o.recomendacion === 'strong_buy' ? 'Compra fuerte' : 'Compra'}</strong>: la posición promedio de esos analistas sobre la acción hoy.
+      <strong>Así se lee ${o.ticker} (${o.empresa})</strong> — la mejor opción de ${o.rubroLabel} hoy entre las empresas reconocidas (con ${o.nAnalistas}+ analistas cubriéndola):<br><br>
+      <strong>Precio actual US$${o.precioActual.toFixed(2)}</strong>: lo que cuesta la empresa hoy en dólares (el CEDEAR en pesos sigue este mismo % de suba o baja).<br>
+      <strong>Precio objetivo US$${o.precioObjetivo.toFixed(2)}</strong>: el promedio de lo que ${o.nAnalistas} analistas creen que va a valer en los próximos 12 meses.<br>
+      <strong>Potencial +${(o.upside * 100).toFixed(1)}%</strong>: cuánto podría subir si los analistas tienen razón (también podría no cumplirse).<br>
+      <strong>¿Por qué por rubro?</strong> Así ves una opción reconocida de cada sector en vez de una lista dominada por nombres chicos con subas explosivas pero mucho más riesgo.
     </div>`;
 }
 async function initTopEquities() {
   try {
-    const cedears = await fetchTopPorObjetivo('USD', 5);
-    renderTopObjetivoTable('topCedearsBox', cedears, 'US$');
-    renderObjetivoExample('cedearExampleBox', cedears[0], 'US$', 'el CEDEAR');
+    const cedears = await fetchTopCedearsPorRubro();
+    renderCedearsTable(cedears);
+    renderCedearExample(cedears[0]);
   } catch (e) {
     const box = document.getElementById('topCedearsBox');
     if (box) box.innerHTML = '<p class="on-loading">No pudimos traer datos de mercado en este momento. Probá recargar la página.</p>';
