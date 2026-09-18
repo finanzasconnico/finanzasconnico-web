@@ -1610,6 +1610,36 @@
         </div>
       </div>
 
+      <!-- a2) Cómo crear una orden de compra -->
+      <div class="accordion-item" data-accordion id="tuto-orden">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">🧾</span>
+            <span class="accordion-title">Cómo crear una orden de compra</span>
+            <span class="accordion-steps-badge">5 pasos</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <p style="font-size:0.9rem;color:var(--ink-soft);line-height:1.6;margin-bottom:14px">Cuando querés comprar un activo, en la pantalla de compra tenés que completar estos campos. Acá te explico qué significa cada uno.</p>
+          <ol class="tutorial-steps">
+            <li><span><strong>Plazo de liquidación</strong> (cuándo se entrega el activo y se paga):<br>
+              • <strong>24 hs</strong>: se liquida al día siguiente. Suele tener mejor precio.<br>
+              • <strong>CI (Contado inmediato)</strong>: se liquida en el momento. Puede ser más caro.</span></li>
+            <li><span><strong>Tipo de orden:</strong><br>
+              • <strong>Market</strong>: comprás al precio que haya en ese momento.<br>
+              • <strong>Limit</strong>: ponés el precio máximo que estás dispuesto a pagar.</span></li>
+            <li><span><strong>Vencimiento de la orden</strong> (cuánto tiempo queda activa):<br>
+              • <strong>Day</strong>: dura solo hasta el final del día.<br>
+              • <strong>Good till date</strong>: dura hasta una fecha que vos definís.<br>
+              • <strong>Immediate or cancel</strong>: se ejecuta ya. Si no se puede cumplir todo, cancela lo que falta.</span></li>
+            <li><span><strong>Nominales / Monto</strong> (cuánto querés comprar): puede ser el número de unidades (acciones, bonos) o el monto en pesos/dólares.</span></li>
+            <li><span><strong>Precio límite</strong> (solo para órdenes "Limit" o "Stop Limit"): es el precio máximo que estás dispuesto a pagar. Si no aparece ese precio, la orden no se ejecuta.</span></li>
+          </ol>
+          <div class="tutorial-note">📝 <strong>Nota:</strong> ¿Dudas sobre qué combinación te conviene en tu caso? <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+c%C3%B3mo+crear+una+orden+de+compra." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a></div>
+        </div>
+      </div>
+
       <!-- b) Comprar ON o Bono -->
       <div class="accordion-item" data-accordion>
         <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -1645,6 +1675,7 @@
             <li><span>¡Listo! El bono aparece en tu cartera.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Nota:</strong> Los cupones se pagan cada 3 o 6 meses según el instrumento. Consultá la hoja de condiciones del bono.</div>
+          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
         </div>
       </div>
 
@@ -1683,6 +1714,7 @@
             <li><span>¡Listo! El CEDEAR sigue el precio en Nueva York.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Horario de operación:</strong> lunes a viernes de 10:00 a 17:00hs.</div>
+          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
         </div>
       </div>
 
@@ -1720,6 +1752,7 @@
             <li><span>¡Listo! La acción aparece en tu cartera, cotizando en pesos.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Nota:</strong> a diferencia de un CEDEAR, acá comprás la empresa local directamente — sin cobertura del dólar.</div>
+          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
         </div>
       </div>
 
@@ -2020,6 +2053,15 @@ function toggleAccordion(header) {
   // Cerrar todos
   document.querySelectorAll('.accordion-item.open').forEach(i => i.classList.remove('open'));
   if (!isOpen) item.classList.add('open');
+}
+
+/* Abre un tutorial puntual (ej. desde un link dentro de otro tutorial) y lleva la vista hasta él */
+function abrirTutorial(id) {
+  const item = document.getElementById(id);
+  if (!item) return;
+  document.querySelectorAll('.accordion-item.open').forEach(i => i.classList.remove('open'));
+  item.classList.add('open');
+  item.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* Acordeón propio de "Explicación de activos" — no cierra el de Tutoriales ni viceversa */
