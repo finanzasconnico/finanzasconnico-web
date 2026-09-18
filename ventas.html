@@ -1105,16 +1105,28 @@ function fbSetRating(v, btn){
 async function enviarFeedback(){
   const comment = document.getElementById('fbComment').value.trim();
   if (!fbRating && !comment) { alert('Elegí una carita o escribí un comentario.'); return; }
+  let ok = false;
   try {
-    await fetch(FB_SUPABASE_URL + '/rest/v1/website_feedback', {
+    const r = await fetch(FB_SUPABASE_URL + '/rest/v1/website_feedback', {
       method: 'POST',
       headers: { 'apikey': FB_SUPABASE_KEY, 'Authorization': 'Bearer ' + FB_SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({ page: location.pathname, rating: fbRating, comment: comment || null })
     });
-  } catch (e) { /* no frustramos al usuario con un error técnico visible */ }
+    ok = r.ok;
+  } catch (e) { ok = false; }
+  const thanks = document.getElementById('fbThanksView');
   document.getElementById('fbFormView').style.display = 'none';
-  document.getElementById('fbThanksView').style.display = 'block';
-  setTimeout(cerrarFeedback, 2200);
+  if (ok) {
+    thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p>';
+    setTimeout(cerrarFeedback, 2200);
+  } else {
+    // No perdemos el comentario en silencio: si no pudimos guardarlo, ofrecemos mandarlo por WhatsApp.
+    const txt = 'Feedback sobre la página (' + location.pathname + ')' + (fbRating ? ' [' + fbRating + '/4]' : '') + (comment ? ': ' + comment : '');
+    thanks.innerHTML = '<p style="font-weight:600;color:var(--petroleo-700);margin-bottom:8px;">No pudimos guardar tu comentario 😕</p>' +
+      '<p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:14px;">Es un problema nuestro, no tuyo. ¿Nos lo mandás por WhatsApp?</p>' +
+      '<a href="https://wa.me/5491123284509?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--whatsapp);color:#fff;font-weight:600;padding:10px 18px;border-radius:9px;text-decoration:none;font-size:0.88rem;">💬 Enviar por WhatsApp</a>';
+  }
+  thanks.style.display = 'block';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedback(); });
 
