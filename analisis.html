@@ -7,7 +7,7 @@
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PMSSQ4VC');</script>
+})(window,document,'script','dataLayer','GTM-W97XNKMZ');</script>
 <!-- End Google Tag Manager -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Análisis avanzado — FinanzasconNico</title>
@@ -207,11 +207,19 @@ body { padding-bottom: 64px; }
   .disclaimer-bar { font-size: 0.66rem; padding: 8px 14px; }
   .wa-float, .fb-trigger { bottom: 104px; }
 }
+/* "?" de ayuda: explica cada término en criollo */
+.q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 5px; border-radius: 50%; border: 1px solid var(--ink-muted); color: var(--ink-muted); font: 600 9.5px/1 var(--font-sans); cursor: help; vertical-align: middle; text-transform: none; letter-spacing: 0; user-select: none; }
+.q:hover, .q:focus-visible, .q.on { background: var(--jade); border-color: var(--jade); color: #fff; outline: none; }
+#q-pop { position: fixed; z-index: 10000; max-width: min(320px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 8px; background: var(--petroleo-900); color: var(--crema); font: 400 0.8rem/1.55 var(--font-sans); text-transform: none; letter-spacing: 0; box-shadow: 0 10px 28px rgba(0,0,0,.28); pointer-events: none; opacity: 0; transition: opacity .12s; }
+#q-pop.show { opacity: 1; }
+#q-pop b { color: #fff; }
+.cmp-nota { font-size: 0.76rem !important; color: var(--ink-muted) !important; margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) { #q-pop { transition: none; } }
 </style>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PMSSQ4VC"
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W97XNKMZ"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
@@ -1260,6 +1268,42 @@ const SECTOR_ES = {
 const REC_LABEL = { strongbuy: 'Compra fuerte', buy: 'Compra', hold: 'Mantener', sell: 'Venta', strongsell: 'Venta fuerte', underperform: 'Venta', outperform: 'Compra', none: '' };
 const PUNTAJE_PESOS = { negocio: 0.35, valuacion: 0.35, tendencia: 0.30 };
 
+// ── "?" de ayuda: un globito con la explicación en criollo, al lado de cada término ──
+const AYUDA = {
+  puntaje: '<b>Puntaje (−100 a +100).</b> Un solo número que resume tres cosas: el negocio (35%), el precio frente a su propia historia (35%) y la tendencia (30%). Cuanto más alto, mejor puntúa hoy; negativo, puntúa mal. Sirve para <b>ordenar</b> la lista, no es una recomendación de compra o venta. No incluye la opinión de los analistas ni noticias.',
+  negocio: '<b>Negocio.</b> Qué tan sana y rentable es la empresa mirando varios años: crecimiento de ventas, si gana plata, si el margen mejora, si genera caja y cuánta deuda tiene. <b>Sólido</b> = buenos números · <b>Regular</b> = mixtos · <b>Flojo</b> = se están deteriorando.',
+  tendencia: '<b>Tendencia.</b> Hacia dónde viene yendo el precio: lo compara con sus promedios de 21, 50 y 200 semanas, cuánto subió en 3 meses, cómo rindió frente al resto en 6 meses y qué tan cerca está de su máximo del año. <b>Alcista</b> = viene subiendo · <b>Lateral</b> · <b>Bajista</b> = viene cayendo.',
+  precioH: '<b>Precio (vs. historia).</b> Compara lo que se paga hoy por la empresa (el múltiplo — mirá el "?" de Múltiplo) con lo que se pagó en promedio en los últimos 5 años. <b>Barato</b> = el precio tendría que subir 5% o más para volver a su promedio · <b>En precio</b> = normal · <b>Caro</b> = tendría que bajar 30% o más.',
+  multiplo: '<b>Múltiplo.</b> Cuánto se paga por cada dólar que la empresa vende o gana. <b>P/E</b>: precio ÷ ganancia · <b>P/S</b>: precio ÷ ventas · <b>EV/EBITDA</b>: valor de la empresa ÷ ganancia operativa · <b>P/FCF</b>: precio ÷ caja libre · <b>P/B</b>: precio ÷ patrimonio. Se usa el más representativo de cada sector. "Prom. 5a" es el promedio de los últimos 5 años: si hoy está por encima, está más cara que lo habitual para esa empresa.',
+  pares: '<b>Mediana del sector.</b> El mismo múltiplo, pero de la empresa "del medio" entre las del mismo sector que seguimos; entre paréntesis, cuánto más caro o barato está este papel frente a esa referencia. Ojo: es solo una referencia y <b>no entra en el puntaje</b>. Sectores como Comunicaciones mezclan gigantes tecnológicas con telefónicas y medios de múltiplo bajo, así que la comparación puede no ser justa.',
+  lectura: '<b>Lectura del modelo.</b> Cómo resume el modelo las señales de Tendencia, Negocio y Precio: <b>Favorable</b> · <b>Neutral</b> · <b>Precaución</b> · <b>Desfavorable</b>. Es informativa: no es una recomendación de compra o venta.',
+  analistas: '<b>Analistas.</b> La opinión de los analistas de Wall Street que siguen la acción: su recomendación de consenso y cuánto por encima (o por debajo) del precio de hoy está su precio objetivo promedio. Es una opinión externa: <b>no entra en el puntaje</b>.'
+};
+function ayq(k) { return '<span class="q" tabindex="0" role="button" aria-label="¿Qué significa?" data-q="' + k + '">?</span>'; }
+(function () {
+  let pop = null, cur = null;
+  const hit = e => (e.target && e.target.closest) ? e.target.closest('.q') : null;
+  function ensure() { if (!pop) { pop = document.createElement('div'); pop.id = 'q-pop'; pop.setAttribute('role', 'tooltip'); document.body.appendChild(pop); } return pop; }
+  function show(el) {
+    const t = AYUDA[el.dataset.q]; if (!t) return;
+    const p = ensure(); p.innerHTML = t; cur = el; el.classList.add('on'); p.classList.add('show');
+    const r = el.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
+    const left = Math.max(12, Math.min(r.left + r.width / 2 - pw / 2, window.innerWidth - pw - 12));
+    let top = r.bottom + 8; if (top + ph > window.innerHeight - 8) top = r.top - ph - 8;
+    p.style.left = left + 'px'; p.style.top = Math.max(8, top) + 'px';
+  }
+  function hide() { if (cur) cur.classList.remove('on'); cur = null; if (pop) pop.classList.remove('show'); }
+  document.addEventListener('mouseover', e => { const el = hit(e); if (el) show(el); });
+  document.addEventListener('mouseout', e => { if (hit(e)) hide(); });
+  document.addEventListener('focusin', e => { const el = hit(e); if (el) show(el); });
+  document.addEventListener('focusout', e => { if (hit(e)) hide(); });
+  // en el celular no hay hover: un toque abre, un toque afuera cierra. Va en captura para que el "?" de un
+  // título de columna NO dispare el ordenamiento de esa columna.
+  document.addEventListener('click', e => { const el = hit(e); if (el) { e.stopPropagation(); e.preventDefault(); show(el); } else hide(); }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+  window.addEventListener('scroll', hide, true);
+})();
+
 function multiplosDeSector(s) { return (s && s in SECTOR_MULTIPLOS) ? SECTOR_MULTIPLOS[s] : DEFAULT_MULTIPLOS; }
 function multPrimario(s) { const p = multiplosDeSector(s); return p.length ? p[0] : null; }
 function num(v) { if (v === null || v === undefined || v === '') return null; const n = Number(v); return isNaN(n) ? null : n; }
@@ -1495,13 +1539,13 @@ function renderRV() {
     return rvSortAsc ? va - vb : vb - va;
   });
   document.getElementById('rvCount').textContent = `${data.length} de ${RV.scored.length} con puntaje · ${RV.rows.length} papeles seguidos`;
-  const th = (col, label) => `<th class="${rvSortCol === col ? 'sorted' + (rvSortAsc ? ' asc' : '') : ''}" onclick="setRvSort('${col}')">${label}</th>`;
+  const th = (col, label, help) => `<th class="${rvSortCol === col ? 'sorted' + (rvSortAsc ? ' asc' : '') : ''}" onclick="setRvSort('${col}')">${label}${help ? ayq(help) : ''}</th>`;
   if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay papeles que coincidan con ese filtro.</p>'; return; }
   box.innerHTML = `
     <table class="data-table" style="min-width:900px">
       <thead><tr>
         <th>#</th>${th('ticker', 'Ticker')}${th('empresa', 'Empresa')}${th('sector', 'Sector')}${th('precio', 'Precio')}
-        ${th('puntaje', 'Puntaje')}${th('negocio', 'Negocio')}${th('precioH', 'Precio vs. historia')}${th('tendencia', 'Tendencia')}${th('upside', 'Analistas')}<th></th>
+        ${th('puntaje', 'Puntaje', 'puntaje')}${th('negocio', 'Negocio', 'negocio')}${th('precioH', 'Precio vs. historia', 'precioH')}${th('tendencia', 'Tendencia', 'tendencia')}${th('upside', 'Analistas', 'analistas')}<th></th>
       </tr></thead>
       <tbody>
         ${data.map((x, i) => `
@@ -1603,6 +1647,11 @@ function renderCmp() {
   const mLabel = s => (MULT[s.k] || {}).label || s.k || '—';
   const multCell = s => (!s.mm || s.mm.actual == null) ? 'Sin dato'
     : `${mLabel(s)} <b>${fmtN(s.mm.actual, 1)}</b>${s.mm.p5 != null ? ` <span class="row-sector">(prom. 5a ${fmtN(s.mm.p5, 1)})</span>` : ''}`;
+  const parCell = s => {
+    if (s.med == null) return '—';
+    const rel = (s.mm && s.mm.actual != null && s.med > 0) ? s.mm.actual / s.med - 1 : null;
+    return fmtN(s.med, 1) + (rel != null ? ` <span class="row-sector">(${esc(s.r.ticker)} ${rel >= 0 ? '+' : '−'}${fmtN(Math.abs(rel) * 100, 0)}%)</span>` : '');
+  };
   const lecCell = s => { const l = LECTURA[s.q]; return `<span class="sig ${l.cls}">${l.txt}</span>`; };
   const cls = ver.ganador === 'B' ? 'win' : ver.ganador === 'A' ? 'stay' : 'tie';
   const titulo = ver.ganador === 'B' ? `Según el modelo, tiene sentido evaluar el cambio ${a.ticker} → ${b.ticker}`
@@ -1617,16 +1666,16 @@ function renderCmp() {
         ${row('Empresa', esc(nombreCorto(a)), esc(nombreCorto(b)))}
         ${row('Sector', esc(SECTOR_ES[a.sector] || a.sector || '—'), esc(SECTOR_ES[b.sector] || b.sector || '—'))}
         ${row('Precio', precio(a), precio(b))}
-        ${row('Múltiplo primario', multCell(sa), multCell(sb))}
-        ${row('vs. pares del sector', sa.med != null ? fmtN(sa.med, 1) : '—', sb.med != null ? fmtN(sb.med, 1) : '—')}
-        ${row('Tendencia', chip(sa.st), chip(sb.st))}
-        ${row('Negocio', chip(sa.sn), chip(sb.sn))}
-        ${row('Precio (vs. historia)', chip(sa.sp), chip(sb.sp))}
-        ${row('Lectura del modelo', lecCell(sa), lecCell(sb))}
-        ${row('Puntaje (−100…+100)', ptCell(sa.p), ptCell(sb.p))}
-        ${row('Analistas', anCell(sa.an), anCell(sb.an))}
+        ${row('Múltiplo primario' + ayq('multiplo'), multCell(sa), multCell(sb))}
+        ${row('Mediana del sector' + ayq('pares'), parCell(sa), parCell(sb))}
+        ${row('Tendencia' + ayq('tendencia'), chip(sa.st), chip(sb.st))}
+        ${row('Negocio' + ayq('negocio'), chip(sa.sn), chip(sb.sn))}
+        ${row('Precio (vs. historia)' + ayq('precioH'), chip(sa.sp), chip(sb.sp))}
+        ${row('Lectura del modelo' + ayq('lectura'), lecCell(sa), lecCell(sb))}
+        ${row('Puntaje (−100…+100)' + ayq('puntaje'), ptCell(sa.p), ptCell(sb.p))}
+        ${row('Analistas' + ayq('analistas'), anCell(sa.an), anCell(sb.an))}
       </tbody></table></div>
-    <div class="cmp-read"><h5>Lectura</h5>${ver.partes.map(p => `<p>${p}</p>`).join('')}<p><strong>${ver.cierre}</strong></p></div>`;
+    <div class="cmp-read"><h5>Lectura</h5>${ver.partes.map(p => `<p>${p}</p>`).join('')}<p><strong>${ver.cierre}</strong></p><p class="cmp-nota">El modelo mide solo números: negocio, precio frente a su historia y tendencia. No ve noticias ni catalizadores — el lanzamiento de un producto, resultados por venir, litigios — que también mueven el precio. Es informativo, no una recomendación.</p></div>`;
 }
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
