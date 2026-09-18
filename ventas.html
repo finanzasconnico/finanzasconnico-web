@@ -1079,7 +1079,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button type="button" class="fb-emoji" data-val="4" onclick="fbSetRating(4,this)">😄</button>
       </div>
       <textarea id="fbComment" class="fb-textarea" rows="4" placeholder="Contanos qué mejorarías, qué no entendiste, o lo que se te ocurra (opcional)..."></textarea>
-      <button class="fb-submit" onclick="enviarFeedback()">Enviar</button>
+      <button class="fb-submit" onclick="enviarFeedback()">Enviar por WhatsApp</button>
     </div>
     <div id="fbThanksView" style="display:none;text-align:center;padding:18px 0;">
       <div style="font-size:2rem;">🙌</div>
@@ -1095,9 +1095,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.12 });
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-/* ── FEEDBACK (Supabase, mismo proyecto que fcn-bajas — solo INSERT, sin lectura) ── */
-const FB_SUPABASE_URL = 'https://wixbbcziostbtqfmphcc.supabase.co';
-const FB_SUPABASE_KEY = 'sb_publishable_olGxTFFfHuoZ-wzxQbq5_Q_1JfYE2yw';
+/* ── FEEDBACK: sin servidor. Abre WhatsApp con el comentario ya escrito y deja la carita en dataLayer (Analytics) ── */
 let fbRating = null;
 function abrirFeedback(){ document.getElementById('fbModalOverlay').classList.add('open'); }
 function cerrarFeedback(){
@@ -1113,31 +1111,19 @@ function fbSetRating(v, btn){
   document.querySelectorAll('.fb-emoji').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-async function enviarFeedback(){
+function enviarFeedback(){
   const comment = document.getElementById('fbComment').value.trim();
   if (!fbRating && !comment) { alert('Elegí una carita o escribí un comentario.'); return; }
-  let ok = false;
-  try {
-    const r = await fetch(FB_SUPABASE_URL + '/rest/v1/website_feedback', {
-      method: 'POST',
-      headers: { 'apikey': FB_SUPABASE_KEY, 'Authorization': 'Bearer ' + FB_SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ page: location.pathname, rating: fbRating, comment: comment || null })
-    });
-    ok = r.ok;
-  } catch (e) { ok = false; }
+  const carita = { 1: '😕', 2: '😐', 3: '🙂', 4: '😄' }[fbRating] || '';
+  // solo la carita y la página (nunca el texto del comentario) para poder ver el ánimo general en Analytics
+  try { (window.dataLayer = window.dataLayer || []).push({ event: 'feedback_enviado', feedback_rating: fbRating || null, feedback_page: location.pathname }); } catch (e) {}
+  const txt = 'Feedback sobre la página (' + location.pathname + ')' + (carita ? ' ' + carita : '') + (comment ? ': ' + comment : '');
+  window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(txt), '_blank', 'noopener');
   const thanks = document.getElementById('fbThanksView');
   document.getElementById('fbFormView').style.display = 'none';
-  if (ok) {
-    thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p>';
-    setTimeout(cerrarFeedback, 2200);
-  } else {
-    // No perdemos el comentario en silencio: si no pudimos guardarlo, ofrecemos mandarlo por WhatsApp.
-    const txt = 'Feedback sobre la página (' + location.pathname + ')' + (fbRating ? ' [' + fbRating + '/4]' : '') + (comment ? ': ' + comment : '');
-    thanks.innerHTML = '<p style="font-weight:600;color:var(--petroleo-700);margin-bottom:8px;">No pudimos guardar tu comentario 😕</p>' +
-      '<p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:14px;">Es un problema nuestro, no tuyo. ¿Nos lo mandás por WhatsApp?</p>' +
-      '<a href="https://wa.me/5491123284509?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--whatsapp);color:#fff;font-weight:600;padding:10px 18px;border-radius:9px;text-decoration:none;font-size:0.88rem;">💬 Enviar por WhatsApp</a>';
-  }
+  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
   thanks.style.display = 'block';
+  setTimeout(cerrarFeedback, 3200);
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedback(); });
 
