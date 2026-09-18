@@ -215,6 +215,35 @@ body { padding-bottom: 64px; }
 #q-pop b { color: #fff; }
 .cmp-nota { font-size: 0.76rem !important; color: var(--ink-muted) !important; margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { #q-pop { transition: none; } }
+/* Correlación */
+.cr-add { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cr-add .cmp-input { flex: 1; min-width: 200px; width: auto; }
+.cr-btn { background: var(--petroleo-700); color: #fff; border: 1px solid var(--petroleo-700); border-radius: 10px; padding: 8px 16px; font: 600 0.82rem var(--font-sans); cursor: pointer; }
+.cr-btn:hover { background: var(--petroleo-900); }
+.cr-btn-soft { background: #fff; color: var(--petroleo-700); border-color: var(--line); }
+.cr-btn-soft:hover { background: var(--crema); }
+.cr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.cr-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--crema); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; font: 600 0.78rem var(--font-mono); color: var(--ink); }
+.cr-chip input { width: 78px; border: none; border-left: 1px solid var(--line); background: transparent; font: 0.74rem var(--font-mono); color: var(--ink-soft); padding: 2px 6px; text-align: right; outline: none; }
+.cr-chip button { background: none; border: none; color: var(--ink-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 6px; }
+.cr-chip button:hover { color: var(--danger); }
+.cr-verd { padding: 12px 16px; border-radius: 12px; margin: 12px 0 10px; }
+.cr-verd .cv-t { font-weight: 700; font-size: 0.95rem; }
+.cr-verd .cv-s { font-size: 0.82rem; line-height: 1.55; margin-top: 3px; }
+.cr-verd.ok { background: #d4f0e3; color: #146c47; }
+.cr-verd.mid { background: #f1ecdf; color: var(--ink-soft); }
+.cr-verd.warn { background: #faecd0; color: #7a5200; }
+.cr-verd.bad { background: #f7d9d5; color: #9a2f26; }
+.cr-p { font-size: 0.85rem; color: var(--ink-soft); margin: 6px 0; }
+.cr-leg { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.72rem; color: var(--ink-muted); margin: 8px 0; }
+.cr-leg i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cr-mat-wrap { overflow-x: auto; margin: 6px 0 10px; }
+.cr-mat { border-collapse: separate; border-spacing: 2px; font-family: var(--font-mono); font-size: 0.72rem; }
+.cr-mat th { font-weight: 600; color: var(--ink-muted); padding: 4px 6px; text-align: center; white-space: nowrap; }
+.cr-mat th.rh { text-align: right; color: var(--ink); }
+.cr-mat td { min-width: 38px; height: 30px; text-align: center; border-radius: 4px; color: var(--ink); background: #faf8f2; }
+.cr-mat td.dg { color: var(--ink-muted); background: var(--crema); }
+.cr-nota { font-size: 0.76rem; color: var(--ink-muted); margin-top: 10px; line-height: 1.55; }
 </style>
 </head>
 <body>
@@ -249,6 +278,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
     <button class="tab-btn" data-tab="rv" onclick="switchTab('rv')">📈 Renta variable: Valuación</button>
     <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
+    <button class="tab-btn" data-tab="corr" onclick="switchTab('corr')">🔗 Correlación</button>
     <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
   </div>
 </nav>
@@ -318,6 +348,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <datalist id="tickerList"></datalist>
       <div id="cmpErr" class="cmp-err" style="display:none"></div>
       <div id="cmpResult"><p class="loading-msg">Cargando datos…</p></div>
+    </div>
+    </div>
+
+    <!-- ══ Correlación ══ -->
+    <div class="tab-panel" id="tab-corr">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">🔗 Correlación entre acciones</div>
+      </div>
+      <div class="tool-sub">¿Tus inversiones se mueven juntas? Sumá los tickers que tenés o estás mirando y fijate qué tan diversificada queda la cartera: cuánto se parecen entre sí y cuánto baja el riesgo por combinarlas.</div>
+      <details class="explain-box">
+        <summary>¿Qué es la correlación?</summary>
+        <p style="margin-top:8px">Mide si dos activos suben y bajan a la vez. <strong>+100</strong> = se mueven idéntico · <strong>0</strong> = no tienen relación · <strong>negativo</strong> = uno tiende a subir cuando el otro baja. Una cartera donde todo está muy correlacionado es como una sola apuesta: una mala semana golpea a todo junto. Con activos poco correlacionados, las caídas de uno se compensan en parte con los otros. Usamos los retornos semanales de los últimos ~3 años.</p>
+        <p><strong>Ojo:</strong> mide cómo se movieron en el pasado, no predice el futuro — y en las crisis la correlación entre acciones suele subir. Es informativo, no una recomendación.</p>
+      </details>
+      <div class="cr-add">
+        <input id="crAdd" class="cmp-input" list="tickerList" placeholder="Sumá un ticker, ej: KO" onkeydown="if(event.key==='Enter'){event.preventDefault();crAgregar();}">
+        <button class="cr-btn" onclick="crAgregar()">Agregar</button>
+        <button class="cr-btn cr-btn-soft" onclick="crEjemplo()">Probar con un ejemplo</button>
+      </div>
+      <div id="crChips" class="cr-chips"></div>
+      <div id="crErr" class="cmp-err" style="display:none"></div>
+      <div id="crRes"><p class="loading-msg">Sumá al menos dos tickers para ver si se mueven juntos.</p></div>
     </div>
     </div>
 
@@ -1038,16 +1091,14 @@ window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChan
         <button type="button" class="fb-emoji" data-val="4" onclick="fbSetRating(4,this)">😄</button>
       </div>
       <textarea id="fbComment" class="fb-textarea" rows="4" placeholder="Contanos qué mejorarías, qué no entendiste, o lo que se te ocurra (opcional)..."></textarea>
-      <button class="fb-submit" onclick="enviarFeedback()">Enviar</button>
+      <button class="fb-submit" onclick="enviarFeedback()">Enviar por WhatsApp</button>
     </div>
     <div id="fbThanksView" style="display:none;text-align:center;padding:18px 0;"></div>
   </div>
 </div>
 
 <script>
-/* ── FEEDBACK (Supabase, mismo proyecto que fcn-bajas — solo INSERT, sin lectura) ── */
-const FB_SUPABASE_URL = 'https://wixbbcziostbtqfmphcc.supabase.co';
-const FB_SUPABASE_KEY = 'sb_publishable_olGxTFFfHuoZ-wzxQbq5_Q_1JfYE2yw';
+/* ── FEEDBACK: sin servidor. Abre WhatsApp con el comentario ya escrito y deja la carita en dataLayer (Analytics) ── */
 let fbRating = null;
 function abrirFeedback(){ document.getElementById('fbModalOverlay').classList.add('open'); }
 function cerrarFeedback(){
@@ -1063,31 +1114,19 @@ function fbSetRating(v, btn){
   document.querySelectorAll('.fb-emoji').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-async function enviarFeedback(){
+function enviarFeedback(){
   const comment = document.getElementById('fbComment').value.trim();
   if (!fbRating && !comment) { alert('Elegí una carita o escribí un comentario.'); return; }
-  let ok = false;
-  try {
-    const r = await fetch(FB_SUPABASE_URL + '/rest/v1/website_feedback', {
-      method: 'POST',
-      headers: { 'apikey': FB_SUPABASE_KEY, 'Authorization': 'Bearer ' + FB_SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ page: location.pathname, rating: fbRating, comment: comment || null })
-    });
-    ok = r.ok;
-  } catch (e) { ok = false; }
+  const carita = { 1: '😕', 2: '😐', 3: '🙂', 4: '😄' }[fbRating] || '';
+  // solo la carita y la página (nunca el texto del comentario) para poder ver el ánimo general en Analytics
+  try { (window.dataLayer = window.dataLayer || []).push({ event: 'feedback_enviado', feedback_rating: fbRating || null, feedback_page: location.pathname }); } catch (e) {}
+  const txt = 'Feedback sobre la página (' + location.pathname + ')' + (carita ? ' ' + carita : '') + (comment ? ': ' + comment : '');
+  window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(txt), '_blank', 'noopener');
   const thanks = document.getElementById('fbThanksView');
   document.getElementById('fbFormView').style.display = 'none';
-  if (ok) {
-    thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p>';
-    setTimeout(cerrarFeedback, 2200);
-  } else {
-    // No perdemos el comentario en silencio: si no pudimos guardarlo, ofrecemos mandarlo por WhatsApp.
-    const txt = 'Feedback sobre la página (' + location.pathname + ')' + (fbRating ? ' [' + fbRating + '/4]' : '') + (comment ? ': ' + comment : '');
-    thanks.innerHTML = '<p style="font-weight:600;color:var(--petroleo-700);margin-bottom:8px;">No pudimos guardar tu comentario 😕</p>' +
-      '<p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:14px;">Es un problema nuestro, no tuyo. ¿Nos lo mandás por WhatsApp?</p>' +
-      '<a href="https://wa.me/5491123284509?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--whatsapp);color:#fff;font-weight:600;padding:10px 18px;border-radius:9px;text-decoration:none;font-size:0.88rem;">💬 Enviar por WhatsApp</a>';
-  }
+  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
   thanks.style.display = 'block';
+  setTimeout(cerrarFeedback, 3200);
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedback(); });
 </script>
@@ -1235,12 +1274,12 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'rv', 'cmp', 'rot'];
+const TABS_ANALISIS = ['ons', 'rv', 'cmp', 'corr', 'rot'];
 function switchTab(name) {
   if (!TABS_ANALISIS.includes(name)) name = 'ons';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
-  if (name === 'rv' || name === 'cmp') ensureRV();
+  if (name === 'rv' || name === 'cmp' || name === 'corr') ensureRV();
   if (name === 'rot' && window.ROT) ROT.init();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
 }
@@ -1564,6 +1603,149 @@ function renderRV() {
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+
+/* ═════════════ Correlación — misma lógica que el botón "🔗 Correlación" del Suite ═════════════
+   Retornos semanales (~3 años) de suit-fcn.vercel.app/data/retornos_semanales.json. Se baja recién al abrir la pestaña. */
+let crSel = [], crPromise = null, CR = null;
+const CR_MAX = 25;
+function ensureCR() {
+  if (!crPromise) crPromise = (async () => {
+    const r = await fetch(SUITE_DATA + 'retornos_semanales.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('sin datos');
+    const j = await r.json();
+    const serie = {};
+    Object.entries(j.ret || {}).forEach(([tk, arr]) => { serie[tk.toUpperCase()] = Float64Array.from(arr, v => v === null ? NaN : v / 10000); });
+    CR = { fechas: j.fechas || [], serie };
+    return CR;
+  })().catch(e => { crPromise = null; return null; });
+  return crPromise;
+}
+function crPar(a, b) {
+  let n = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+  for (let i = 0; i < a.length; i++) { const x = a[i], y = b[i]; if (x !== x || y !== y) continue; n++; sa += x; sb += y; saa += x * x; sbb += y * y; sab += x * y; }
+  if (n < 40) return null;
+  const ma = sa / n, mb = sb / n, va = saa / n - ma * ma, vb = sbb / n - mb * mb;
+  if (va <= 1e-12 || vb <= 1e-12) return null;
+  return { rho: clamp((sab / n - ma * mb) / Math.sqrt(va * vb), -1, 1), n };
+}
+// volatilidad anual de la cartera vs. el promedio ponderado de la de cada activo (semanas en que todos cotizan; si son <52, no se calcula)
+function crVol(series, w) {
+  const T = series[0].length, idx = [];
+  for (let t = 0; t < T; t++) { if (series.every(s => s[t] === s[t])) idx.push(t); }
+  if (idx.length < 52) return null;
+  const k = series.length, n = idx.length;
+  const mu = series.map(s => idx.reduce((a, t) => a + s[t], 0) / n);
+  const cov = Array.from({ length: k }, () => new Array(k).fill(0));
+  for (let i = 0; i < k; i++) for (let j = i; j < k; j++) {
+    let c = 0; for (const t of idx) c += (series[i][t] - mu[i]) * (series[j][t] - mu[j]);
+    cov[i][j] = cov[j][i] = c / (n - 1);
+  }
+  let varP = 0, avg = 0;
+  for (let i = 0; i < k; i++) { avg += w[i] * Math.sqrt(cov[i][i] * 52); for (let j = 0; j < k; j++) varP += w[i] * w[j] * cov[i][j] * 52; }
+  return { n, volP: Math.sqrt(Math.max(varP, 0)), avg };
+}
+function crBg(rho) {
+  if (rho === null) return '';
+  if (rho >= 0.5) return `background:rgba(192,69,59,${(0.14 + (Math.min(rho, 1) - 0.5) / 0.5 * 0.42).toFixed(2)})`;
+  if (rho <= 0.2) return `background:rgba(28,140,95,${(0.12 + Math.min((0.2 - rho) / 0.5, 1) * 0.36).toFixed(2)})`;
+  return '';
+}
+function crAgregar() {
+  const inp = document.getElementById('crAdd'), err = document.getElementById('crErr');
+  const v = inp.value.trim();
+  if (!v) return;
+  ensureRV().then(() => {
+    const r = resolverTicker(v);
+    if (!r) { err.textContent = `No encontré "${v}" en la lista.`; err.style.display = ''; return; }
+    err.style.display = 'none';
+    if (!crSel.some(x => x.tk === r.ticker)) crSel.push({ tk: r.ticker, w: null });
+    inp.value = ''; crChips(); crRender();
+  });
+}
+function crQuitar(tk) { crSel = crSel.filter(x => x.tk !== tk); crChips(); crRender(); }
+function crPeso(tk, v) { const it = crSel.find(x => x.tk === tk); if (it) { const n = parseFloat(v); it.w = n > 0 ? n : null; } crRender(); }
+function crEjemplo() {
+  ensureRV().then(() => {
+    crSel = ['AAPL', 'MSFT', 'KO', 'JNJ', 'XOM', 'NEM'].filter(t => resolverTicker(t)).map(t => ({ tk: t, w: null }));
+    document.getElementById('crErr').style.display = 'none';
+    crChips(); crRender();
+  });
+}
+function crChips() {
+  document.getElementById('crChips').innerHTML = crSel.map(x => {
+    const k = JSON.stringify(x.tk).replace(/"/g, '&quot;');
+    return `<span class="cr-chip">${esc(x.tk)}<input type="number" min="0" step="100" value="${x.w || ''}" placeholder="US$ (opc.)" title="Monto en US$ (opcional): pondera el cálculo" onchange="crPeso(${k},this.value)"><button title="Sacar" onclick="crQuitar(${k})">✕</button></span>`;
+  }).join('');
+}
+async function crRender() {
+  const res = document.getElementById('crRes');
+  if (crSel.length < 2) { res.innerHTML = '<p class="loading-msg">Sumá al menos dos tickers para ver si se mueven juntos.</p>'; return; }
+  res.innerHTML = '<p class="loading-msg">Calculando…</p>';
+  await ensureRV();
+  const D = await ensureCR();
+  if (!D) { res.innerHTML = '<p class="loading-msg">No pudimos traer los datos de correlación en este momento. Probá recargar la página.</p>'; return; }
+  const conMonto = crSel.every(x => x.w > 0);
+  let items = crSel.map(x => ({ tk: x.tk, w: x.w, s: D.serie[String(x.tk).toUpperCase()], r: resolverTicker(x.tk) }));
+  const sinDatos = items.filter(i => !i.s).map(i => i.tk);
+  items = items.filter(i => i.s);
+  if (conMonto) items.sort((a, b) => b.w - a.w);
+  let recorte = 0;
+  if (items.length > CR_MAX) { recorte = items.length - CR_MAX; items = items.slice(0, CR_MAX); }
+  if (items.length < 2) {
+    res.innerHTML = `<p class="loading-msg">${items.length ? 'Sumá al menos un activo más con historial de precios.' : 'Ninguno de estos activos tiene historial de precios.'}${sinDatos.length ? ' Sin datos: ' + esc(sinDatos.join(', ')) + '.' : ''}</p>`;
+    return;
+  }
+  const k = items.length;
+  const sw = conMonto ? items.reduce((a, i) => a + i.w, 0) : k;
+  const w = items.map(i => conMonto ? i.w / sw : 1 / k);
+  const M = Array.from({ length: k }, () => new Array(k).fill(null));
+  for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) { const c = crPar(items[i].s, items[j].s); M[i][j] = M[j][i] = c; }
+  let num = 0, den = 0; const pares = [];
+  for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) {
+    const c = M[i][j]; if (!c) continue;
+    num += 2 * w[i] * w[j] * c.rho; den += 2 * w[i] * w[j];
+    pares.push({ a: items[i].tk, b: items[j].tk, rho: c.rho });
+  }
+  const rhoMed = den > 0 ? num / den : null;
+  const mediaDe = i => { let a = 0, b = 0; for (let j = 0; j < k; j++) { if (j === i || !M[i][j]) continue; a += w[j] * M[i][j].rho; b += w[j]; } return b > 0 ? a / b : null; };
+  let cls, tit, exp;
+  if (rhoMed === null) { cls = 'mid'; tit = 'Sin datos suficientes'; exp = 'No hay semanas en común para comparar estos activos.'; }
+  else if (rhoMed < 0.30) { cls = 'ok'; tit = 'Bien diversificada'; exp = 'Los activos se mueven bastante por separado: cuando uno cae, los otros amortiguan.'; }
+  else if (rhoMed < 0.50) { cls = 'mid'; tit = 'Diversificación moderada'; exp = 'Hay algo de relación entre los activos, pero todavía se compensan en parte.'; }
+  else if (rhoMed < 0.65) { cls = 'warn'; tit = 'Poco diversificada'; exp = 'Muchos activos tienden a subir y bajar a la vez: la cartera se parece a una sola apuesta.'; }
+  else { cls = 'bad'; tit = 'Muy concentrada en el mismo riesgo'; exp = 'Casi todo se mueve junto: una mala semana del mercado golpea a toda la cartera al mismo tiempo.'; }
+  const vol = crVol(items.map(i => i.s), w);
+  const volTxt = vol ? ` Volatilidad anual estimada de la cartera: <b>${fmtN(vol.volP * 100, 0)}%</b> (el promedio de cada activo por separado es ${fmtN(vol.avg * 100, 0)}%; combinarlos la baja <b>${fmtN(Math.max(0, 1 - vol.volP / vol.avg) * 100, 0)}%</b>).` : '';
+  const sec = {};
+  items.forEach((i, ix) => { const sc = SECTOR_ES[i.r && i.r.sector] || (i.r && i.r.sector) || 'Sin sector'; sec[sc] = (sec[sc] || 0) + w[ix]; });
+  const secTop = Object.entries(sec).sort((a, b) => b[1] - a[1]);
+  if (secTop.length && secTop[0][1] >= 0.5 && (cls === 'ok' || cls === 'mid')) exp += ' Ojo: aunque no se muevan igual, más de la mitad está en un solo sector, y si ese sector se da vuelta los golpea a todos.';
+  const juntos = pares.filter(p => p.rho >= 0.6).sort((a, b) => b.rho - a.rho).slice(0, 5);
+  const aparte = pares.filter(p => p.rho <= 0.2).sort((a, b) => a.rho - b.rho).slice(0, 3);
+  const f2 = x => `${x < 0 ? '−' : ''}${Math.abs(x).toFixed(2).replace('.', ',')}`;
+  const parTxt = p => `<b>${esc(p.a)}</b> y <b>${esc(p.b)}</b> (${f2(p.rho)})`;
+  const ars = items.filter(i => i.r && i.r.moneda === 'ARS').map(i => i.tk);
+  const head = `<tr><th></th>${items.map(i => `<th>${esc(i.tk)}</th>`).join('')}<th title="Correlación promedio de este activo con el resto">vs. resto</th></tr>`;
+  const body = items.map((a, i) => {
+    const m = mediaDe(i);
+    return `<tr><th class="rh">${esc(a.tk)}${conMonto ? ` <span style="font-weight:400">${fmtN(w[i] * 100, 0)}%</span>` : ''}</th>${items.map((b, j) => {
+      if (i === j) return '<td class="dg">—</td>';
+      const c = M[i][j];
+      if (!c) return '<td title="Sin semanas en común suficientes">·</td>';
+      return `<td style="${crBg(c.rho)}" title="${esc(a.tk)} y ${esc(b.tk)}: ${f2(c.rho)} (${c.n} semanas)">${Math.round(c.rho * 100)}</td>`;
+    }).join('')}<td style="${crBg(m)};font-weight:700">${m === null ? '·' : Math.round(m * 100)}</td></tr>`;
+  }).join('');
+  const rango = D.fechas.length ? `${D.fechas[0]} → ${D.fechas[D.fechas.length - 1]}` : '';
+  res.innerHTML = `
+    <div class="cr-verd ${cls}"><div class="cv-t">${tit}${rhoMed !== null ? ` · correlación media ${Math.round(rhoMed * 100)}` : ''}</div><div class="cv-s">${exp}${volTxt}</div></div>
+    <p class="cr-p">Por sector: ${secTop.slice(0, 3).map(([s, v]) => `${esc(s)} ${fmtN(v * 100, 0)}%`).join(' · ')}${secTop[0][1] >= 0.5 ? ' — <b>más de la mitad en un solo sector</b>' : ''}.</p>
+    ${juntos.length ? `<p class="cr-p"><b>Se mueven casi iguales:</b> ${juntos.map(parTxt).join(' · ')}. Tener las dos duplica la misma apuesta.</p>` : '<p class="cr-p"><b>Ningún par se mueve casi igual</b> (todos por debajo de 60): no hay activos duplicando la misma apuesta.</p>'}
+    ${aparte.length ? `<p class="cr-p"><b>Los que más diversifican:</b> ${aparte.map(parTxt).join(' · ')}.</p>` : ''}
+    <div class="cr-leg"><span><i style="background:rgba(28,140,95,.4)"></i>≤ 20 casi independientes</span><span><i style="background:#faf8f2;border:1px solid var(--line)"></i>20–50 relación moderada</span><span><i style="background:rgba(192,69,59,.3)"></i>≥ 50 se mueven juntos</span><span><i style="background:rgba(192,69,59,.6)"></i>≥ 80 casi iguales</span></div>
+    <div class="cr-mat-wrap"><table class="cr-mat"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    <p class="cr-nota">Correlación de retornos semanales (${esc(rango)}); los números de la tabla son la correlación ×100. Mide cómo se movieron en el pasado: no predice el futuro, y en las crisis la correlación entre acciones suele subir.${conMonto ? '' : ' Sin montos cargados, todos los activos pesan lo mismo.'}${ars.length ? ` ${esc(ars.join(', '))} cotiza${ars.length > 1 ? 'n' : ''} en pesos: su correlación incluye el efecto del tipo de cambio.` : ''}${sinDatos.length ? ` Sin historial de precios (fuera del cálculo): ${esc(sinDatos.join(', '))}.` : ''}${recorte ? ` Se muestran los ${CR_MAX} de mayor peso.` : ''} Es solo renta variable, informativo — no una recomendación.</p>`;
 }
 
 /* ── Comparador de dos acciones ── */
