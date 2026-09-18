@@ -276,6 +276,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <nav class="tool-tabs">
   <div class="container">
     <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
+    <button class="tab-btn" data-tab="cobro" onclick="switchTab('cobro')">💰 ¿Cuánto cobro?</button>
     <button class="tab-btn" data-tab="rv" onclick="switchTab('rv')">📈 Renta variable: Valuación</button>
     <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
     <button class="tab-btn" data-tab="corr" onclick="switchTab('corr')">🔗 Correlación</button>
@@ -303,6 +304,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div id="monitorTableBox" class="data-table-wrap">
         <p class="loading-msg">Cargando el monitor…</p>
       </div>
+    </div>
+    </div>
+
+    <!-- ══ ¿Cuánto cobro? — la herramienta vive en cuanto-cobro.html y se muestra acá adentro ══ -->
+    <div class="tab-panel" id="tab-cobro">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">💰 ¿Cuánto cobro?</div>
+      </div>
+      <div class="tool-sub">Elegí cuánta plata querés invertir y mirá <strong>cuánto cobrás y en qué fecha</strong> con cada letra o bono: LECAPs y BONCAPs en pesos, y bonos y ONs en dólares. Lo que cobrás ya está fijado en el calendario de cada uno.</div>
+      <iframe id="cobroFrame" title="¿Cuánto cobro? Letras, bonos y ONs" style="width:100%;border:0;display:block;min-height:640px;background:transparent"></iframe>
+      <noscript><p class="loading-msg">Para usar esta herramienta necesitás activar JavaScript. También la podés abrir en <a href="cuanto-cobro.html">cuanto-cobro.html</a>.</p></noscript>
     </div>
     </div>
 
@@ -1274,12 +1287,40 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'rv', 'cmp', 'corr', 'rot'];
+const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot'];
+
+/* ¿Cuánto cobro?: la herramienta es cuanto-cobro.html (una sola fuente, así no se desincroniza). Acá se carga
+   recién al abrir la pestaña y se le sacan el encabezado, el cartel legal y los botones flotantes — esta página ya
+   tiene los suyos — y se le ajusta la altura al contenido para que no haya scroll doble. */
+function initCobro() {
+  const f = document.getElementById('cobroFrame');
+  if (!f || f.dataset.cargado) return;
+  f.dataset.cargado = '1';
+  f.addEventListener('load', () => {
+    try {
+      const d = f.contentDocument;
+      const st = d.createElement('style');
+      st.textContent = 'header.site-header,.hero,.cta,.disclaimer-bar,.wa-float,.fb-trigger,.fb-modal-overlay{display:none!important}'
+        + 'body{background:transparent!important;padding-bottom:0!important}'
+        + '.container{max-width:none!important;padding:0!important}.tool-section{padding:0!important}'
+        + '.tool-card{border:0!important;padding:0!important;background:transparent!important;border-radius:0!important}';
+      d.head.appendChild(st);
+      const ajustar = () => { f.style.height = Math.ceil(d.body.getBoundingClientRect().height) + 24 + 'px'; };
+      // el observador tiene que ser el de la ventana del iframe (el de esta página no ve los cambios de su documento);
+      // y por las dudas se repasa cada medio segundo
+      try { new f.contentWindow.ResizeObserver(ajustar).observe(d.body); } catch (e) {}
+      setInterval(ajustar, 500);
+      ajustar();
+    } catch (e) { f.style.height = '1500px'; }
+  });
+  f.src = 'cuanto-cobro.html';
+}
 function switchTab(name) {
   if (!TABS_ANALISIS.includes(name)) name = 'ons';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   if (name === 'rv' || name === 'cmp' || name === 'corr') ensureRV();
+  if (name === 'cobro') initCobro();
   if (name === 'rot' && window.ROT) ROT.init();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
 }
