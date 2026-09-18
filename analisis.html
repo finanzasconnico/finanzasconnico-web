@@ -121,6 +121,49 @@ body { padding-bottom: 64px; }
 }
 .fb-submit{ width:100%;background:var(--jade);color:#fff;font-weight:600;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:0.9rem; }
 .fb-submit:hover{ opacity:0.9; }
+/* Pestañas de herramientas */
+.tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--crema); padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tool-tabs .container { display: flex; gap: 8px; overflow-x: auto; }
+.tab-btn {
+  font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; padding: 9px 16px; white-space: nowrap;
+  border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer;
+}
+.tab-btn.active { background: var(--petroleo-700); border-color: var(--petroleo-700); color: #fff; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Renta variable + comparador */
+.explain-box { background: var(--crema); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.6; margin-bottom: 16px; }
+.explain-box summary { cursor: pointer; font-weight: 600; color: var(--petroleo-700); }
+.rv-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.rv-controls select, .rv-controls input, .cmp-input {
+  font-family: var(--font-sans); font-size: 0.85rem; padding: 8px 12px; border: 1px solid var(--line);
+  border-radius: 10px; background: #fff; color: var(--ink); min-width: 0;
+}
+.pt { display: inline-block; min-width: 46px; text-align: center; font-family: var(--font-mono); font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+.sig { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.sig-ok  { background: #d4f0e3; color: #146c47; }
+.sig-mid { background: #f1ecdf; color: var(--ink-soft); }
+.sig-bad { background: #fbe0de; color: #a3362d; }
+.sig-none { color: var(--ink-muted); }
+.rank-n { color: var(--ink-muted); font-family: var(--font-mono); font-size: 0.72rem; }
+.cmp-btn-row { background: none; border: none; cursor: pointer; font-size: 0.95rem; opacity: 0.55; }
+.cmp-btn-row:hover { opacity: 1; }
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.cmp-grid label { display: block; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); margin-bottom: 4px; }
+.cmp-input { width: 100%; }
+.cmp-verdict { font-weight: 700; font-size: 0.95rem; padding: 10px 14px; border-radius: 10px; margin: 6px 0 12px; }
+.cmp-verdict.win  { background: #d4f0e3; color: #146c47; }
+.cmp-verdict.stay { background: #f1ecdf; color: var(--ink-soft); }
+.cmp-verdict.tie  { background: #f1ecdf; color: var(--ink-muted); }
+.cmp-table td:first-child { color: var(--ink-muted); font-size: 0.78rem; white-space: nowrap; }
+.cmp-table { min-width: 0 !important; }
+.cmp-read p { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 6px; }
+.cmp-read h5 { font-family: var(--font-display); font-size: 0.95rem; color: var(--petroleo-700); margin: 14px 0 6px; }
+.cmp-err { color: var(--danger); font-size: 0.82rem; margin-bottom: 8px; }
+@media (max-width: 640px) {
+  .cmp-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 640px) {
   .data-table { min-width: 620px; }
   .monitor-count { margin-left: 0; width: 100%; }
@@ -153,8 +196,19 @@ body { padding-bottom: 64px; }
   </div>
 </section>
 
+<nav class="tool-tabs">
+  <div class="container">
+    <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
+    <button class="tab-btn" data-tab="rv" onclick="switchTab('rv')">📈 Renta variable: Valuación</button>
+    <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
+  </div>
+</nav>
+
 <section class="tool-section">
   <div class="container">
+
+    <!-- ══ Renta fija: Monitor de ONs ══ -->
+    <div class="tab-panel active" id="tab-ons">
     <div class="tool-card">
       <div class="tool-card-header">
         <div class="tool-title">📊 Monitor de Obligaciones Negociables</div>
@@ -171,6 +225,53 @@ body { padding-bottom: 64px; }
         <p class="loading-msg">Cargando el monitor…</p>
       </div>
     </div>
+    </div>
+
+    <!-- ══ Renta variable: Valuación por múltiplos ══ -->
+    <div class="tab-panel" id="tab-rv">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">📈 Valuación por múltiplos — renta variable</div>
+      </div>
+      <div class="tool-sub">Cada acción recibe un puntaje de <strong>−100 a +100</strong>. Arriba de todo, las que hoy mejor puntúan; abajo, las que peor. Tocá cualquier columna para reordenar.</div>
+      <details class="explain-box">
+        <summary>¿Cómo se calcula el puntaje?</summary>
+        <p style="margin-top:8px">Junta tres miradas, cada una de −100 a +100:</p>
+        <p>• <strong>Negocio (35%)</strong>: qué tan sólida es la empresa — crecimiento de ventas, si gana plata, tendencia del margen, generación de caja y nivel de deuda.<br>
+           • <strong>Precio vs. su historia (35%)</strong>: si hoy cotiza barata o cara frente a su propio promedio de 5 años, usando el múltiplo que corresponde a su sector.<br>
+           • <strong>Tendencia (30%)</strong>: si el precio viene subiendo o bajando (medias móviles, retornos y fuerza contra el resto).</p>
+        <p><strong>Ojo:</strong> es un ordenamiento cuantitativo con datos de hoy, no una recomendación. Una acción con puntaje alto puede bajar y una con puntaje bajo puede subir. Los ETFs y los papeles que cotizan en pesos no tienen puntaje. Las opiniones de analistas se muestran aparte y no entran en el puntaje.</p>
+      </details>
+      <div class="rv-controls">
+        <button class="calif-btn active" id="rvBtnMejor" onclick="setRvOrden('mejor')">Mejor puntaje primero</button>
+        <button class="calif-btn" id="rvBtnPeor" onclick="setRvOrden('peor')">Peor puntaje primero</button>
+        <select id="rvSector" onchange="setRvSector(this.value)"><option value="todos">Todos los sectores</option></select>
+        <input id="rvQuery" type="search" placeholder="Buscar ticker o empresa…" oninput="setRvQuery(this.value)">
+        <span class="monitor-count" id="rvCount"></span>
+      </div>
+      <div id="rvTableBox" class="data-table-wrap">
+        <p class="loading-msg">Cargando datos de renta variable…</p>
+      </div>
+    </div>
+    </div>
+
+    <!-- ══ Comparar dos acciones ══ -->
+    <div class="tab-panel" id="tab-cmp">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">⚖️ Comparar dos acciones</div>
+      </div>
+      <div class="tool-sub">¿Tiene sentido pasar de una a otra? Poné la que ya tenés y la que estás mirando, y compará negocio, precio, tendencia y analistas lado a lado.</div>
+      <div class="cmp-grid">
+        <div><label for="cmpA">Tenés (vender)</label><input id="cmpA" class="cmp-input" list="tickerList" placeholder="Ej: KO" oninput="onCmpChange()"></div>
+        <div><label for="cmpB">Candidato (comprar)</label><input id="cmpB" class="cmp-input" list="tickerList" placeholder="Ej: PEP" oninput="onCmpChange()"></div>
+      </div>
+      <datalist id="tickerList"></datalist>
+      <div id="cmpErr" class="cmp-err" style="display:none"></div>
+      <div id="cmpResult"><p class="loading-msg">Cargando datos…</p></div>
+    </div>
+    </div>
+
   </div>
 </section>
 
@@ -285,7 +386,8 @@ let monitorSortAsc = false;
 
 async function getMonitorWorkbook() {
   if (monitorWb) return monitorWb;
-  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-store' });
+  // "no-cache" = revalida con el servidor (ETag) y si no cambió responde 304 sin volver a bajar los 1,7 MB
+  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-cache' });
   if (!r.ok) throw new Error('No se pudo leer el monitor');
   const buf = await r.arrayBuffer();
   monitorWb = XLSX.read(buf, { type: 'array' });
@@ -386,6 +488,413 @@ function setMonitorSort(col) {
   renderMonitorTable(monitorDataCache[monitorCalifActual] || []);
 }
 loadMonitor();
+</script>
+
+<script>
+/* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
+const TABS_ANALISIS = ['ons', 'rv', 'cmp'];
+function switchTab(name) {
+  if (!TABS_ANALISIS.includes(name)) name = 'ons';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  if (name === 'rv' || name === 'cmp') ensureRV();
+  try { history.replaceState(null, '', '#' + name); } catch (e) {}
+}
+
+/* ═════════════ Renta variable — mismo motor de puntaje que la Valuación por Múltiplos del Suite ═════════════
+   Pesos y cortes idénticos a los del Suite (Negocio 35% · Valuación 35% · Tendencia 30%). Lo único distinto es
+   el lenguaje: acá las lecturas usan palabras neutras (Favorable/Neutral/Precaución/Desfavorable) en vez de
+   Sumar/Mantener/Reducir, porque esta página es informativa y no una recomendación. */
+const SUITE_DATA = 'https://suit-fcn.vercel.app/data/';
+const MULT = { PE: { label: 'P/E' }, PS: { label: 'P/S' }, EVEBITDA: { label: 'EV/EBITDA' }, PFCF: { label: 'P/FCF' }, PB: { label: 'P/B' } };
+const MULT_ORDER = ['PE', 'PS', 'EVEBITDA', 'PFCF', 'PB'];
+const SECTOR_MULTIPLOS = {
+  'Financial Services': ['PB', 'PE'], 'Technology': ['PS', 'EVEBITDA', 'PFCF', 'PE'],
+  'Communication Services': ['PS', 'EVEBITDA', 'PFCF', 'PE'], 'Consumer Cyclical': ['PE', 'EVEBITDA', 'PFCF'],
+  'Consumer Defensive': ['PE', 'EVEBITDA', 'PFCF'], 'Healthcare': ['PE', 'EVEBITDA', 'PFCF'],
+  'Industrials': ['PE', 'EVEBITDA', 'PB'], 'Energy': ['EVEBITDA', 'PB', 'PFCF'],
+  'Basic Materials': ['EVEBITDA', 'PB', 'PFCF'], 'Utilities': ['PE', 'EVEBITDA', 'PB'], 'Real Estate': []
+};
+const DEFAULT_MULTIPLOS = ['PE', 'EVEBITDA', 'PS'];
+const SECTOR_ES = {
+  'Technology': 'Tecnología', 'Financial Services': 'Finanzas', 'Healthcare': 'Salud', 'Consumer Cyclical': 'Consumo cíclico',
+  'Consumer Defensive': 'Consumo defensivo', 'Industrials': 'Industriales', 'Energy': 'Energía', 'Basic Materials': 'Materiales',
+  'Utilities': 'Servicios públicos', 'Real Estate': 'Inmobiliario', 'Communication Services': 'Comunicaciones'
+};
+const REC_LABEL = { strongbuy: 'Compra fuerte', buy: 'Compra', hold: 'Mantener', sell: 'Venta', strongsell: 'Venta fuerte', underperform: 'Venta', outperform: 'Compra', none: '' };
+const PUNTAJE_PESOS = { negocio: 0.35, valuacion: 0.35, tendencia: 0.30 };
+
+function multiplosDeSector(s) { return (s && s in SECTOR_MULTIPLOS) ? SECTOR_MULTIPLOS[s] : DEFAULT_MULTIPLOS; }
+function multPrimario(s) { const p = multiplosDeSector(s); return p.length ? p[0] : null; }
+function num(v) { if (v === null || v === undefined || v === '') return null; const n = Number(v); return isNaN(n) ? null : n; }
+function mult(v) { const n = num(v); return (n === null || n <= 0) ? null : n; }   // un múltiplo <=0 no sirve para comparar
+function corr(actual, prom) { if (actual === null || prom === null) return null; return prom / actual - 1; }
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+function fmtN(v, dec) {
+  if (v === null || v === undefined || isNaN(v)) return null;
+  return Number(v).toLocaleString('es-AR', { minimumFractionDigits: dec ?? 2, maximumFractionDigits: dec ?? 2 });
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+const RV = { rows: [], analistas: {}, scored: [] };
+
+function parseValuacion(buf) {
+  const wb = XLSX.read(buf, { type: 'array' });
+  const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  return raw.map(r => {
+    const m = {};
+    MULT_ORDER.forEach(k => { m[k] = { actual: mult(r[k + '_actual']), p3: mult(r[k + '_prom_3y']), p5: mult(r[k + '_prom_5y']), p10: mult(r[k + '_prom_10y']) }; });
+    return {
+      ticker: String(r['Ticker'] || r['Ticker_usado'] || '').trim(),
+      tickerUsado: String(r['Ticker_usado'] || '').trim(),
+      empresa: String(r['Empresa'] || '').trim(),
+      sector: String(r['Sector'] || '').trim(),
+      moneda: String(r['Moneda'] || '').trim(),
+      precio: num(r['Precio_actual']), m,
+      mm21: num(r['MM21_sem']), mm50: num(r['MM50_sem']), mm200: num(r['MM200_sem']),
+      ret3m: num(r['Ret_3m']), ret6m: num(r['Ret_6m']), dist52: num(r['Dist_max_52s']),
+      f: { revCagr: num(r['Rev_CAGR']), niPos: num(r['NI_pos']), fcfPos: num(r['FCF_pos']), margenTrend: num(r['Margen_trend']), ndEbitda: num(r['ND_EBITDA']) }
+    };
+  }).filter(r => r.ticker);
+}
+function parseAnalistas(buf) {
+  const wb = XLSX.read(buf, { type: 'array' });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  const out = {};
+  rows.forEach(r => {
+    const tk = String(r['Ticker_original'] || r['Ticker_usado'] || '').trim().toUpperCase();
+    if (!tk) return;
+    const px = num(r['Precio_actual']), tgt = num(r['Precio_objetivo_promedio']);
+    out[tk] = {
+      rec: String(r['Recomendacion'] || '').toLowerCase().replace(/[\s_-]/g, ''),
+      upside: (tgt !== null && px !== null && px > 0) ? (tgt / px - 1) : null,
+      n: num(r['N_analistas'])
+    };
+  });
+  return out;
+}
+function analistasDe(r) { return RV.analistas[r.ticker.toUpperCase()] || RV.analistas[r.tickerUsado.toUpperCase()] || null; }
+
+// percentil del retorno 6m contra toda la lista (fuerza relativa) — solo tickers en USD
+function calcularFuerzaRelativa(rows) {
+  const vals = rows.filter(r => r.moneda !== 'ARS').map(r => r.ret6m).filter(v => v !== null && v !== undefined).sort((a, b) => a - b);
+  rows.forEach(r => {
+    if (r.moneda === 'ARS' || r.ret6m === null || r.ret6m === undefined || !vals.length) { r._rs = null; return; }
+    let lo = 0; while (lo < vals.length && vals[lo] < r.ret6m) lo++;
+    r._rs = vals.length > 1 ? lo / (vals.length - 1) : 0.5;
+  });
+}
+function tendencia(r) {
+  if (r.moneda === 'ARS') return null;   // en pesos el precio "sube" por inflación: la tendencia nominal no dice nada
+  const c = [];
+  if (r.precio !== null && r.mm200) c.push([clamp((r.precio / r.mm200 - 1) / 0.25, -1, 1), 0.25]);
+  if (r.mm21 && r.mm50 && r.mm200) c.push([(r.mm21 > r.mm50 ? 0.5 : -0.5) + (r.mm50 > r.mm200 ? 0.5 : -0.5), 0.20]);
+  if (r.ret3m !== null && r.ret3m !== undefined) c.push([clamp(r.ret3m / 0.20, -1, 1), 0.20]);
+  if (r._rs !== null && r._rs !== undefined) c.push([r._rs * 2 - 1, 0.20]);
+  if (r.dist52 !== null && r.dist52 !== undefined) c.push([clamp((r.dist52 + 0.15) / 0.15, -1, 1), 0.15]);
+  if (c.length < 3) return null;
+  const w = c.reduce((a, x) => a + x[1], 0);
+  return Math.round(100 * c.reduce((a, x) => a + x[0] * x[1], 0) / w);
+}
+function valuacion5y(r) {
+  const k = multPrimario(r.sector);
+  const mm = k ? r.m[k] : null;
+  return (mm && mm.actual !== null && mm.p5 !== null) ? corr(mm.actual, mm.p5) : null;
+}
+function fundamental(r) {
+  const f = r.f || {};
+  const c = [];
+  if (f.revCagr !== null && f.revCagr !== undefined) c.push([clamp(f.revCagr / 0.15, -1, 1), 0.30]);
+  if (f.niPos !== null && f.niPos !== undefined) c.push([f.niPos * 2 - 1, 0.25]);
+  if (f.margenTrend !== null && f.margenTrend !== undefined) c.push([clamp(f.margenTrend / 0.05, -1, 1), 0.20]);
+  if (f.fcfPos !== null && f.fcfPos !== undefined) c.push([f.fcfPos * 2 - 1, 0.15]);
+  if (f.ndEbitda !== null && f.ndEbitda !== undefined) c.push([clamp((2.5 - f.ndEbitda) / 2.5, -1, 1), 0.10]);
+  if (c.length < 3) return null;
+  const w = c.reduce((a, x) => a + x[1], 0);
+  return Math.round(100 * c.reduce((a, x) => a + x[0] * x[1], 0) / w);
+}
+function palabra(score, bueno, medio, malo) {
+  if (score === null || score === undefined) return null;
+  if (score >= 20) return { txt: bueno, cls: 'sig-ok' };
+  if (score <= -20) return { txt: malo, cls: 'sig-bad' };
+  return { txt: medio, cls: 'sig-mid' };
+}
+function sigTendencia(r) { const t = tendencia(r); const p = palabra(t, 'Alcista', 'Lateral', 'Bajista'); return p ? { ...p, num: t } : null; }
+function sigNegocio(r) { const n = fundamental(r); const p = palabra(n, 'Sólido', 'Regular', 'Flojo'); return p ? { ...p, num: n } : null; }
+function sigPrecio(r) {
+  const v = valuacion5y(r);   // % de corrección al promedio 5a: + = barato, − = caro
+  if (v === null) return null;
+  if (v >= 0.05) return { txt: 'Barato', cls: 'sig-ok', num: v };
+  if (v <= -0.30) return { txt: 'Caro', cls: 'sig-bad', num: v };
+  return { txt: 'En precio', cls: 'sig-mid', num: v };
+}
+// Puntaje combinado −100…+100. Solo existe si están los TRES ejes.
+function puntajeDetalle(r) {
+  const t = tendencia(r), n = fundamental(r), v = valuacion5y(r);
+  if (t === null || n === null || v === null) return null;
+  const v100 = Math.round(clamp(v / 0.40, -1, 1) * 100);
+  const total = Math.round(clamp(n * PUNTAJE_PESOS.negocio + v100 * PUNTAJE_PESOS.valuacion + t * PUNTAJE_PESOS.tendencia, -100, 100));
+  return { total, negocio: n, valuacion: v100, tendencia: t };
+}
+function puntajeTitle(p) {
+  const s = x => (x > 0 ? '+' : '') + x;
+  return `Negocio ${s(p.negocio)} (35%) · Precio vs. historia ${s(p.valuacion)} (35%) · Tendencia ${s(p.tendencia)} (30%)`;
+}
+function ptBg(score) {
+  const a = Math.pow(Math.min(Math.abs(score) / 100, 1), 0.75) * 0.42;
+  return score >= 0 ? `rgba(28,140,95,${a.toFixed(3)})` : `rgba(192,69,59,${a.toFixed(3)})`;
+}
+function ptCell(p) {
+  if (!p) return '<span class="sig-none" title="Sin puntaje: faltan datos (ETF sin balances, papel en pesos o sin promedio histórico).">—</span>';
+  return `<span class="pt" style="background:${ptBg(p.total)}" title="${esc(puntajeTitle(p))}">${p.total > 0 ? '+' : ''}${p.total}</span>`;
+}
+// Lectura combinada (misma lógica que "Qué hacer" del Suite; se muestra con palabras neutras)
+const LECTURA = { 'Sumar': { txt: 'Favorable', cls: 'sig-ok' }, 'Mantener': { txt: 'Neutral', cls: 'sig-mid' }, 'Atención': { txt: 'Precaución', cls: 'sig-bad' }, 'Reducir': { txt: 'Desfavorable', cls: 'sig-bad' }, 'Sin señal': { txt: 'Sin señal', cls: 'sig-none' } };
+const QH_BONDAD = { 'Sumar': 4, 'Mantener': 3, 'Atención': 2, 'Reducir': 1 };
+function queHacer(r) {
+  const t = tendencia(r), n = fundamental(r), v = valuacion5y(r);
+  const up = t !== null && t >= 25, down = t !== null && t <= -20;
+  const solido = n !== null && n >= 20, flojo = n !== null && n <= -15;
+  const caro = v !== null && v <= -0.40;
+  if (n === null) {
+    if (t === null) return 'Sin señal';
+    if (t <= -25) return 'Atención';
+    return 'Mantener';
+  }
+  if (t === null) return 'Sin señal';
+  if (flojo) return up ? 'Atención' : 'Reducir';
+  if (up && solido) return caro ? 'Mantener' : 'Sumar';
+  return 'Mantener';
+}
+function chip(s) { return s ? `<span class="sig ${s.cls}">${s.txt}</span>` : '<span class="sig-none">—</span>'; }
+function anCell(an) {
+  if (!an) return '<span class="sig-none">sin cobertura</span>';
+  const lbl = REC_LABEL[an.rec] || '—';
+  const up = an.upside !== null ? ` · ${an.upside >= 0 ? '+' : ''}${fmtN(an.upside * 100, 0)}%` : '';
+  return lbl + up;
+}
+function nombreCorto(r) {
+  const e = r && r.empresa ? r.empresa : '';
+  return e ? (e.replace(/,?\s*(Inc\.?|Corp\.?|Corporation|Company|Co\.|S\.?A\.?B?\.?|Ltd\.?|plc|N\.V\.|Holdings?|Group|Class [A-C])\b.*$/i, '').replace(/^The\s+/i, '').trim() || r.ticker) : (r ? r.ticker : '');
+}
+function medianaSector(sector, k) {
+  if (!sector || !k) return null;
+  const xs = RV.rows.filter(r => r.sector === sector && r.moneda !== 'ARS' && r.m[k] && r.m[k].actual != null).map(r => r.m[k].actual).sort((a, b) => a - b);
+  if (xs.length < 4) return null;
+  const m = Math.floor(xs.length / 2);
+  return xs.length % 2 ? xs[m] : (xs[m - 1] + xs[m]) / 2;
+}
+
+/* ── Carga de datos (2 archivos livianos: ~100 KB en total) ── */
+let rvPromise = null;
+function ensureRV() {
+  if (!rvPromise) rvPromise = loadRV();
+  return rvPromise;
+}
+async function loadRV() {
+  try {
+    const [rv, ra] = await Promise.all([
+      fetch(SUITE_DATA + 'valuacion_multiplos.xlsx', { cache: 'no-cache' }),
+      fetch(SUITE_DATA + 'precios_objetivo.xlsx', { cache: 'no-cache' })
+    ]);
+    if (!rv.ok) throw new Error('No se pudo leer la valuación');
+    RV.rows = parseValuacion(await rv.arrayBuffer());
+    RV.analistas = ra.ok ? parseAnalistas(await ra.arrayBuffer()) : {};
+    calcularFuerzaRelativa(RV.rows);
+    RV.scored = RV.rows
+      .map(r => ({ r, p: puntajeDetalle(r), st: sigTendencia(r), sn: sigNegocio(r), sp: sigPrecio(r), an: analistasDe(r) }))
+      .filter(x => x.p);
+    poblarSectores();
+    poblarTickerList();
+    renderRV();
+    initCmpDefault();
+  } catch (e) {
+    const msg = '<p class="loading-msg">No pudimos traer los datos del mercado en este momento. Probá recargar la página.</p>';
+    document.getElementById('rvTableBox').innerHTML = msg;
+    document.getElementById('cmpResult').innerHTML = msg;
+    rvPromise = null;
+  }
+}
+
+/* ── Ranking ── */
+let rvSortCol = 'puntaje', rvSortAsc = false, rvSector = 'todos', rvQuery = '';
+const RV_SORT = {
+  puntaje: x => x.p.total, ticker: x => x.r.ticker, empresa: x => x.r.empresa,
+  sector: x => SECTOR_ES[x.r.sector] || x.r.sector, precio: x => x.r.precio,
+  negocio: x => x.p.negocio, precioH: x => x.p.valuacion, tendencia: x => x.p.tendencia,
+  upside: x => x.an ? x.an.upside : null
+};
+function poblarSectores() {
+  const sel = document.getElementById('rvSector');
+  const sectores = [...new Set(RV.scored.map(x => x.r.sector).filter(Boolean))].sort((a, b) => (SECTOR_ES[a] || a).localeCompare(SECTOR_ES[b] || b));
+  sel.innerHTML = '<option value="todos">Todos los sectores</option>' + sectores.map(s => `<option value="${esc(s)}">${esc(SECTOR_ES[s] || s)}</option>`).join('');
+}
+function setRvOrden(modo) {
+  rvSortCol = 'puntaje'; rvSortAsc = (modo === 'peor');
+  document.getElementById('rvBtnMejor').classList.toggle('active', modo === 'mejor');
+  document.getElementById('rvBtnPeor').classList.toggle('active', modo === 'peor');
+  renderRV();
+}
+function setRvSector(v) { rvSector = v; renderRV(); }
+function setRvQuery(v) { rvQuery = v.trim().toLowerCase(); renderRV(); }
+function setRvSort(col) {
+  if (rvSortCol === col) rvSortAsc = !rvSortAsc; else { rvSortCol = col; rvSortAsc = (col === 'ticker' || col === 'empresa' || col === 'sector'); }
+  document.getElementById('rvBtnMejor').classList.toggle('active', rvSortCol === 'puntaje' && !rvSortAsc);
+  document.getElementById('rvBtnPeor').classList.toggle('active', rvSortCol === 'puntaje' && rvSortAsc);
+  renderRV();
+}
+function renderRV() {
+  const box = document.getElementById('rvTableBox');
+  if (!RV.scored.length) return;
+  let data = RV.scored.filter(x =>
+    (rvSector === 'todos' || x.r.sector === rvSector) &&
+    (!rvQuery || x.r.ticker.toLowerCase().includes(rvQuery) || x.r.empresa.toLowerCase().includes(rvQuery)));
+  const get = RV_SORT[rvSortCol];
+  data = data.slice().sort((a, b) => {
+    let va = get(a), vb = get(b);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return rvSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return rvSortAsc ? va - vb : vb - va;
+  });
+  document.getElementById('rvCount').textContent = `${data.length} de ${RV.scored.length} con puntaje · ${RV.rows.length} papeles seguidos`;
+  const th = (col, label) => `<th class="${rvSortCol === col ? 'sorted' + (rvSortAsc ? ' asc' : '') : ''}" onclick="setRvSort('${col}')">${label}</th>`;
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay papeles que coincidan con ese filtro.</p>'; return; }
+  box.innerHTML = `
+    <table class="data-table" style="min-width:900px">
+      <thead><tr>
+        <th>#</th>${th('ticker', 'Ticker')}${th('empresa', 'Empresa')}${th('sector', 'Sector')}${th('precio', 'Precio')}
+        ${th('puntaje', 'Puntaje')}${th('negocio', 'Negocio')}${th('precioH', 'Precio vs. historia')}${th('tendencia', 'Tendencia')}${th('upside', 'Analistas')}<th></th>
+      </tr></thead>
+      <tbody>
+        ${data.map((x, i) => `
+          <tr>
+            <td class="rank-n">${i + 1}</td>
+            <td class="mono">${tickerLink(x.r.ticker)}</td>
+            <td>${esc(nombreCorto(x.r))}</td>
+            <td><span class="row-sector" style="font-size:0.75rem">${esc(SECTOR_ES[x.r.sector] || x.r.sector || '—')}</span></td>
+            <td class="mono">${x.r.precio != null ? 'US$ ' + fmtN(x.r.precio) : '—'}</td>
+            <td>${ptCell(x.p)}</td>
+            <td>${chip(x.sn)}</td>
+            <td>${chip(x.sp)}</td>
+            <td>${chip(x.st)}</td>
+            <td style="font-size:0.78rem">${anCell(x.an)}</td>
+            <td><button class="cmp-btn-row" title="Comparar con otra acción" onclick="enviarAComparar('${esc(x.r.ticker)}')">⚖️</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ── Comparador de dos acciones ── */
+function resolverTicker(str) {
+  str = String(str || '').trim().toUpperCase();
+  if (!str) return null;
+  return RV.rows.find(r => r.ticker.toUpperCase() === str || r.tickerUsado.toUpperCase() === str) || null;
+}
+function poblarTickerList() {
+  document.getElementById('tickerList').innerHTML = RV.rows.map(r => `<option value="${esc(r.ticker)}">${esc(r.ticker)} — ${esc(r.empresa)}</option>`).join('');
+}
+function snapshotTicker(r) {
+  const k = multPrimario(r.sector), mm = (k && r.m[k]) || {};
+  return { r, k, mm, med: medianaSector(r.sector, k), t: tendencia(r), n: fundamental(r), v: valuacion5y(r),
+    st: sigTendencia(r), sn: sigNegocio(r), sp: sigPrecio(r), q: queHacer(r), an: analistasDe(r), p: puntajeDetalle(r) };
+}
+function veredictoComparacion(sa, sb) {
+  const partes = [];
+  const A = sa.r.ticker, B = sb.r.ticker;
+  if (sa.t != null && sb.t != null) {
+    const dif = sb.t - sa.t;
+    partes.push(Math.abs(dif) >= 15 ? `En tendencia, <b>${dif > 0 ? B : A}</b> viene mejor (${dif > 0 ? sb.t : sa.t} contra ${dif > 0 ? sa.t : sb.t}).` : 'En tendencia están parejas.');
+  }
+  if (sa.n != null && sb.n != null) {
+    const dif = sb.n - sa.n;
+    partes.push(Math.abs(dif) >= 15 ? `En negocio, <b>${dif > 0 ? B : A}</b> está mejor parada (${dif > 0 ? sb.n : sa.n} contra ${dif > 0 ? sa.n : sb.n}).` : 'En negocio están parejas.');
+  }
+  if (sa.k === sb.k && sa.mm.actual != null && sb.mm.actual != null) {
+    const label = (MULT[sa.k] || {}).label || sa.k;
+    const dif = (sb.mm.actual / sa.mm.actual) - 1;
+    partes.push(Math.abs(dif) >= 0.10
+      ? `En precio, <b>${dif < 0 ? B : A}</b> está más barata en ${label} (${fmtN(sa.mm.actual, 1)} vs ${fmtN(sb.mm.actual, 1)}).`
+      : `Pagan un ${label} parecido (${fmtN(sa.mm.actual, 1)} vs ${fmtN(sb.mm.actual, 1)}).`);
+  } else {
+    if (sa.sp) partes.push(`${A} está <b>${sa.sp.txt.toLowerCase()}</b> frente a su propia historia.`);
+    if (sb.sp) partes.push(`${B} está <b>${sb.sp.txt.toLowerCase()}</b> frente a su propia historia.`);
+  }
+  if (sa.an && sb.an && sa.an.upside != null && sb.an.upside != null) {
+    const dif = sb.an.upside - sa.an.upside;
+    if (Math.abs(dif) >= 0.05) partes.push(`Los analistas le ven más recorrido a <b>${dif > 0 ? B : A}</b> (${fmtN((dif > 0 ? sb.an.upside : sa.an.upside) * 100, 0)}% contra ${fmtN((dif > 0 ? sa.an.upside : sb.an.upside) * 100, 0)}%).`);
+  }
+  const bA = QH_BONDAD[sa.q] || 0, bB = QH_BONDAD[sb.q] || 0;
+  const lA = LECTURA[sa.q].txt, lB = LECTURA[sb.q].txt;
+  let ganador = null, cierre;
+  if (bB > bA) { ganador = 'B'; cierre = `Con la lectura de hoy (${A}: ${lA} · ${B}: ${lB}), tiene sentido evaluar el cambio de ${A} a ${B}.`; }
+  else if (bA > bB) { ganador = 'A'; cierre = `Con la lectura de hoy (${A}: ${lA} · ${B}: ${lB}), no hay ventaja clara en cambiar — ${A} sigue mejor parada.`; }
+  else { cierre = `Las dos están en "${lA}" — no hay una ventaja clara de una sobre la otra hoy.`; }
+  return { ganador, partes, cierre };
+}
+let _cmpTimer = null;
+function onCmpChange() { clearTimeout(_cmpTimer); _cmpTimer = setTimeout(renderCmp, 250); }
+function enviarAComparar(ticker) {
+  switchTab('cmp');
+  document.getElementById('cmpA').value = ticker;
+  document.getElementById('cmpB').value = '';
+  document.getElementById('cmpB').focus();
+  renderCmp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function initCmpDefault() {
+  const a = document.getElementById('cmpA'), b = document.getElementById('cmpB');
+  if (a.value || b.value) return;
+  if (resolverTicker('KO') && resolverTicker('PEP')) { a.value = 'KO'; b.value = 'PEP'; }   // ejemplo para que se vea un resultado de entrada
+  renderCmp();
+}
+function renderCmp() {
+  const ta = document.getElementById('cmpA').value, tb = document.getElementById('cmpB').value;
+  const err = document.getElementById('cmpErr'), res = document.getElementById('cmpResult');
+  if (!RV.rows.length) return;
+  if (!ta.trim() || !tb.trim()) { err.style.display = 'none'; res.innerHTML = '<p class="loading-msg">Elegí las dos acciones para ver la comparación.</p>'; return; }
+  if (ta.trim().toUpperCase() === tb.trim().toUpperCase()) { err.textContent = 'Elegí dos activos distintos.'; err.style.display = ''; res.innerHTML = ''; return; }
+  const a = resolverTicker(ta), b = resolverTicker(tb);
+  if (!a || !b) {
+    const falt = [!a ? ta.trim() : null, !b ? tb.trim() : null].filter(Boolean).join(' y ');
+    err.textContent = `No encontré "${falt}" en la lista.`; err.style.display = ''; res.innerHTML = ''; return;
+  }
+  err.style.display = 'none';
+  const sa = snapshotTicker(a), sb = snapshotTicker(b);
+  const ver = veredictoComparacion(sa, sb);
+  const row = (lbl, va, vb) => `<tr><td>${lbl}</td><td>${va}</td><td>${vb}</td></tr>`;
+  const mLabel = s => (MULT[s.k] || {}).label || s.k || '—';
+  const multCell = s => (!s.mm || s.mm.actual == null) ? 'Sin dato'
+    : `${mLabel(s)} <b>${fmtN(s.mm.actual, 1)}</b>${s.mm.p5 != null ? ` <span class="row-sector">(prom. 5a ${fmtN(s.mm.p5, 1)})</span>` : ''}`;
+  const lecCell = s => { const l = LECTURA[s.q]; return `<span class="sig ${l.cls}">${l.txt}</span>`; };
+  const cls = ver.ganador === 'B' ? 'win' : ver.ganador === 'A' ? 'stay' : 'tie';
+  const titulo = ver.ganador === 'B' ? `Según el modelo, tiene sentido evaluar el cambio ${a.ticker} → ${b.ticker}`
+    : ver.ganador === 'A' ? `Según el modelo, ${a.ticker} sigue mejor parada — sin ventaja clara en cambiar a ${b.ticker}`
+    : 'Sin ventaja clara entre las dos';
+  const precio = x => x.precio != null ? `${x.moneda || ''} ${fmtN(x.precio)}` : '—';
+  res.innerHTML = `
+    <div class="cmp-verdict ${cls}">${titulo}</div>
+    <div class="data-table-wrap"><table class="data-table cmp-table">
+      <thead><tr><th></th><th>${esc(a.ticker)}</th><th>${esc(b.ticker)}</th></tr></thead>
+      <tbody>
+        ${row('Empresa', esc(nombreCorto(a)), esc(nombreCorto(b)))}
+        ${row('Sector', esc(SECTOR_ES[a.sector] || a.sector || '—'), esc(SECTOR_ES[b.sector] || b.sector || '—'))}
+        ${row('Precio', precio(a), precio(b))}
+        ${row('Múltiplo primario', multCell(sa), multCell(sb))}
+        ${row('vs. pares del sector', sa.med != null ? fmtN(sa.med, 1) : '—', sb.med != null ? fmtN(sb.med, 1) : '—')}
+        ${row('Tendencia', chip(sa.st), chip(sb.st))}
+        ${row('Negocio', chip(sa.sn), chip(sb.sn))}
+        ${row('Precio (vs. historia)', chip(sa.sp), chip(sb.sp))}
+        ${row('Lectura del modelo', lecCell(sa), lecCell(sb))}
+        ${row('Puntaje (−100…+100)', ptCell(sa.p), ptCell(sb.p))}
+        ${row('Analistas', anCell(sa.an), anCell(sb.an))}
+      </tbody></table></div>
+    <div class="cmp-read"><h5>Lectura</h5>${ver.partes.map(p => `<p>${p}</p>`).join('')}<p><strong>${ver.cierre}</strong></p></div>`;
+}
+
+// abrir directo una pestaña desde el link (#rv, #cmp)
+(function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
 </script>
 </body>
 </html>

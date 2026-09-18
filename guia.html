@@ -2291,7 +2291,7 @@ function formatVto(d) {
 let _monitorWbCache = null;
 async function getMonitorWorkbook() {
   if (_monitorWbCache) return _monitorWbCache;
-  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-store' });
+  const r = await fetch('https://suit-fcn.vercel.app/data/monitor.xlsx', { cache: 'no-cache' });
   if (!r.ok) throw new Error('No se pudo leer el monitor');
   const buf = await r.arrayBuffer();
   _monitorWbCache = XLSX.read(buf, { type: 'array' });
@@ -2429,7 +2429,7 @@ const CEDEARS_RECONOCIDOS = [
   { ticker: 'SPY', rubroLabel: 'Índice (S&P 500 completo)' }
 ];
 async function fetchCedearsReconocidos() {
-  const r = await fetch('https://suit-fcn.vercel.app/data/precios_objetivo.xlsx', { cache: 'no-store' });
+  const r = await fetch('https://suit-fcn.vercel.app/data/precios_objetivo.xlsx', { cache: 'no-cache' });
   if (!r.ok) throw new Error('No se pudo leer precios objetivo');
   const buf = await r.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
@@ -2508,7 +2508,7 @@ async function initTopEquities() {
    no sirve acá), así que el criterio es distinto — mejor suba en 12 meses,
    filtrado a empresas que dan ganancia y generan caja (NI_pos / FCF_pos). */
 async function fetchTopAccionesLocal(n) {
-  const r = await fetch('https://suit-fcn.vercel.app/data/valuacion_multiplos.xlsx', { cache: 'no-store' });
+  const r = await fetch('https://suit-fcn.vercel.app/data/valuacion_multiplos.xlsx', { cache: 'no-cache' });
   if (!r.ok) throw new Error('No se pudo leer valuación por múltiplos');
   const buf = await r.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
