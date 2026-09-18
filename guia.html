@@ -647,6 +647,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .top-ons-table td.mono { font-family: var(--font-mono); }
     .top-ons-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
     .on-sector { font-size: 0.68rem; color: var(--ink-muted); margin-top: 2px; }
+    .orden-simple { background: #d4f0e3; border: 1px solid #b6e0c9; border-radius: 12px; padding: 14px 16px; font-size: 0.92rem; color: #146c47; line-height: 1.55; margin-bottom: 16px; }
+    .campo-orden { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: #fff; }
+    .campo-orden summary { cursor: pointer; list-style: none; padding: 11px 14px; font-weight: 600; font-size: 0.88rem; color: var(--petroleo-700); display: flex; align-items: center; gap: 10px; }
+    .campo-orden summary::-webkit-details-marker { display: none; }
+    .campo-orden .q { width: 20px; height: 20px; border-radius: 50%; background: var(--line); color: var(--ink-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+    .campo-orden[open] .q { background: var(--jade); color: #fff; }
+    .campo-orden .campo-body { padding: 0 14px 12px 44px; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.6; }
     .ticker-link { color: var(--petroleo-700); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
     .ticker-link:hover { color: var(--jade); }
 
@@ -1621,32 +1628,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
 
-      <!-- a2) Cómo crear una orden de compra -->
+      <!-- a2) Orden de compra: simple por defecto, detalle opcional -->
       <div class="accordion-item" data-accordion id="tuto-orden">
         <div class="accordion-header" onclick="toggleAccordion(this)">
           <div class="accordion-title-wrap">
             <span class="accordion-icon">🧾</span>
-            <span class="accordion-title">Cómo crear una orden de compra</span>
-            <span class="accordion-steps-badge">5 pasos</span>
+            <span class="accordion-title">Orden de compra: qué es cada campo</span>
+            <span class="accordion-steps-badge">Opcional</span>
           </div>
           <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </div>
         <div class="accordion-body">
-          <p style="font-size:0.9rem;color:var(--ink-soft);line-height:1.6;margin-bottom:14px">Cuando querés comprar un activo, en la pantalla de compra tenés que completar estos campos. Acá te explico qué significa cada uno.</p>
-          <ol class="tutorial-steps">
-            <li><span><strong>Plazo de liquidación</strong> (cuándo se entrega el activo y se paga):<br>
-              • <strong>24 hs</strong>: se liquida al día siguiente. Suele tener mejor precio.<br>
-              • <strong>CI (Contado inmediato)</strong>: se liquida en el momento. Puede ser más caro.</span></li>
-            <li><span><strong>Tipo de orden:</strong><br>
-              • <strong>Market</strong>: comprás al precio que haya en ese momento.<br>
-              • <strong>Limit</strong>: ponés el precio máximo que estás dispuesto a pagar.</span></li>
-            <li><span><strong>Vencimiento de la orden</strong> (cuánto tiempo queda activa):<br>
-              • <strong>Day</strong>: dura solo hasta el final del día.<br>
-              • <strong>Good till date</strong>: dura hasta una fecha que vos definís.<br>
-              • <strong>Immediate or cancel</strong>: se ejecuta ya. Si no se puede cumplir todo, cancela lo que falta.</span></li>
-            <li><span><strong>Nominales / Monto</strong> (cuánto querés comprar): puede ser el número de unidades (acciones, bonos) o el monto en pesos/dólares.</span></li>
-            <li><span><strong>Precio límite</strong> (solo para órdenes "Limit" o "Stop Limit"): es el precio máximo que estás dispuesto a pagar. Si no aparece ese precio, la orden no se ejecuta.</span></li>
-          </ol>
+          <div class="orden-simple">✅ <strong>La forma más simple:</strong> dejá todos los campos como vienen predeterminados y elegí solamente el <strong>monto</strong> (o la cantidad de nominales). Con eso ya podés comprar.</div>
+          <p style="font-size:0.88rem;color:var(--ink-soft);line-height:1.6;margin-bottom:12px">Si querés entender qué significa cada campo de la pantalla de compra, tocá el <strong>?</strong> de cada uno:</p>
+            <details class="campo-orden"><summary><span class="q">?</span>Plazo de liquidación</summary><div class="campo-body"><strong>Cuándo se entrega el activo y se paga.</strong><br>• <strong>24 hs</strong>: se liquida al día siguiente. Suele tener mejor precio.<br>• <strong>CI (Contado inmediato)</strong>: se liquida en el momento. Puede ser más caro.</div></details>
+            <details class="campo-orden"><summary><span class="q">?</span>Tipo de orden</summary><div class="campo-body"><strong>A qué precio querés comprar.</strong><br>• <strong>Market</strong>: comprás al precio que haya en ese momento.<br>• <strong>Limit</strong>: ponés el precio máximo que estás dispuesto a pagar.</div></details>
+            <details class="campo-orden"><summary><span class="q">?</span>Vencimiento de la orden</summary><div class="campo-body"><strong>Cuánto tiempo queda activa la orden.</strong><br>• <strong>Day</strong>: dura solo hasta el final del día.<br>• <strong>Good till date</strong>: dura hasta una fecha que vos definís.<br>• <strong>Immediate or cancel</strong>: se ejecuta ya. Si no se puede cumplir todo, cancela lo que falta.</div></details>
+            <details class="campo-orden"><summary><span class="q">?</span>Nominales / Monto</summary><div class="campo-body"><strong>Cuánto querés comprar.</strong> Puede ser el número de unidades (acciones, bonos) o el monto en pesos/dólares. <em>Este es el único campo que necesitás completar.</em></div></details>
+            <details class="campo-orden"><summary><span class="q">?</span>Precio límite</summary><div class="campo-body">Solo aparece en órdenes "Limit" o "Stop Limit". Es el precio máximo que estás dispuesto a pagar. Si no aparece ese precio, la orden no se ejecuta.</div></details>
           <div class="tutorial-note">📝 <strong>Nota:</strong> ¿Dudas sobre qué combinación te conviene en tu caso? <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+c%C3%B3mo+crear+una+orden+de+compra." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y lo vemos juntos →</a></div>
         </div>
       </div>
@@ -1686,7 +1685,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <li><span>¡Listo! El bono aparece en tu cartera.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Nota:</strong> Los cupones se pagan cada 3 o 6 meses según el instrumento. Consultá la hoja de condiciones del bono.</div>
-          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
+          <div class="tutorial-note">💡 <strong>Tip:</strong> dejá plazo, tipo de orden y vencimiento como vienen y elegí solo el monto. <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">❔ ¿Qué significa cada uno? →</a></div>
         </div>
       </div>
 
@@ -1725,7 +1724,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <li><span>¡Listo! El CEDEAR sigue el precio en Nueva York.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Horario de operación:</strong> lunes a viernes de 10:00 a 17:00hs.</div>
-          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
+          <div class="tutorial-note">💡 <strong>Tip:</strong> dejá plazo, tipo de orden y vencimiento como vienen y elegí solo el monto. <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">❔ ¿Qué significa cada uno? →</a></div>
         </div>
       </div>
 
@@ -1763,7 +1762,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <li><span>¡Listo! La acción aparece en tu cartera, cotizando en pesos.</span></li>
           </ol>
           <div class="tutorial-note">📝 <strong>Nota:</strong> a diferencia de un CEDEAR, acá comprás la empresa local directamente — sin cobertura del dólar.</div>
-          <div class="tutorial-note">🧾 ¿No sabés qué elegir en plazo, tipo de orden o vencimiento? <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">Mirá cómo crear una orden de compra →</a></div>
+          <div class="tutorial-note">💡 <strong>Tip:</strong> dejá plazo, tipo de orden y vencimiento como vienen y elegí solo el monto. <a href="#tuto-orden" onclick="abrirTutorial('tuto-orden'); return false;" style="color:var(--jade);font-weight:600;">❔ ¿Qué significa cada uno? →</a></div>
         </div>
       </div>
 
