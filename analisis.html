@@ -894,7 +894,7 @@ function rotVeredicto(r) {
   var cls, icon, head, sub;
   var dur = fmtNum(r.H, 2) + ' años (' + fmtDateAR(hd) + ')';
   if (abs < 1) { cls = 'tie'; icon = '⚖️'; head = 'Da prácticamente lo mismo'; sub = 'A ' + dur + ', quedarte con <b>' + rotEsc(r.venta.ticker) + '</b> o cambiar a <b>' + rotEsc(r.compra.ticker) + '</b> te dejan un resultado muy parecido.'; }
-  else if (r.ventajaHoy > 0) { cls = 'win'; icon = '✅'; head = 'Según el cálculo, cambiar a ' + rotEsc(r.compra.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar te deja <b>' + rotUSD(abs) + ' más</b>' + (pct != null ? ' (' + fmtNum(Math.abs(pct)) + '% más)' : '') + ' que quedarte con <b>' + rotEsc(r.venta.ticker) + '</b>.'; }
+  else if (r.ventajaHoy > 0) { cls = 'win'; icon = '✅'; head = 'Según el cálculo, cambiar a ' + rotEsc(r.compra.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar te deja <b>' + rotUSD(abs) + ' más</b>' + (pct != null ? ' (' + fmtNum(Math.abs(pct)) + '% más de ganancia)' : '') + ' que quedarte con <b>' + rotEsc(r.venta.ticker) + '</b>.'; }
   else { cls = 'stay'; icon = '🛑'; head = 'Según el cálculo, quedarte con ' + rotEsc(r.venta.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar a <b>' + rotEsc(r.compra.ticker) + '</b> te dejaría <b>' + rotUSD(abs) + ' menos</b> que quedarte como estás.'; }
   var cash = Math.abs(r.difCash) >= 1
     ? (r.difCash > 0 ? ' Además, al cambiar te sobran ' + rotUSD(r.difCash) + ' de efectivo (queda parado, no se cuenta como ganancia del bono nuevo).' : ' Además, para cambiar tendrías que poner ' + rotUSD(Math.abs(r.difCash)) + ' extra de efectivo.') : '';
