@@ -161,8 +161,37 @@ body { padding-bottom: 64px; }
 .cmp-read p { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 6px; }
 .cmp-read h5 { font-family: var(--font-display); font-size: 0.95rem; color: var(--petroleo-700); margin: 14px 0 6px; }
 .cmp-err { color: var(--danger); font-size: 0.82rem; margin-bottom: 8px; }
+/* Rotar bonos */
+.rot-adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
+.rot-adv-grid label { display: block; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); margin-bottom: 4px; }
+.rot-note { font-size: 0.78rem; color: var(--ink-muted); line-height: 1.55; }
+.rot-verdict { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 14px 18px; margin: 6px 0 12px; }
+.rot-verdict.win  { background: #d4f0e3; color: #146c47; }
+.rot-verdict.stay { background: #fbe9d0; color: #8a5a12; }
+.rot-verdict.tie  { background: #f1ecdf; color: var(--ink-soft); }
+.rot-verdict-icon { font-size: 1.5rem; line-height: 1.2; }
+.rot-verdict-head { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
+.rot-verdict-sub { font-size: 0.86rem; line-height: 1.55; color: var(--ink); }
+.rot-same { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.55; margin-bottom: 14px; }
+.rot-horizon { margin-bottom: 14px; }
+.rot-horizon label { font-size: 0.85rem; color: var(--ink-soft); }
+.rot-horizon input[type=range] { width: 100%; margin-top: 8px; accent-color: var(--jade); }
+.rot-chart { margin-top: 18px; }
+.rot-chart h5 { font-family: var(--font-display); font-size: 0.98rem; color: var(--petroleo-700); margin-bottom: 8px; }
+.rot-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.74rem; color: var(--ink-soft); margin-top: 8px; }
+.rot-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.rot-legend i.ring { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--jade); background: none; }
+.rot-legend em { color: var(--ink-muted); font-style: normal; }
+.rot-tip { display: none; position: absolute; top: 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.12); pointer-events: none; z-index: 5; }
+.rot-best { background: #d4f0e3; font-weight: 600; }
+.tool-tabs .container { scrollbar-width: none; }
+.tool-tabs .container::-webkit-scrollbar { display: none; }
 @media (max-width: 640px) {
   .cmp-grid { grid-template-columns: 1fr; }
+  header.site-header .container { flex-wrap: wrap; gap: 6px 12px; padding: 12px 16px; }
+  .badge-adv { display: none; }
+  .header-links { gap: 12px; font-size: 0.8rem; }
+  .tool-tabs { top: 0; position: static; }
 }
 @media (max-width: 640px) {
   .data-table { min-width: 620px; }
@@ -201,6 +230,7 @@ body { padding-bottom: 64px; }
     <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
     <button class="tab-btn" data-tab="rv" onclick="switchTab('rv')">📈 Renta variable: Valuación</button>
     <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
+    <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
   </div>
 </nav>
 
@@ -272,11 +302,705 @@ body { padding-bottom: 64px; }
     </div>
     </div>
 
+    <!-- ══ Rotar bonos ══ -->
+    <div class="tab-panel" id="tab-rot">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">🔁 Rotar bonos</div>
+      </div>
+      <div class="tool-sub">¿Te conviene cambiar un bono por otro? Poné el que tenés y el que estás mirando: calculamos cuántos nominales comprarías con lo que te dan por vender y comparamos cuál rinde más a tu horizonte. Ya viene cargado un ejemplo — cambialo por tu caso.</div>
+      <details class="explain-box">
+        <summary>¿Qué es un nominal?</summary>
+        <p style="margin-top:8px">Es la cantidad de bonos que tenés: 1 nominal representa US$ 1 de valor del bono. El bono cotiza a un precio por cada nominal (por ejemplo 1,10 significa US$ 1,10 por nominal), así que <strong>10.000 nominales a 1,10 cuestan US$ 11.000</strong>. Por eso "cuánta plata" y "cuántos nominales" no son lo mismo: con la misma plata comprás más nominales de un bono barato que de uno caro. Los nominales que tenés los ves en la tenencia de tu cuenta, en la línea de cada bono.</p>
+      </details>
+      <div class="cmp-grid">
+        <div>
+          <label for="rotV">Tenés (vender)</label>
+          <input id="rotV" class="cmp-input" list="bondList" placeholder="Ej: YM39O" oninput="ROT.onTicker('v')">
+          <label for="rotNomV" style="margin-top:10px">Nominales que tenés</label>
+          <input id="rotNomV" class="cmp-input" type="number" min="1" step="1" value="10000" oninput="ROT.onChange()">
+        </div>
+        <div>
+          <label for="rotC">Candidato (comprar)</label>
+          <input id="rotC" class="cmp-input" list="bondList" placeholder="Ej: TLCTO" oninput="ROT.onTicker('c')">
+          <p class="rot-note" style="margin-top:10px">Los nominales que comprarías se calculan solos, con la plata que te queda después de vender (y la comisión).</p>
+        </div>
+      </div>
+      <datalist id="bondList"></datalist>
+      <details class="explain-box">
+        <summary>Opciones avanzadas (comisión, precios, lote)</summary>
+        <div class="rot-adv-grid">
+          <div><label for="rotCom">Comisión (% por cada punta)</label><input id="rotCom" class="cmp-input" type="number" step="0.01" min="0" value="0.50" oninput="ROT.onChange()"></div>
+          <div><label for="rotTipo">Precios a usar</label><select id="rotTipo" class="cmp-input" onchange="ROT.onTipo()"><option value="mep" selected>Dólar MEP</option><option value="cable">Dólar Cable</option></select></div>
+          <div><label for="rotPV">Precio de lo que vendés</label><input id="rotPV" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
+          <div><label for="rotPC">Precio de lo que comprás</label><input id="rotPC" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
+          <div><label for="rotLote">Después del mínimo, el lote va</label><select id="rotLote" class="cmp-input" onchange="ROT.onChange()"><option value="uno" selected>De a 1 (1000, 1001, 1002…)</option><option value="multiplo">Solo múltiplos de la lámina (1000, 2000…)</option></select></div>
+        </div>
+        <p style="margin-top:10px">Si tenés una comisión negociada distinta de la estándar, cambiala acá: mueve el punto de equilibrio de "¿conviene rotar?". Los precios vienen del monitor y podés editarlos.</p>
+      </details>
+      <div id="rotErr" class="cmp-err" style="display:none"></div>
+      <div id="rotResult"><p class="loading-msg">Cargando datos…</p></div>
+    </div>
+    </div>
+
   </div>
 </section>
+<!--ROT-SCRIPT-BEGIN-->
+<script>
+(function () {
+/* ROT-CORE: copiado SIN cambios de Calculadora_Rotaciones_FinanzasconNico_4.html (líneas 807-975 y 980-1187) */
+// ═══════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════
+function isoDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseISO(s){ if(!s) return null; var p=s.split('-'); return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); }
+function fmtDateAR(d){ if(!d) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtNum(n,dec){ if(n===null||n===undefined||isNaN(n)) return '—'; dec=dec===undefined?2:dec; return Number(n).toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fmtUSD(n){ if(n===null||n===undefined||isNaN(n)) return '—'; var sign = n<0?'-':''; return sign+'$'+fmtNum(Math.abs(n),0); }
+function daysBetween(d1,d2){ return Math.round((d2-d1)/86400000); }
+function yearFrac(d1,d2){ return daysBetween(d1,d2)/365; }
+var MONTH_ABR = {ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12};
+function parseMesesCupon(str){
+  if(!str) return [];
+  var res=[];
+  String(str).toLowerCase().replace(/[^a-záéíóúñ ]/g,' ').split(/\s+/).forEach(function(w){
+    var m = MONTH_ABR[w.slice(0,3)];
+    if(m && res.indexOf(m)<0) res.push(m);
+  });
+  return res.sort(function(a,b){return a-b;});
+}
+
+// ═══════════════════════════════════════════════════════
+// CRONOGRAMA DE CUPONES
+// ═══════════════════════════════════════════════════════
+function addMonthsClamp(date, n){
+  var d = new Date(date.getTime());
+  var day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  var lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d;
+}
+function buildCouponDates(fechaEmision, fechaVenc, freq){
+  var step = 12/freq;
+  var dates = [fechaVenc];
+  var cur = fechaVenc;
+  var guard = 0;
+  while(guard<400){
+    var prev = addMonthsClamp(cur, -step);
+    if(prev <= fechaEmision) break;
+    dates.unshift(prev);
+    cur = prev;
+    guard++;
+  }
+  return dates;
+}
+function buildSchedule(bond){
+  var freq = bond.freq;
+  var dates = buildCouponDates(bond.fechaEmision, bond.fechaVenc, freq);
+  var n = dates.length;
+  var amortStart = bond.amortStart || bond.fechaEmision;
+  var amortIdx = [];
+  if(bond.amortType==='amortizable'){
+    dates.forEach(function(d,i){ if(d.getTime() >= amortStart.getTime()) amortIdx.push(i); });
+  }
+  var defaultPct = amortIdx.length>0 ? 100/amortIdx.length : 0;
+  var vnResidual = 100;
+  var schedule = [];
+  dates.forEach(function(d,i){
+    var isLast = (i===n-1);
+    var pct;
+    if(bond.amortType==='bullet'){ pct = isLast ? 100 : 0; }
+    else if(amortIdx.indexOf(i)>=0){ pct = defaultPct; }
+    else { pct = 0; }
+    var vnStart = vnResidual;
+    var cuponMonto = vnStart * (bond.cuponAnual/100) / freq;
+    var amortMonto = pct;
+    vnResidual = Math.max(0, vnResidual - amortMonto);
+    schedule.push({date:d, vnStart:vnStart, vnEnd:vnResidual, cupon:cuponMonto, amort:amortMonto, total:cuponMonto+amortMonto});
+  });
+  return schedule;
+}
+function scaleSchedule(schedule, nominales){
+  var f = nominales/100;
+  return schedule.map(function(cf){
+    return {date:cf.date, cupon:cf.cupon*f, amort:cf.amort*f, total:cf.total*f};
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DURATION (MACAULAY) — automática, nunca se carga a mano
+// ═══════════════════════════════════════════════════════
+function macaulayDuration(scheduleUSD, tirDecimal, hoy){
+  var sumPV = 0, sumTPV = 0;
+  scheduleUSD.forEach(function(cf){
+    var t = yearFrac(hoy, cf.date);
+    if(t<=0) return;
+    var pv = cf.total / Math.pow(1+tirDecimal, t);
+    sumPV += pv;
+    sumTPV += t*pv;
+  });
+  return sumPV>0 ? sumTPV/sumPV : null;
+}
+
+// ═══════════════════════════════════════════════════════
+// TIR IMPLÍCITA EN EL PRECIO — resuelve la tasa r tal que el valor presente del
+// cronograma de flujos descontado a r sea igual al monto pagado (precio×nominales).
+// Newton-Raphson (rápido, converge en pocas iteraciones para un cronograma de bono
+// normal) con fallback a bisección si no converge (cronogramas irregulares/atípicos).
+// ═══════════════════════════════════════════════════════
+function pvSchedule(scheduleUSD, r, hoy){
+  var s = 0;
+  scheduleUSD.forEach(function(cf){
+    var t = yearFrac(hoy, cf.date);
+    if(t>0) s += cf.total / Math.pow(1+r, t);
+  });
+  return s;
+}
+function dPvSchedule(scheduleUSD, r, hoy){
+  var s = 0;
+  scheduleUSD.forEach(function(cf){
+    var t = yearFrac(hoy, cf.date);
+    if(t>0) s += -t * cf.total / Math.pow(1+r, t+1);
+  });
+  return s;
+}
+function tirDesdePrecio(scheduleUSD, monto, hoy, seedPct){
+  if(!scheduleUSD || !scheduleUSD.length || !(monto>0)) return seedPct!=null?seedPct:null;
+  var r = (seedPct!=null && !isNaN(seedPct) && seedPct>-99) ? seedPct/100 : 0.10;
+  var found = null;
+  for(var i=0;i<60;i++){
+    var f = pvSchedule(scheduleUSD, r, hoy) - monto;
+    var fp = dPvSchedule(scheduleUSD, r, hoy);
+    if(Math.abs(fp) < 1e-8) break;
+    var rNext = r - f/fp;
+    if(!isFinite(rNext) || rNext <= -0.99) rNext = r/2; // salvavidas si Newton diverge
+    if(Math.abs(rNext-r) < 1e-8){ found = rNext; break; }
+    r = rNext;
+  }
+  if(found===null){
+    // Newton no convergió — bisección en un rango amplio de tasas como respaldo
+    var lo=-0.5, hi=5, flo=pvSchedule(scheduleUSD,lo,hoy)-monto, fhi=pvSchedule(scheduleUSD,hi,hoy)-monto;
+    if(flo*fhi>0) return seedPct!=null?seedPct:null; // no hay raíz en el rango: mantiene lo que había
+    for(var j=0;j<80;j++){
+      var mid=(lo+hi)/2, fmid=pvSchedule(scheduleUSD,mid,hoy)-monto;
+      found = mid;
+      if(Math.abs(fmid)<1e-6) break;
+      if(flo*fmid<0){ hi=mid; fhi=fmid; } else { lo=mid; flo=fmid; }
+    }
+  }
+  return found*100;
+}
+
+// ═══════════════════════════════════════════════════════
+// RETORNO TOTAL A UN HORIZONTE (años desde "hoy")
+// ═══════════════════════════════════════════════════════
+// `comisionPct` se recibe pero NO se descuenta acá: la comisión de la rotación ya se cobra
+// una sola vez, sobre el monto de la operación, vía difCash/comV/comC (ver renderCondiciones).
+// Bug real arreglado 05/09/2026: antes se restaba también sobre cada cupón/amortización
+// reinvertido hasta el horizonte, como si cada pago fuera una operación nueva con comisión
+// propia — eso inflaba de más la comisión total en bonos que pagan/amortizan seguido frente
+// a uno bullet con la misma TIR, sesgando el veredicto de rotación sin motivo real.
+function retornoAHorizonteAnios(scheduleUSD, tirDecimal, hoy, comisionPct, anios){
+  var horizonDate = new Date(hoy.getTime());
+  horizonDate.setDate(horizonDate.getDate() + Math.round(anios*365));
+  var realized = 0, interes = 0, remanentePV = 0;
+  scheduleUSD.forEach(function(cf){
+    if(cf.date.getTime() <= horizonDate.getTime()){
+      realized += cf.total;
+      var yrs = yearFrac(cf.date, horizonDate);
+      interes += yrs*cf.total*tirDecimal;
+    } else {
+      var t = yearFrac(horizonDate, cf.date);
+      remanentePV += cf.total / Math.pow(1+tirDecimal, t);
+    }
+  });
+  return {date:horizonDate, valorHorizonte:realized+interes+remanentePV};
+}
+var BOND_DB = {};
+var LS_KEYS_READ = ['fcn-rotaciones-db','fcn-bond-calc-db','fcn-on-db','fcn-sov-db'];
+var LS_KEY_WRITE = 'fcn-rotaciones-db';
+
+// FLUJO_DB: cronograma REAL de cada ticker, leído directo de su hoja individual
+// en el Monitor de Individuos (mucho más preciso que la aproximación de buildSchedule).
+var FLUJO_DB = {};
+var LS_KEY_FLUJO = 'fcn-rotaciones-flujo-db';
+
+function excelDateToISO(v){
+  if(v===null||v===undefined||v==='') return '';
+  if(typeof v==='number'){ var d=new Date(Math.round((v-25569)*86400*1000)); return isoDate(d); }
+  if(typeof v==='string' && v.length>=10) return v.slice(0,10);
+  return '';
+}
+// Un bono con vencimiento ya pasado no es una opción para rotar — el Monitor lo sigue trayendo
+// unos días con TIR basura. Se descarta de BOND_DB y FLUJO_DB. Margen 3 días.
+function bonoVencidoISO(iso){
+  if(!iso) return false;
+  var t=Date.parse(iso);
+  if(isNaN(t) || t < 946684800000) return false; // < 2000: fecha vacía / epoch de Excel = "sin dato", no "vencido"
+  return t < Date.now()-3*86400000;
+}
+// Nombres de encabezado candidatos por campo — si el header de la fila coincide con alguno
+// (sin importar mayúsculas), se usa ESA columna en vez del offset fijo de FIELDS_CORP/FIELDS_SOB.
+// Si no matchea ninguno, cae al offset fijo (comportamiento de siempre) — esto es puramente
+// defensivo, nunca puede dar un resultado peor que antes.
+// Por qué: alguna categoría del Monitor (ej. Letras del Tesoro dentro de la hoja Soberanos)
+// tiene las columnas corridas respecto al resto, y leer por offset fijo agarraba el TIR/
+// calificación de la columna equivocada (TIR mostraba ~4200%, calificación mostraba el ticker
+// repetido) — pasó de verdad, ver "Alternativas para rotar" en CLAUDE.md.
+var FIELD_HEADER_NAMES = {
+  precioMep:['Precio Mep','Precio MEP','Px Mep','Precio actual','Precio','Px Compra','Precio Compra'],
+  vencimiento:['Vencimiento','Fecha Vencimiento','Vto','Vcto'],
+  tir:['TIR','TIR Mep','Tir Mep','Yield','TIR Efectiva','Tir efectiva'],
+  duration:['Duration','Dur.','Dur','Duration (años)','Duración','Duracion'],
+  amortizacion:['Amortización','Amortizacion','Amort','Tipo Amortización'],
+  cupon:['Cupón','Cupon','Cupón Anual','Cupon Anual','Coupon'],
+  mesCupon:['Mes Cupón','Mes Cupon','Meses Cupón','Meses Cupon','Meses de pago'],
+  dolar:['Dólar','Dolar','Moneda de Cobro'],
+  ley:['Ley'],
+  calif:['Calificación','Calificacion','Rating'],
+  laminaMin:['Lámina min.','Lamina min.','Lámina mín.','Lamina mín.','Lám. min.','Lámina Min','Lamina Min'],
+  nominMin:['Nominales mín.','Nominal Mínimo','Nominales Min','Nominal Min'],
+  sector:['Sector'],
+  paridad:['Paridad'],
+  varDiaria:['Var. Diaria','Variación Diaria','Var Diaria'],
+  precioCable:['Precio Cable','Px Cable'],
+  tirCable:['TIR Cable','Tir Cable'],
+  durationCable:['Duration Cable','Dur Cable','Duración Cable']
+};
+function parseBlock(ws, fieldOffsets){
+  var raw = XLSX.utils.sheet_to_json(ws, {defval:null, header:1, raw:true});
+  var hIdx=-1, tIdx=-1;
+  for(var i=0;i<Math.min(raw.length,20);i++){
+    var row = raw[i]||[];
+    for(var j=0;j<row.length;j++){ if(row[j]==='Ticker'){ hIdx=i; tIdx=j; break; } }
+    if(hIdx>=0) break;
+  }
+  if(hIdx<0) return [];
+  var colMap = {};
+  (raw[hIdx]||[]).forEach(function(v,j){ if(v!==null && v!==undefined && v!==''){ var k=String(v).trim().toLowerCase(); if(colMap[k]===undefined) colMap[k]=j; } });
+  var findCol = function(names){ for(var n=0;n<names.length;n++){ var k=names[n].toLowerCase(); if(colMap[k]!==undefined) return colMap[k]; } return -1; };
+  var colIdx = {};
+  for(var key in fieldOffsets){
+    var byName = FIELD_HEADER_NAMES[key] ? findCol(FIELD_HEADER_NAMES[key]) : -1;
+    colIdx[key] = byName>=0 ? byName : (tIdx+fieldOffsets[key]);
+  }
+  var out=[];
+  for(var r=hIdx+1;r<raw.length;r++){
+    var row2 = raw[r]||[];
+    var tkRaw = row2[colIdx.ticker];
+    var tk = String(tkRaw||'').trim();
+    if(!tk || tk.toLowerCase()==='ticker' || !/^[A-Za-z0-9][A-Za-z0-9.\-]{1,9}$/.test(tk)) continue;
+    var rec={};
+    for(var key2 in fieldOffsets){
+      rec[key2] = row2[colIdx[key2]]!==undefined ? row2[colIdx[key2]] : null;
+    }
+    rec.ticker = tk.toUpperCase();
+    out.push(rec);
+  }
+  return out;
+}
+var FIELDS_CORP = {ticker:0,emisor:1,precioMep:2,vencimiento:3,tir:4,duration:5,amortizacion:6,cupon:7,mesCupon:8,dolar:9,ley:10,calif:11,laminaMin:12,sector:13,paridad:14,precioCable:15,tirCable:16,durationCable:17};
+var FIELDS_SOB  = {ticker:0,emisor:1,precioMep:2,vencimiento:3,tir:4,duration:5,amortizacion:6,cupon:7,mesCupon:8,dolar:9,ley:10,calif:11,nominMin:12,paridad:13,varDiaria:14,precioCable:15,tirCable:16,durationCable:17};
+
+function ingestRows(rows, categoria){
+  var count=0;
+  rows.forEach(function(r){
+    var tirMep = parseFloat(r.tir); var tirCable = parseFloat(r.tirCable);
+    if((isNaN(tirMep)||tirMep<=0) && (isNaN(tirCable)||tirCable<=0)) return;
+    if(bonoVencidoISO(excelDateToISO(r.vencimiento))) return;
+    var durationExcel = parseFloat(r.duration);
+    BOND_DB[r.ticker] = {
+      ticker:r.ticker, emisor:r.emisor||'', categoria:categoria,
+      cuponAnual: isNaN(parseFloat(r.cupon)) ? null : Math.round(parseFloat(r.cupon)*10000)/100,
+      mesCupon: r.mesCupon||'',
+      vencimiento: excelDateToISO(r.vencimiento),
+      amortizacion: String(r.amortizacion||'').trim(),
+      moneda: String(r.dolar||'').trim(),
+      ley: String(r.ley||'').trim(),
+      calif: String(r.calif||'').trim(),
+      laminaMin: r.laminaMin || r.nominMin || null,
+      duration: (!isNaN(durationExcel) && durationExcel>0) ? durationExcel : null,
+      tirMep: isNaN(tirMep)?null:Math.round(tirMep*10000)/100,
+      tirCable: isNaN(tirCable)?null:Math.round(tirCable*10000)/100,
+      precioMep: parseFloat(r.precioMep)||null,
+      precioCable: parseFloat(r.precioCable)||null
+    };
+    count++;
+  });
+  return count;
+}
+
+// ═══════════════════════════════════════════════════════
+// PARSER DE HOJAS INDIVIDUALES POR TICKER — cronograma REAL
+// Cada bono tiene su propia hoja (nombre = ticker) con celdas fijas:
+// B3/C3=Emisor, C4=Sector, C5=Calif, C6=Moneda cobro, C7=Tipo tasa,
+// C8=Interés anual (decimal), C9=Frecuencia (texto), C11=Amortización (texto),
+// C12=Fecha emisión, C13=Fecha vencimiento, C15=Ley, C16=Nominales mínimos,
+// C20=Nominales base de la tabla de flujo, F3=TIR efectiva, I9=Duration.
+// Tabla de flujo: header en E15:J15 (Fecha, Valor residual, Amort%, Amort USD, Interés, Total),
+// datos desde la fila 16. La fila de "hoy" (liquidación) tiene la columna F (Valor residual) vacía —
+// se descarta porque no es un flujo de cobro real.
+// ═══════════════════════════════════════════════════════
+function parseTickerSheets(wb){
+  var count = 0;
+  wb.SheetNames.forEach(function(name){
+    var ws = wb.Sheets[name];
+    if(!ws) return;
+    var b3 = ws['B3'];
+    if(!b3 || String(b3.v).trim()!=='Emisor') return;
+    var cellVal = function(addr){ var c = ws[addr]; return (c && c.v!==undefined) ? c.v : null; };
+
+    var ticker = name.trim().toUpperCase();
+    var emisor = cellVal('C3');
+    var sector = cellVal('C4');
+    var calif = cellVal('C5');
+    var monedaCobro = cellVal('C6');
+    var tipoTasa = cellVal('C7');
+    var interesAnual = cellVal('C8');
+    var freqTexto = cellVal('C9');
+    var amortDesc = cellVal('C11');
+    var fechaEmision = excelDateToISO(cellVal('C12'));
+    var fechaVenc = excelDateToISO(cellVal('C13'));
+    var ley = cellVal('C15');
+    var nominalesMin = cellVal('C16');
+    var nominalBase = cellVal('C20');
+    var tirEfectiva = cellVal('F3');
+    var duration = cellVal('I9');
+
+    if(!fechaVenc || !nominalBase || isNaN(parseFloat(nominalBase)) || parseFloat(nominalBase)<=0) return;
+    if(bonoVencidoISO(fechaVenc)) return; // bono ya vencido — fuera de la calculadora
+
+    var freqMap = {'anual':1,'semestral':2,'trimestral':4,'mensual':12};
+    var freqTxt = String(freqTexto||'').toLowerCase();
+    var freq = 2;
+    for(var k in freqMap){ if(freqTxt.indexOf(k)>=0){ freq=freqMap[k]; break; } }
+
+    var rows = [];
+    for(var r=16; r<10000; r++){
+      var eVal = cellVal('E'+r);
+      if(eVal===null || eVal===undefined) break;
+      var valorResidual = cellVal('F'+r);
+      if(valorResidual===null || valorResidual===undefined) continue; // fila "hoy"/liquidación — sin flujo real
+      var amortUSD = cellVal('H'+r);
+      var interes = cellVal('I'+r);
+      var total = cellVal('J'+r);
+      var fechaISO = excelDateToISO(eVal);
+      if(!fechaISO) continue;
+      rows.push({date:fechaISO, amort:(amortUSD!=null?amortUSD:0), cupon:(interes!=null?interes:0), total:(total!=null?total:((amortUSD||0)+(interes||0)))});
+    }
+    if(!rows.length) return;
+
+    var factor = 100/parseFloat(nominalBase);
+    var schedule100 = rows.map(function(cf){
+      return {date:cf.date, cupon:cf.cupon*factor, amort:cf.amort*factor, total:cf.total*factor};
+    });
+
+    FLUJO_DB[ticker] = {
+      ticker:ticker, emisor:emisor||'', sector:sector||'', calif:calif||'',
+      monedaCobro:monedaCobro||'', tipoTasa:tipoTasa||'',
+      cuponAnual: (interesAnual!=null && !isNaN(parseFloat(interesAnual))) ? Math.round(parseFloat(interesAnual)*10000)/100 : null,
+      freq:freq, freqTexto:freqTexto||'', amortDesc:String(amortDesc||''),
+      ley:ley||'', fechaEmision:fechaEmision, fechaVenc:fechaVenc,
+      nominalesMin: (nominalesMin!=null && !isNaN(parseFloat(nominalesMin))) ? parseFloat(nominalesMin) : null,
+      nominalBase: parseFloat(nominalBase),
+      tirEfectiva: (tirEfectiva!=null && !isNaN(parseFloat(tirEfectiva))) ? Math.round(parseFloat(tirEfectiva)*10000)/100 : null,
+      duration: (duration!=null && !isNaN(parseFloat(duration))) ? parseFloat(duration) : null,
+      schedule100: schedule100
+    };
+    count++;
+  });
+  return count;
+}
+
+// Devuelve el cronograma de flujos (en USD, ya escalado a los nominales del bono) a usar en los cálculos:
+// si hay cronograma real (FLUJO_DB) lo usa tal cual viene del Monitor; si no, cae a la aproximación estimada.
+function getScheduleForLeg(bond, hoy){
+  var real = FLUJO_DB[bond.ticker];
+  if(real && real.schedule100 && real.schedule100.length){
+    var f = bond.nominales/100;
+    return real.schedule100.map(function(cf){
+      return {date:parseISO(cf.date), cupon:cf.cupon*f, amort:cf.amort*f, total:cf.total*f};
+    }).filter(function(cf){ return cf.date && cf.date.getTime()>hoy.getTime(); });
+  }
+  return scaleSchedule(buildSchedule(bond), bond.nominales).filter(function(cf){ return cf.date.getTime()>hoy.getTime(); });
+}
+/* ROT-CORE-END */
+/* ═════════ Interfaz del rotador (versión para clientes) ═════════
+   La matemática (cronogramas, TIR, duration, retorno a horizonte) es la del Suite, copiada sin cambios arriba.
+   Acá solo está lo propio de esta página: leer los datos públicos, armar el cálculo con los mismos pasos que
+   renderAll() de la Calculadora de Rotaciones, y dibujar el resultado. No hay clientes, tenencias ni envíos. */
+var ROT_DEFAULT = { venta: 'YM39O', compra: 'TLCTO', nominales: 10000 };
+var rotState = { horizonte: 2, vista: 'total', loading: null, listo: false };
+var rotTimer = null;
+
+function rotEl(id) { return document.getElementById(id); }
+function rotEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function rotUSD(n) { if (n === null || n === undefined || isNaN(n)) return '—'; return (n < 0 ? '-' : '') + 'US$ ' + fmtNum(Math.abs(n), 0); }
+function rotHoy() { var h = new Date(); return new Date(h.getFullYear(), h.getMonth(), h.getDate()); }
+
+/* precio / TIR "efectivos" según MEP o Cable — igual que precioEfectivo/tirEfectivo del Suite (sin el precio en vivo de BYMA) */
+function precioEfectivo(ticker, tipo) {
+  var b = BOND_DB[ticker]; if (!b) return null;
+  return tipo === 'cable' ? (b.precioCable != null ? b.precioCable : b.precioMep) : (b.precioMep != null ? b.precioMep : b.precioCable);
+}
+function tirEfectivo(ticker, tipo) {
+  var real = FLUJO_DB[ticker];
+  if (real && real.tirEfectiva != null) return real.tirEfectiva;
+  var b = BOND_DB[ticker]; if (!b) return null;
+  return tipo === 'cable' ? (b.tirCable != null ? b.tirCable : b.tirMep) : (b.tirMep != null ? b.tirMep : b.tirCable);
+}
+
+/* ── Carga de datos (reusa el mismo monitor.xlsx que el tab de ONs: se baja una sola vez) ── */
+function rotEnsure() {
+  if (rotState.loading) return rotState.loading;
+  rotState.loading = (async function () {
+    try {
+      var wb = await getMonitorWorkbook();
+      var shC = wb.SheetNames.find(function (n) { return n === 'Corporativos'; });
+      var shS = wb.SheetNames.find(function (n) { return n === 'Soberanos'; });
+      if (shC) ingestRows(parseBlock(wb.Sheets[shC], FIELDS_CORP), 'ON');
+      if (shS) ingestRows(parseBlock(wb.Sheets[shS], FIELDS_SOB), 'Soberano');
+      parseTickerSheets(wb);
+      rotPoblarLista();
+      var a = rotEl('rotV'), b = rotEl('rotC');
+      if (!a.value && !b.value && rotOk(ROT_DEFAULT.venta) && rotOk(ROT_DEFAULT.compra)) {
+        a.value = ROT_DEFAULT.venta; b.value = ROT_DEFAULT.compra; rotEl('rotNomV').value = ROT_DEFAULT.nominales;
+      }
+      rotOnTicker('v'); rotOnTicker('c');
+      rotState.listo = true;
+      rotRender();
+    } catch (e) {
+      rotEl('rotResult').innerHTML = '<p class="loading-msg">No pudimos traer los datos del mercado en este momento. Probá recargar la página.</p>';
+      rotState.loading = null;
+    }
+  })();
+  return rotState.loading;
+}
+function rotOk(t) { return !!(BOND_DB[t] && FLUJO_DB[t]); }
+function rotPoblarLista() {
+  var tks = Object.keys(BOND_DB).filter(rotOk).sort();
+  rotEl('bondList').innerHTML = tks.map(function (t) {
+    var b = BOND_DB[t], r = FLUJO_DB[t];
+    return '<option value="' + rotEsc(t) + '">' + rotEsc(t) + ' — ' + rotEsc((r.emisor || b.emisor || '').trim()) + (b.calif ? ' · ' + rotEsc(b.calif) : '') + (b.tirMep != null ? ' · TIR ' + fmtNum(b.tirMep, 1) + '%' : '') + '</option>';
+  }).join('');
+}
+
+/* ── Entradas ── */
+function rotInputs() {
+  var pV = parseFloat(rotEl('rotPV').value), pC = parseFloat(rotEl('rotPC').value);
+  return {
+    tkV: rotEl('rotV').value.trim().toUpperCase(),
+    tkC: rotEl('rotC').value.trim().toUpperCase(),
+    nomV: parseFloat(rotEl('rotNomV').value) || 0,
+    comisionPct: parseFloat(rotEl('rotCom').value) || 0,
+    tipo: rotEl('rotTipo').value,
+    step: rotEl('rotLote').value,
+    pV: (!isNaN(pV) && pV > 0) ? pV : null,
+    pC: (!isNaN(pC) && pC > 0) ? pC : null
+  };
+}
+/* al elegir/cambiar un bono (o el tipo de precio) se completa su precio de referencia; después se puede editar */
+function rotOnTicker(pata) {
+  var tk = rotEl(pata === 'v' ? 'rotV' : 'rotC').value.trim().toUpperCase();
+  var tipo = rotEl('rotTipo').value;
+  var p = rotOk(tk) ? precioEfectivo(tk, tipo) : null;
+  rotEl(pata === 'v' ? 'rotPV' : 'rotPC').value = p != null ? String(Math.round(p * 10000) / 10000) : '';
+  rotOnChange();
+}
+function rotOnTipo() { rotOnTicker('v'); rotOnTicker('c'); }
+function rotOnChange() { clearTimeout(rotTimer); rotTimer = setTimeout(rotRender, 200); }
+
+function rotMakeBond(ticker, nominales, precio) {
+  var b = BOND_DB[ticker], real = FLUJO_DB[ticker];
+  var fv = parseISO(real.fechaVenc), fe = parseISO(real.fechaEmision);
+  if (!fe && fv) { fe = new Date(fv.getTime()); fe.setFullYear(fe.getFullYear() - 5); }   // solo referencia: los flujos vienen del cronograma real
+  return {
+    ticker: ticker, emisor: real.emisor || b.emisor || '', tir: tirEfectivo(ticker, rotEl('rotTipo').value), duration: null,
+    cuponAnual: real.cuponAnual != null ? real.cuponAnual : b.cuponAnual, freq: real.freq || 2,
+    fechaEmision: fe, fechaVenc: fv, amortType: /cuota|amortiz/i.test(real.amortDesc || '') ? 'amortizable' : 'bullet', amortStart: fe,
+    ley: real.ley || b.ley || '', calif: real.calif || b.calif || '', precio: precio, nominales: nominales
+  };
+}
+
+/* ── Cálculo: mismos pasos que renderAll() de la Calculadora de Rotaciones ── */
+function rotCompute() {
+  var I = rotInputs(), hoy = rotHoy();
+  if (!I.tkV || !I.tkC) return { msg: 'Elegí los dos bonos para ver la comparación.' };
+  if (I.tkV === I.tkC) return { err: 'Elegí dos bonos distintos.' };
+  var falt = [!rotOk(I.tkV) ? I.tkV : null, !rotOk(I.tkC) ? I.tkC : null].filter(Boolean);
+  if (falt.length) return { err: 'No encontré "' + falt.join('" y "') + '" en la lista de bonos.' };
+  if (!(I.nomV > 0)) return { msg: 'Ingresá cuántos nominales tenés para vender.' };
+  var comision = I.comisionPct / 100;
+  var precioV = I.pV != null ? I.pV : precioEfectivo(I.tkV, I.tipo);
+  var precioC = I.pC != null ? I.pC : precioEfectivo(I.tkC, I.tipo);
+  if (!(precioV > 0) || !(precioC > 0)) return { err: 'Falta el precio de alguno de los dos bonos.' };
+
+  // nominales que se compran con lo que entra por la venta (computeMatchedNominales)
+  var realC = FLUJO_DB[I.tkC], bC = BOND_DB[I.tkC], loteMin = 1;
+  if (realC && realC.nominalesMin && parseFloat(realC.nominalesMin) > 0) loteMin = parseFloat(realC.nominalesMin);
+  else if (bC && bC.laminaMin && parseFloat(bC.laminaMin) > 0) loteMin = parseFloat(bC.laminaMin);
+  var cashVenta = I.nomV * precioV * (1 - comision);
+  var nomCRaw = cashVenta / (precioC * (1 + comision));
+  var nomC;
+  if (I.step === 'multiplo') nomC = Math.floor(nomCRaw / loteMin) * loteMin;
+  else { nomC = Math.floor(nomCRaw); if (nomC < loteMin) nomC = 0; }
+  if (!nomC) return { err: 'Con lo que recibirías por vender ' + fmtNum(I.nomV, 0) + ' nominales de ' + I.tkV + ' no alcanza para el mínimo de ' + fmtNum(loteMin, 0) + ' nominales de ' + I.tkC + '.' };
+
+  var venta = rotMakeBond(I.tkV, I.nomV, precioV), compra = rotMakeBond(I.tkC, nomC, precioC);
+  var schedV = getScheduleForLeg(venta, hoy), schedC = getScheduleForLeg(compra, hoy);
+  if (!schedV.length || !schedC.length) return { err: 'Alguno de los dos bonos ya no tiene pagos futuros.' };
+  venta.tir = tirDesdePrecio(schedV, venta.nominales * venta.precio, hoy, venta.tir);
+  compra.tir = tirDesdePrecio(schedC, compra.nominales * compra.precio, hoy, compra.tir);
+  venta.duration = macaulayDuration(schedV, venta.tir / 100, hoy);
+  compra.duration = macaulayDuration(schedC, compra.tir / 100, hoy);
+
+  var montoVTotal = venta.nominales * venta.precio;
+  var difCash = montoVTotal * (1 - I.comisionPct / 100) - compra.nominales * compra.precio * (1 + I.comisionPct / 100);
+  var cashSobrante = Math.max(0, difCash);
+  var vencAniosV = yearFrac(hoy, venta.fechaVenc), vencAniosC = yearFrac(hoy, compra.fechaVenc);
+  var tMax = Math.ceil(Math.max(vencAniosV, vencAniosC, 1) * 4) / 4;
+  if (rotState.horizonte > tMax) rotState.horizonte = tMax;
+  var H = rotState.horizonte;
+
+  function retV(a) { return retornoAHorizonteAnios(schedV, venta.tir / 100, hoy, I.comisionPct, a).valorHorizonte - montoVTotal; }
+  function retC(a) { return retornoAHorizonteAnios(schedC, compra.tir / 100, hoy, I.comisionPct, a).valorHorizonte - compra.nominales * compra.precio; }
+  var N = 100, points = [];
+  for (var i = 0; i <= N; i++) { var t = tMax * i / N; points.push({ t: t, v: retV(t), c: retC(t) }); }
+  var atH = { t: H, v: retV(H), c: retC(H) };
+  var totalMantener = montoVTotal + atH.v;
+  var totalRotar = compra.nominales * compra.precio + atH.c + cashSobrante;
+  return { I: I, hoy: hoy, venta: venta, compra: compra, comisionPct: I.comisionPct, montoVTotal: montoVTotal, difCash: difCash, cashSobrante: cashSobrante,
+    vencAniosV: vencAniosV, vencAniosC: vencAniosC, tMax: tMax, H: H, points: points, atH: atH, ventajaHoy: totalRotar - totalMantener, totalMantener: totalMantener, loteMin: loteMin };
+}
+
+/* ── Dibujo ── */
+function rotRender() {
+  if (!rotState.listo) return;
+  var res = rotEl('rotResult'), err = rotEl('rotErr');
+  var r = rotCompute();
+  if (r.msg) { err.style.display = 'none'; res.innerHTML = '<p class="loading-msg">' + rotEsc(r.msg) + '</p>'; return; }
+  if (r.err) { err.textContent = r.err; err.style.display = ''; res.innerHTML = ''; return; }
+  err.style.display = 'none';
+  res.innerHTML = rotVeredicto(r) + rotSameMoney(r) + rotControlesHorizonte(r) + rotGrafico(r) + rotTabla(r) +
+    '<p class="rot-note">Cómo se calcula: se vende el 100% de ' + rotEsc(r.venta.ticker) + ' y con esa plata (menos la comisión) se compran los nominales que alcanzan de ' + rotEsc(r.compra.ticker) +
+    '. Se supone que los cobros se reinvierten a la misma TIR del bono y que el bono que sigue vivo al horizonte se valúa a esa TIR. Es una estimación con datos de hoy, no una promesa de resultado.</p>';
+  rotBindChart(r);
+}
+function rotVeredicto(r) {
+  var hd = new Date(r.hoy.getTime()); hd.setDate(hd.getDate() + Math.round(r.H * 365));
+  var abs = Math.abs(r.ventajaHoy), pct = r.atH.v !== 0 ? (r.ventajaHoy / Math.abs(r.atH.v)) * 100 : null;
+  var cls, icon, head, sub;
+  var dur = fmtNum(r.H, 2) + ' años (' + fmtDateAR(hd) + ')';
+  if (abs < 1) { cls = 'tie'; icon = '⚖️'; head = 'Da prácticamente lo mismo'; sub = 'A ' + dur + ', quedarte con <b>' + rotEsc(r.venta.ticker) + '</b> o cambiar a <b>' + rotEsc(r.compra.ticker) + '</b> te dejan un resultado muy parecido.'; }
+  else if (r.ventajaHoy > 0) { cls = 'win'; icon = '✅'; head = 'Según el cálculo, cambiar a ' + rotEsc(r.compra.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar te deja <b>' + rotUSD(abs) + ' más</b>' + (pct != null ? ' (' + fmtNum(Math.abs(pct)) + '% más)' : '') + ' que quedarte con <b>' + rotEsc(r.venta.ticker) + '</b>.'; }
+  else { cls = 'stay'; icon = '🛑'; head = 'Según el cálculo, quedarte con ' + rotEsc(r.venta.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar a <b>' + rotEsc(r.compra.ticker) + '</b> te dejaría <b>' + rotUSD(abs) + ' menos</b> que quedarte como estás.'; }
+  var cash = Math.abs(r.difCash) >= 1
+    ? (r.difCash > 0 ? ' Además, al cambiar te sobran ' + rotUSD(r.difCash) + ' de efectivo (queda parado, no se cuenta como ganancia del bono nuevo).' : ' Además, para cambiar tendrías que poner ' + rotUSD(Math.abs(r.difCash)) + ' extra de efectivo.') : '';
+  return '<div class="rot-verdict ' + cls + '"><div class="rot-verdict-icon">' + icon + '</div><div><div class="rot-verdict-head">' + head + '</div><div class="rot-verdict-sub">' + sub + cash + '</div></div></div>';
+}
+function rotSameMoney(r) {
+  var dc = Math.max(0, r.difCash), montoC = r.compra.nominales * r.compra.precio, target = r.montoVTotal + r.atH.v, found = null;
+  for (var i = 0; i < r.points.length; i++) { if ((montoC + r.points[i].c + dc) >= target) { found = r.points[i]; break; } }
+  var box;
+  if (!found) box = 'Cambiando a <b>' + rotEsc(r.compra.ticker) + '</b>, dentro del rango mostrado (hasta ' + fmtNum(r.tMax, 1) + ' años) no llegás a igualar los ' + rotUSD(target) + ' que te da quedarte con <b>' + rotEsc(r.venta.ticker) + '</b> a tus ' + fmtNum(r.H, 2) + ' años.';
+  else if (found.t >= r.H - 0.01) box = 'Cambiando a <b>' + rotEsc(r.compra.ticker) + '</b> no ganás tiempo: llegás a esa misma plata recién a los ' + fmtNum(found.t, 2) + ' años, después de tu horizonte de ' + fmtNum(r.H, 2) + ' años.';
+  else {
+    var f = new Date(r.hoy.getTime()); f.setDate(f.getDate() + Math.round(found.t * 365));
+    box = '💡 <b>Misma plata, menos tiempo:</b> cambiando a <b>' + rotEsc(r.compra.ticker) + '</b> llegás a los mismos ' + rotUSD(target) + ' que te daría quedarte con ' + rotEsc(r.venta.ticker) + ' a los ' + fmtNum(r.H, 2) + ' años, pero ya a los <b>' + fmtNum(found.t, 2) + ' años</b> (' + fmtDateAR(f) + ') — <b>' + fmtNum(r.H - found.t, 2) + ' años antes</b>.';
+  }
+  return '<div class="rot-same">' + box + '</div>';
+}
+function rotControlesHorizonte(r) {
+  var presets = [
+    { l: 'Vto. más cercano', v: Math.min(r.vencAniosV, r.vencAniosC) }, { l: 'Vto. más lejano', v: Math.max(r.vencAniosV, r.vencAniosC) },
+    { l: 'Duration de ' + r.venta.ticker, v: r.venta.duration }, { l: 'Duration de ' + r.compra.ticker, v: r.compra.duration }, { l: '2 años', v: 2 }
+  ].filter(function (p) { return p.v != null && p.v > 0; });
+  var chips = presets.map(function (p) {
+    var act = Math.abs(p.v - r.H) < 0.05;
+    return '<button type="button" class="calif-btn' + (act ? ' active' : '') + '" onclick="ROT.setHorizon(' + p.v + ')">' + rotEsc(p.l) + ' (' + fmtNum(Math.min(p.v, r.tMax), 1) + ' a.)</button>';
+  }).join('');
+  return '<div class="rot-horizon"><label>¿Hasta cuándo mirás? <b id="rotHLabel">' + fmtNum(r.H, 2).replace(',00', '') + ' años</b></label>' +
+    '<input type="range" min="0.25" max="' + r.tMax + '" step="0.25" value="' + r.H + '" oninput="ROT.horizonLive(this.value)" onchange="ROT.setHorizon(this.value)">' +
+    '<div class="monitor-controls" style="margin:8px 0 0">' + chips + '</div></div>';
+}
+function rotGrafico(r) {
+  var total = rotState.vista === 'total', dc = Math.max(0, r.difCash);
+  var costV = r.montoVTotal, costC = r.compra.nominales * r.compra.precio, offV = total ? costV : 0, offC = total ? costC : 0;
+  var W = 900, Ht = 280, padL = 62, padR = 16, padT = 16, padB = 30, iw = W - padL - padR, ih = Ht - padT - padB;
+  var vals = []; r.points.forEach(function (p) { vals.push(p.v + offV, p.c + dc + offC); });
+  var yMinRaw = total ? Math.min.apply(null, vals) : Math.min(0, Math.min.apply(null, vals)), yMaxRaw = Math.max.apply(null, vals);
+  if (yMaxRaw === yMinRaw) { yMaxRaw += 1; yMinRaw -= 1; }
+  var pad = (yMaxRaw - yMinRaw) * 0.12, yMin = yMinRaw - pad, yMax = yMaxRaw + pad;
+  if (total) yMin = Math.max(0, yMin);
+  var xp = function (t) { return padL + (t / r.tMax) * iw; }, yp = function (v) { return padT + ih - ((v - yMin) / (yMax - yMin)) * ih; };
+  var path = function (k) { return r.points.map(function (p, i) { var v = k === 'v' ? p.v + offV : p.c + dc + offC; return (i ? 'L' : 'M') + xp(p.t).toFixed(1) + ',' + yp(v).toFixed(1); }).join(' '); };
+  var grid = '';
+  for (var g = 0; g <= 4; g++) { var val = yMin + (yMax - yMin) * g / 4, y = yp(val); grid += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '" stroke="#E5DDCE"/><text x="' + (padL - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-size="10" fill="#6C817C">' + rotUSD(val) + '</text>'; }
+  var stepX = r.tMax <= 3 ? 0.5 : (r.tMax <= 8 ? 1 : 2), tx = '';
+  for (var x = 0; x <= r.tMax + 0.001; x += stepX) tx += '<text x="' + xp(x).toFixed(1) + '" y="' + (Ht - 8) + '" text-anchor="middle" font-size="10" fill="#6C817C">' + fmtNum(x, 1) + 'a</text>';
+  var hx = xp(r.H), valV = r.atH.v + offV, valC = r.atH.c + dc + offC;
+  var ring = valC !== valV ? '<circle cx="' + hx.toFixed(1) + '" cy="' + yp(Math.max(valC, valV)).toFixed(1) + '" r="8" fill="none" stroke="#1C8C5F" stroke-width="2"/>' : '';
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + Ht + '" id="rotSvg" style="width:100%;height:auto;display:block">' + grid + tx +
+    '<path d="' + path('v') + '" fill="none" stroke="#3B6EA5" stroke-width="2.2"/><path d="' + path('c') + '" fill="none" stroke="#DBA03C" stroke-width="2.2"/>' +
+    '<line x1="' + hx.toFixed(1) + '" y1="' + padT + '" x2="' + hx.toFixed(1) + '" y2="' + (padT + ih) + '" stroke="#DBA03C" stroke-width="1.4" stroke-dasharray="4,3"/>' + ring +
+    '<circle cx="' + hx.toFixed(1) + '" cy="' + yp(valV).toFixed(1) + '" r="4" fill="#3B6EA5"/><circle cx="' + hx.toFixed(1) + '" cy="' + yp(valC).toFixed(1) + '" r="4" fill="#DBA03C"/>' +
+    '<rect id="rotHover" x="' + padL + '" y="' + padT + '" width="' + iw + '" height="' + ih + '" fill="transparent" style="cursor:crosshair"/></svg>';
+  var tabs = '<div class="monitor-controls" style="margin:0 0 8px"><button type="button" class="calif-btn' + (total ? ' active' : '') + '" onclick="ROT.setVista(\'total\')">💰 Total recibido (capital + interés)</button>' +
+    '<button type="button" class="calif-btn' + (!total ? ' active' : '') + '" onclick="ROT.setVista(\'neta\')">📈 Ganancia neta</button></div>';
+  var legend = '<div class="rot-legend"><span><i style="background:#3B6EA5"></i>Quedarte con ' + rotEsc(r.venta.ticker) + '</span><span><i style="background:#DBA03C"></i>Cambiar a ' + rotEsc(r.compra.ticker) + ' <em>(incluye el ajuste de efectivo del día 1)</em></span><span><i class="ring"></i>Lo que rinde más a tu horizonte</span></div>';
+  var nota = total ? 'Capital invertido hoy: <b>' + rotUSD(costV) + '</b> (quedarte) · <b>' + rotUSD(costC) + '</b> (cambiar). Las curvas ya suman ese capital.' : 'Cuánto ganás por encima de lo que invertiste hoy.';
+  return '<div class="rot-chart"><h5>Cómo evoluciona cada opción</h5>' + tabs + '<div class="rot-note" style="margin:0 0 6px">' + nota + '</div><div id="rotChartWrap" style="position:relative">' + svg + '<div id="rotTip" class="rot-tip"></div></div>' + legend + '</div>';
+}
+function rotBindChart(r) {
+  var svg = rotEl('rotSvg'), hov = rotEl('rotHover'), tip = rotEl('rotTip'); if (!svg || !hov) return;
+  var total = rotState.vista === 'total', dc = Math.max(0, r.difCash), offV = total ? r.montoVTotal : 0, offC = total ? r.compra.nominales * r.compra.precio : 0;
+  var W = 900, padL = 62, padR = 16, iw = W - padL - padR;
+  hov.addEventListener('mousemove', function (ev) {
+    var rect = svg.getBoundingClientRect(), sc = W / rect.width, mx = (ev.clientX - rect.left) * sc;
+    var t = Math.max(0, Math.min(r.tMax, ((mx - padL) / iw) * r.tMax));
+    var n = r.points.reduce(function (b, p) { return Math.abs(p.t - t) < Math.abs(b.t - t) ? p : b; }, r.points[0]);
+    var f = new Date(r.hoy.getTime()); f.setDate(f.getDate() + Math.round(n.t * 365));
+    tip.style.display = 'block'; tip.style.left = Math.min(rect.width - 170, mx / sc + 12) + 'px';
+    tip.innerHTML = '<b>' + fmtNum(n.t, 2) + ' años · ' + fmtDateAR(f) + '</b><br><span style="color:#3B6EA5">Quedarte</span> ' + rotUSD(n.v + offV) + '<br><span style="color:#b07d1f">Cambiar</span> ' + rotUSD(n.c + dc + offC);
+  });
+  hov.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+}
+function rotTabla(r) {
+  var v = r.venta, c = r.compra, com = r.comisionPct, montoV = v.nominales * v.precio, montoC = c.nominales * c.precio, comV = montoV * (com / 100), comC = montoC * (com / 100);
+  var mej = function (a, b, mayor) { if (a == null || b == null || isNaN(a) || isNaN(b) || a === b) return null; return mayor ? (a > b ? 'v' : 'c') : (a < b ? 'v' : 'c'); };
+  var row = function (l, a, b, lado) { return '<tr><td>' + l + '</td><td' + (lado === 'v' ? ' class="rot-best"' : '') + '>' + a + (lado === 'v' ? ' ✓' : '') + '</td><td' + (lado === 'c' ? ' class="rot-best"' : '') + '>' + b + (lado === 'c' ? ' ✓' : '') + '</td></tr>'; };
+  var cashLbl = r.difCash < -1 ? 'Efectivo extra que tendrías que poner hoy' : 'Efectivo que sobra hoy', cashVal = r.difCash < -1 ? rotUSD(Math.abs(r.difCash)) : rotUSD(r.difCash) + (Math.abs(r.difCash) < 1 ? ' (justo)' : ' — queda parado, no se cuenta como ganancia');
+  return '<div class="rot-chart"><h5>Las dos opciones lado a lado</h5><div class="data-table-wrap"><table class="data-table cmp-table"><thead><tr><th></th><th>' + rotEsc(v.ticker) + ' (lo que tenés)</th><th>' + rotEsc(c.ticker) + ' (candidato)</th></tr></thead><tbody>' +
+    row('Emisor', rotEsc(v.emisor || '—'), rotEsc(c.emisor || '—'), null) +
+    row('TIR', fmtNum(v.tir) + '%', fmtNum(c.tir) + '%', mej(v.tir, c.tir, true)) +
+    row('Duration', v.duration != null ? fmtNum(v.duration, 3) : '—', c.duration != null ? fmtNum(c.duration, 3) : '—', mej(v.duration, c.duration, false)) +
+    row('Vencimiento', fmtDateAR(v.fechaVenc), fmtDateAR(c.fechaVenc), null) +
+    row('Cupón anual', v.cuponAnual != null ? fmtNum(v.cuponAnual) + '%' : '—', c.cuponAnual != null ? fmtNum(c.cuponAnual) + '%' : '—', mej(v.cuponAnual, c.cuponAnual, true)) +
+    row('Pagos por año', v.freq, c.freq, null) +
+    row('Amortización', v.amortType === 'bullet' ? 'Bullet (todo al final)' : 'Amortizable', c.amortType === 'bullet' ? 'Bullet (todo al final)' : 'Amortizable', null) +
+    row('Ley', rotEsc(v.ley || '—'), rotEsc(c.ley || '—'), null) +
+    row('Calificación', rotEsc(v.calif || '—'), rotEsc(c.calif || '—'), null) +
+    row('Precio de referencia', fmtNum(v.precio, 4), fmtNum(c.precio, 4), null) +
+    row('Nominales', fmtNum(v.nominales, 0), fmtNum(c.nominales, 0), null) +
+    row('Monto operado (bruto)', rotUSD(montoV), rotUSD(montoC), null) +
+    row('Comisión (' + fmtNum(com, 2) + '% por punta)', '-' + rotUSD(comV), '-' + rotUSD(comC), null) +
+    row('Neto después de comisión', rotUSD(montoV - comV) + ' (te acreditan)', rotUSD(montoC + comC) + ' (necesitás poner)', null) +
+    '<tr><td><b>' + cashLbl + '</b></td><td>—</td><td>' + cashVal + '</td></tr></tbody></table></div></div>';
+}
+function rotSetHorizon(v) { rotState.horizonte = Math.round(parseFloat(v) * 4) / 4; rotRender(); }
+function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent = fmtNum(parseFloat(v), 2).replace(',00', '') + ' años'; }
+function rotSetVista(m) { rotState.vista = m; rotRender(); }
+
+window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista };
+
+})();
+</script>
+<!--ROT-SCRIPT-END-->
 
 <div class="disclaimer-bar">
-  📌 Contenido informativo para apoyar tu propio análisis — <strong>no es una recomendación de inversión</strong>. Los datos se actualizan periódicamente y pueden no reflejar el precio exacto al momento de operar. Antes de operar, hacé tu propia verificación.
+  📌 Contenido informativo para apoyar tu propio análisis — <strong>no es una recomendación de inversión</strong>. Los datos se actualizan semanalmente y pueden no reflejar el precio exacto al momento de operar. Antes de operar, hacé tu propia verificación.
 </div>
 
 <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+el+an%C3%A1lisis+avanzado." target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp">💬</a>
@@ -492,12 +1216,13 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'rv', 'cmp'];
+const TABS_ANALISIS = ['ons', 'rv', 'cmp', 'rot'];
 function switchTab(name) {
   if (!TABS_ANALISIS.includes(name)) name = 'ons';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   if (name === 'rv' || name === 'cmp') ensureRV();
+  if (name === 'rot' && window.ROT) ROT.init();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
 }
 
