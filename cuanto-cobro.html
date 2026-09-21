@@ -299,13 +299,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <div class="notes" id="notes-l">
         <div><b>Comprás (VN):</b> nominales enteros que alcanzan con tu monto; lo que sobra (menos de $ 2) queda sin invertir. <b>Cobrás</b> = nominales × valor final. <b>Ganancia %</b> es lo que ganás hasta el vencimiento, sin anualizar; la <b>TNA</b> la lleva a un año para comparar con otras opciones y la <b>TEM</b> la lleva a un mes.</div>
-        <div><b>Precio:</b> la punta vendedora de BYMA, lo que pagaría hoy un comprador. En órdenes grandes el precio real puede ser algo peor. Fuera del horario de mercado (11 a 17 hs) la orden se ejecuta el próximo día hábil y los días se cuentan desde ahí.</div>
+        <div><b>Precio:</b> durante el horario de mercado (11 a 17 hs) se toma la punta vendedora de BYMA, lo que pagaría hoy un comprador (en órdenes grandes el precio real puede ser algo peor). Fuera de ese horario se toma el último precio operado, y la orden se ejecutaría el próximo día hábil: por eso los días se cuentan desde ahí.</div>
         <div><b>Comisión:</b> cambiála por la que te cobre tu broker; cambia bastante el resultado en las letras más cortas.</div>
       </div>
       <div class="notes" id="notes-b" hidden>
         <div><b>Cobrás</b> = nominales × cada pago del calendario (intereses + devolución de capital) desde la fecha de liquidación. El precio de mercado de un bono <b>ya incluye los intereses corridos</b>: no se suma nada aparte. <b>TIR</b>: rendimiento anual si lo mantenés hasta el final y cobrás todo lo que dice el calendario, con la comisión incluida.</div>
         <div><b>Mínimos:</b> cada bono tiene un mínimo y un múltiplo de compra (p. ej. 10.000 VN); si el monto no alcanza, la fila lo indica. Si comprás pocos días antes de una fecha de cobro, ese pago puede quedar afuera (fecha de corte): confirmalo con tu broker.</div>
-        <div><b>Precio:</b> la punta vendedora de BYMA en dólar MEP. Si un bono no cotiza hoy se usa su último precio conocido y se marca. <b>Comisión:</b> cambiála por la que te cobre tu broker.</div>
+        <div><b>Precio:</b> de BYMA en dólar MEP (la punta vendedora durante la rueda, el último operado fuera de ella). Si un bono no cotiza hoy se usa su último precio conocido y se marca. <b>Comisión:</b> cambiála por la que te cobre tu broker.</div>
       </div>
     </div>
 
@@ -498,7 +498,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     if (pi && pi.ok) {
       var hh = new Date(pi.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
       chips.push('<span class="pill ' + (pi.stale ? 'warn' : 'ok') + '">Precios BYMA ' + hh + (pi.stale ? ' (desactualizados)' : ' en vivo') + '</span>');
-    } else if (pi) chips.push('<span class="pill err">Sin conexión con BYMA</span>');
+    } else if (pi) chips.push('<span class="pill err">' + ((pi.error && /sin datos/.test(pi.error)) ? 'BYMA sin cotizaciones todavía' : 'Sin conexión con BYMA') + '</span>');
     else chips.push('<span class="pill">Trayendo precios…</span>');
     chips.push('<span class="pill">Liquida ' + fdateCorta(FCNLetras.fechaLiquidacion(hoy, st.plazo)) + ' · ' + (st.plazo === 'CI' ? 'CI' : '24 hs') + '</span>');
 
@@ -514,7 +514,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     if (monto > 0 && monto < 1000) chips.push('<span class="pill warn">Monto muy bajo: puede no alcanzar para 1 VN</span>');
     $('strip').innerHTML = chips.join('');
 
-    if (!filas.length) { $('tabla').innerHTML = '<p class="loading-msg">' + (pi ? 'No hay precios disponibles ahora. Probá de nuevo en unos minutos.' : 'Trayendo precios…') + '</p>'; return; }
+    if (!filas.length) { $('tabla').innerHTML = '<p class="loading-msg">' + (pi ? 'No hay precios disponibles ahora.<br>BYMA todavía no publicó cotizaciones (el mercado abre a las 11 hs) o no responde, y no hay un precio guardado lo bastante reciente para usar de referencia.<br>Volvé a probar cuando abra el mercado.' : 'Trayendo precios…') + '</p>'; return; }
 
     var cols = st.vista === 'simple' ? COLS_SIMPLE : COLS_FULL;
     if (!(pf > 0)) cols = cols.filter(function (c) { return c[0] !== 'vsPF'; });
@@ -652,7 +652,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     if (pi && pi.ok) {
       var hh = new Date(pi.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
       chips.push(['BYMA ' + hh + (pi.stale ? ' (desactualizado)' : ' en vivo'), pi.stale ? 'warn' : 'ok']);
-    } else if (pi) chips.push(['BYMA sin conexión', 'err']); else chips.push(['Trayendo precios…', '']);
+    } else if (pi) chips.push([(pi.error && /sin datos/.test(pi.error)) ? 'BYMA sin cotizaciones todavía' : 'BYMA sin conexión', 'err']); else chips.push(['Trayendo precios…', '']);
     chips.push(['Liquida ' + fdateCorta(FCNLetras.fechaLiquidacion(hoy, st.plazo)) + ' · ' + (st.plazo === 'CI' ? 'CI' : '24 hs'), '']);
 
     var q = (st.bQuery || '').trim().toLowerCase(), filas = [], sinPrecio = 0, usaMonitor = 0, ocultos = 0;
@@ -676,7 +676,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     if ($('st-precios')) { $('st-precios').textContent = chips[0][0]; $('st-precios').className = 'pill ' + chips[0][1]; }
     if ($('st-liq')) $('st-liq').textContent = chips[1][0].toLowerCase();
 
-    if (!filas.length) { $('tabla').innerHTML = MSG('No hay bonos con esos filtros.'); return; }
+    if (!filas.length) { $('tabla').innerHTML = MSG(sinPrecio ? 'BYMA todavía no publicó cotizaciones (el mercado abre a las 11 hs) o no responde, y no hay un precio guardado lo bastante reciente para usar de referencia. Volvé a probar cuando abra el mercado.' : 'No hay bonos con esos filtros.'); return; }
     var cols = st.vista === 'simple' ? BN_SIMPLE : BN_FULL, sc = st.bSortCol, asc = st.bSortAsc;
     function val(r, c) {
       if (c === 'ticker') return r.ticker;

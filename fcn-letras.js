@@ -29,6 +29,9 @@
   var TTL_MS = 90 * 1000;
   var RE_LETRA = /^[ST]\d{1,2}[A-Z]\d$/;          // S30S6, S16O6, T15E7, T30J7…
   var DAY = 86400000;
+  // El precio guardado en el Monitor solo sirve de respaldo si es RECIENTE. En una letra de 8 días, 0,7% de diferencia de precio
+  // cambia la TNA de 17% a 41% (verificado 21/09: BYMA aún sin cotizaciones antes de la apertura, Monitor del 15/09).
+  var MAX_EDAD_MONITOR = 4;   // días corridos
 
   // Feriados nacionales de días hábiles (para contar la liquidación a 24 hs).
   // Solo los que están confirmados; los "puentes turísticos" se deciden por decreto
@@ -81,6 +84,13 @@
     }
   }
   var CIERRE_RUEDA = 17;   // BYMA cierra a las 17:00; después de eso la orden se ejecuta el próximo día hábil
+  // ¿Está abierta la rueda (11 a 17 hs, día hábil, hora de Buenos Aires)? Fuera de rueda el libro de órdenes queda con puntas
+  // viejas y spreads anchos (verificado 18/09 a las 23 hs: S30S6 compra 116,51 / venta 117,39 / último 116,92): ahí el
+  // precio de referencia es el ÚLTIMO operado, no la punta vendedora.
+  function enRueda(hoy) {
+    var b = ahoraBA(hoy);
+    return esHabil(b.fecha) && b.hora >= 11 && b.hora < CIERRE_RUEDA;
+  }
   // Día en que se ejecutaría una orden dada HOY: hoy si es hábil y la rueda sigue abierta; si no, el próximo hábil.
   function fechaOperacion(hoy) {
     var b = ahoraBA(hoy);
@@ -127,6 +137,7 @@
     var emisionRow = flujo.filter(function (x) { return typeof x.residual === 'number' && x.residual > 0; })[0];
     if (pagos.length !== 1 || !emisionRow) return null;      // no es un pago único: no la tratamos como letra
     var pago = pagos[0];
+    var compraRow = flujo.filter(function (x) { return x.total < 0; })[0];     // fila "compra": su fecha es la del precio guardado en el Monitor
 
     var tna = null, precio = null;
     for (i = 0; i < rows.length; i++) {          // datos "de cortesía": la etiqueta puede estar en cualquier columna
@@ -144,7 +155,8 @@
       vto: pago.fecha,
       tnaEmision: tna > 0 ? tna : null,
       vf: pago.total / emisionRow.residual,      // valor final por 1 VN
-      precioMonitor: precio > 0 ? precio : null  // por 1 VN, sin comisión (solo como respaldo si falla BYMA)
+      precioMonitor: precio > 0 ? precio : null,  // por 1 VN, sin comisión (solo como respaldo si falla BYMA)
+      fechaPrecio: compraRow ? compraRow.fecha : null    // de cuándo es ese precio: si es viejo NO se usa (ver MAX_EDAD_MONITOR)
     };
   }
 
@@ -178,13 +190,13 @@
   // mismo parser, así la web pública no tiene que bajar el Monitor entero (1,7 MB) para leer 10 hojas.
   function letrasAJSON(letras) {
     return letras.map(function (l) {
-      return { t: l.ticker, tp: l.tipo, e: l.emision ? iso(l.emision) : null, v: iso(l.vto), tna: l.tnaEmision, vf: l.vf, pm: l.precioMonitor };
+      return { t: l.ticker, tp: l.tipo, e: l.emision ? iso(l.emision) : null, v: iso(l.vto), tna: l.tnaEmision, vf: l.vf, pm: l.precioMonitor, fp: l.fechaPrecio ? iso(l.fechaPrecio) : null };
     });
   }
   function letrasDesdeJSON(arr, hoy) {
     hoy = hoy || new Date();
     var out = (arr || []).map(function (x) {
-      return { ticker: x.t, tipo: x.tp, emision: x.e ? fechaCelda(x.e) : null, vto: fechaCelda(x.v), tnaEmision: x.tna, vf: x.vf, precioMonitor: x.pm };
+      return { ticker: x.t, tipo: x.tp, emision: x.e ? fechaCelda(x.e) : null, vto: fechaCelda(x.v), tnaEmision: x.tna, vf: x.vf, precioMonitor: x.pm, fechaPrecio: x.fp ? fechaCelda(x.fp) : null };
     }).filter(function (l) { return l.vto && diasEntre(hoy, l.vto) > 0; });      // se vuelve a filtrar por vigencia: el JSON puede tener días
     out.sort(function (a, b) { return a.vto - b.vto || (a.ticker < b.ticker ? -1 : 1); });
     return out;
@@ -210,7 +222,7 @@
 
   // { S30S6: { ci:{px,bid,offer,ult,prev,vol,hora}, h24:{…} }, … }  (px = precio cada 100 VN)
   function agruparPrecios(payloads) {
-    var out = {};
+    var out = {}, rueda = enRueda(new Date());
     payloads.forEach(function (p) {
       ((p && p.data) || []).forEach(function (x) {
         if (!RE_LETRA.test(x.symbol)) return;
@@ -218,9 +230,9 @@
         if (!pata) return;
         var ult = num(x.trade) || num(x.closingPrice) || num(x.previousClosingPrice);
         var offer = num(x.offerPrice), bid = num(x.bidPrice);
-        // Lo que pagaría un comprador es la punta vendedora; si falta o está lejos del último
-        // (libro vacío/roto), se usa el último operado.
-        var px = (offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;
+        // En rueda, lo que pagaría un comprador es la punta vendedora; si falta o está lejos del último
+        // (libro vacío/roto) o la rueda está cerrada, se usa el último operado.
+        var px = (rueda && offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;
         if (!(px > 0)) return;
         (out[x.symbol] = out[x.symbol] || {})[pata] = {
           px: px, ult: ult, bid: bid, offer: offer, prev: num(x.previousClosingPrice),
@@ -269,7 +281,8 @@
       var p = b[pref] || b[alt];
       if (p) return { px: p.px, fuente: 'BYMA', hora: p.hora, pata: b[pref] ? pref : alt, variacion: p.prev > 0 ? p.px / p.prev - 1 : null };
     }
-    if (letra.precioMonitor) return { px: letra.precioMonitor * 100, fuente: 'Monitor', hora: null, pata: null, variacion: null };
+    var edad = letra.fechaPrecio ? diasEntre(letra.fechaPrecio, new Date()) : null;
+    if (letra.precioMonitor && edad !== null && edad <= MAX_EDAD_MONITOR) return { px: letra.precioMonitor * 100, fuente: 'Monitor', hora: null, pata: null, variacion: null };
     return null;
   }
 
@@ -313,6 +326,7 @@
 
   global.FCNLetras = {
     RE_LETRA: RE_LETRA,
+    MAX_EDAD_MONITOR: MAX_EDAD_MONITOR,
     nombresLetras: nombresLetras,
     parseHoja: parseHoja,
     letrasDesdeLibro: letrasDesdeLibro,
@@ -323,8 +337,9 @@
     agruparPrecios: agruparPrecios,
     elegirPrecio: elegirPrecio,
     calcular: calcular,
-    util: { num: num, noAcc: noAcc, fechaCelda: fechaCelda, diasEntre: diasEntre, sumarHabiles: sumarHabiles, esHabil: esHabil, bymaPost: bymaPost },   // los usa fcn-bonos.js
+    util: { num: num, noAcc: noAcc, fechaCelda: fechaCelda, diasEntre: diasEntre, sumarHabiles: sumarHabiles, esHabil: esHabil, bymaPost: bymaPost, enRueda: enRueda },   // los usa fcn-bonos.js
     fechaOperacion: fechaOperacion,
+    enRueda: enRueda,
     fechaLiquidacion: function (hoy, plazo) { var op = fechaOperacion(hoy); return plazo === 'CI' ? op : sumarHabiles(op, 1); },
     ahoraBA: ahoraBA,
     diasEntre: diasEntre,

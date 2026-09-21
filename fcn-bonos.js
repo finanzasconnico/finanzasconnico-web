@@ -199,7 +199,7 @@
 
   // { SIMBOLO: { ci:{px,ult,bid,offer,prev,vol,hora}, h24:{…} } } — solo de los símbolos pedidos
   function agrupar(rows, wanted) {
-    var out = {};
+    var out = {}, rueda = U.enRueda(new Date());
     rows.forEach(function (x) {
       if (!wanted[x.symbol]) return;
       var pata = x.settlementType === '1' ? 'ci' : (x.settlementType === '2' ? 'h24' : null);
@@ -207,7 +207,7 @@
       if (x.denominationCcy === 'ARS') return;               // la punta en pesos (símbolo sin D/C) cotiza en otra unidad: nunca es la que buscamos
       var ult = num(x.trade) || num(x.closingPrice) || num(x.previousClosingPrice);
       var offer = num(x.offerPrice), bid = num(x.bidPrice);
-      var px = (offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;
+      var px = (rueda && offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;   // fuera de rueda, el último operado
       if (!(px > 0)) return;
       (out[x.symbol] = out[x.symbol] || {})[pata] = { px: px, ult: ult, bid: bid, offer: offer, prev: num(x.previousClosingPrice), vol: num(x.volume), hora: x.tradeHour || null };
     });
@@ -258,6 +258,8 @@
     // El precio del Monitor es de SU fecha. Si entre esa fecha y la liquidación de hoy cayó un pago, ese precio todavía
     // incluía el cobro (cotiza "con cupón") y usarlo daría una TIR absurda: en ese caso no hay precio confiable.
     var liqHoy = L.fechaLiquidacion(hoy || new Date(), plazo);
+    // ...ni si el precio del Monitor es viejo (ver MAX_EDAD_MONITOR en fcn-letras.js)
+    if (refMon && (!b.liqMonitor || diasEntre(b.liqMonitor, hoy || new Date()) > L.MAX_EDAD_MONITOR)) return null;
     if (refMon && b.liqMonitor && b.flujos.some(function (f) { return f.fecha > b.liqMonitor && f.fecha <= liqHoy; })) return null;
     if (refMon) return { px: refMon, fuente: 'Monitor', simbolo: null, hora: null, variacion: null, sinOperar: false, aviso: aviso };
     return null;
