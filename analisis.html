@@ -174,6 +174,8 @@ body { padding-bottom: 64px; }
 .rot-note { font-size: 0.78rem; color: var(--ink-muted); line-height: 1.55; }
 .rot-fee { margin-top: 18px; font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; opacity: 0.85; }
 .rot-fee a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.rot-fee label { font-weight: 600; margin-right: 4px; }
+.rot-fee input { width: 74px; font: inherit; padding: 3px 6px; border: 1px solid var(--line, #d9d4c9); border-radius: 6px; background: #fff; color: var(--ink, inherit); text-align: right; }
 .rot-verdict { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 14px 18px; margin: 6px 0 12px; }
 .rot-verdict.win  { background: #d4f0e3; color: #146c47; }
 .rot-verdict.stay { background: #fbe9d0; color: #8a5a12; }
@@ -414,10 +416,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <datalist id="bondList"></datalist>
-      <details class="explain-box" id="rotAvanzado">
+      <details class="explain-box">
         <summary>Opciones avanzadas (precios, lote)</summary>
         <div class="rot-adv-grid">
-          <div id="rotComWrap" hidden><label for="rotCom">Comisión (% por cada punta)</label><input id="rotCom" class="cmp-input" type="number" step="0.01" min="0" value="0.50" oninput="ROT.onChange()"></div>
+          <input id="rotCom" type="hidden" value="0.50">
           <div><label for="rotTipo">Precios a usar</label><select id="rotTipo" class="cmp-input" onchange="ROT.onTipo()"><option value="mep" selected>Dólar MEP</option><option value="cable">Dólar Cable</option></select></div>
           <div><label for="rotPV">Precio de lo que vendés</label><input id="rotPV" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
           <div><label for="rotPC">Precio de lo que comprás</label><input id="rotPC" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
@@ -427,7 +429,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </details>
       <div id="rotErr" class="cmp-err" style="display:none"></div>
       <div id="rotResult"><p class="loading-msg">Cargando datos…</p></div>
-      <p class="rot-fee">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.</p>
+      <div class="rot-fee">
+        <span id="rotFeeStd">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a> o <a href="#" onclick="ROT.toggleCom(); return false;">cambiá la comisión predeterminada</a>.</span>
+        <span id="rotFeeEdit" hidden><label for="rotComEdit">Comisión por punta (%)</label> <input id="rotComEdit" type="number" step="0.01" min="0" max="5" inputmode="decimal" value="0.50" oninput="ROT.setCom(this.value)"> <a href="#" onclick="ROT.resetCom(); return false;">Volver a la estándar</a> · <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">Ver comisiones vigentes</a></span>
+      </div>
     </div>
     </div>
 
@@ -842,26 +847,41 @@ function tirEfectivo(ticker, tipo) {
 
 /* ── Carga de datos (reusa el mismo monitor.xlsx que el tab de ONs: se baja una sola vez) ── */
 var rotComCustom = null, rotComInit = false;
-// Comisión personalizada (clientes con tarifa especial): se activa con ?com=0.25 en el link (queda guardada en el navegador; ?com=off la borra).
-// Sin eso, el cálculo usa la comisión estándar y no se muestra ningún dato de comisión.
+// Comisión: por defecto se usa la estándar (0,50% por punta) sin mostrarla. Desde el pie, "cambiá la comisión predeterminada"
+// deja cargar la propia; se guarda en el navegador (compartida con ¿Cuánto cobro?). También se activa con ?com=0.25 en el link (?com=off la borra).
+function rotSyncFee(open) {
+  var std = rotEl('rotFeeStd'), box = rotEl('rotFeeEdit');
+  if (!std || !box) return;
+  std.hidden = !!open; box.hidden = !open;
+  if (open) rotEl('rotComEdit').value = rotEl('rotCom').value;
+}
+function rotApplyCom(n) {
+  rotComCustom = (n === null || n === 0.5) ? null : n;
+  rotEl('rotCom').value = rotComCustom === null ? '0.50' : String(rotComCustom);
+  try { if (rotComCustom === null) localStorage.removeItem('fcn_com_custom'); else localStorage.setItem('fcn_com_custom', String(rotComCustom)); } catch (e) {}
+}
 function rotInitComCustom() {
   if (rotComInit) return; rotComInit = true;
+  var n = null;
   try {
     var p = new URLSearchParams(location.search).get('com');
     if (p !== null) {
       if (p === '' || p === 'off') localStorage.removeItem('fcn_com_custom');
-      else { var n = parseFloat(String(p).replace(',', '.')); if (isFinite(n) && n >= 0 && n <= 5) localStorage.setItem('fcn_com_custom', String(n)); }
+      else { var q = parseFloat(String(p).replace(',', '.')); if (isFinite(q) && q >= 0 && q <= 5) localStorage.setItem('fcn_com_custom', String(q)); }
     }
     var v = localStorage.getItem('fcn_com_custom');
-    if (v !== null && isFinite(parseFloat(v))) rotComCustom = parseFloat(v);
+    if (v !== null && isFinite(parseFloat(v))) n = parseFloat(v);
   } catch (e) {}
-  if (rotComCustom === null) return;
-  rotEl('rotCom').value = rotComCustom;
-  rotEl('rotComWrap').hidden = false;
-  var d = rotEl('rotAvanzado'); if (d) d.open = true;
-  var f = document.querySelector('.rot-fee');
-  if (f) f.innerHTML = 'Estás usando tu comisión personalizada (' + fmtNum(rotComCustom, 2) + '% por punta). Comisiones vigentes: <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.';
+  rotApplyCom(n);
+  if (rotComCustom !== null) rotSyncFee(true);
 }
+function rotToggleCom() { rotSyncFee(true); var i = rotEl('rotComEdit'); if (i) i.focus(); }
+function rotSetCom(v) {
+  var n = parseFloat(String(v).replace(',', '.'));
+  if (!isFinite(n) || n < 0 || n > 5) return;
+  rotApplyCom(n); rotOnChange();
+}
+function rotResetCom() { rotApplyCom(null); rotSyncFee(false); rotOnChange(); }
 function rotEnsure() {
   rotInitComCustom();
   if (rotState.loading) return rotState.loading;
@@ -1103,7 +1123,7 @@ function rotSetHorizon(v) { rotState.horizonte = Math.round(parseFloat(v) * 4) /
 function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent = fmtNum(parseFloat(v), 2).replace(',00', '') + ' años'; }
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
-window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista };
+window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista };
 
 })();
 </script>

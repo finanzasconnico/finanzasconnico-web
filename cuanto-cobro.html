@@ -104,6 +104,9 @@ header.site-header .container { display: flex; align-items: center; justify-cont
 .notes b { color: var(--ink-soft); }
 .notes .fee-note { margin-top: 6px; font-size: 0.72rem; opacity: 0.85; }
 .notes .fee-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.fee-note .fee-field { flex-direction: row; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fee-note .fee-field label { margin: 0; }
+.fee-note .fee-field input[type=text].sm { font-size: 0.85rem; padding: 5px 8px; width: 74px; }
 .cta { margin-top: 22px; background: var(--petroleo-700); color: #fff; border-radius: 16px; padding: 22px 24px; display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .cta p { font-size: 0.95rem; max-width: 620px; color: rgba(247,243,234,0.92); }
 .cta a { background: var(--whatsapp); color: #fff; font-weight: 600; text-decoration: none; padding: 11px 20px; border-radius: 999px; font-size: 0.9rem; white-space: nowrap; }
@@ -269,10 +272,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <label for="in-monto" id="lbl-monto">Monto a invertir ($)</label>
           <input type="text" id="in-monto" inputmode="numeric" autocomplete="off" value="1.000.000">
         </div>
-        <div class="field" id="fld-com" hidden>
-          <label for="in-com">Comisión del broker %</label>
-          <input type="text" id="in-com" class="sm" inputmode="decimal" autocomplete="off" value="0,10">
-        </div>
         <div class="field">
           <label>Plazo</label>
           <div class="seg" id="seg-plazo">
@@ -302,13 +301,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="notes" id="notes-l">
         <div><b>Comprás (VN):</b> nominales enteros que alcanzan con tu monto; lo que sobra (menos de $ 2) queda sin invertir. <b>Cobrás</b> = nominales × valor final. <b>Ganancia %</b> es lo que ganás hasta el vencimiento, sin anualizar; la <b>TNA</b> la lleva a un año para comparar con otras opciones y la <b>TEM</b> la lleva a un mes.</div>
         <div><b>Precio:</b> durante el horario de mercado (11 a 17 hs) se toma la punta vendedora de BYMA, lo que pagaría hoy un comprador (en órdenes grandes el precio real puede ser algo peor). Fuera de ese horario se toma el último precio operado, y la orden se ejecutaría el próximo día hábil: por eso los días se cuentan desde ahí.</div>
-        <div class="fee-note">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.</div>
+        <div class="fee-note"><div class="field fee-field" id="fld-com" hidden>
+          <label for="in-com">Comisión del broker %</label>
+          <input type="text" id="in-com" class="sm" inputmode="decimal" autocomplete="off" value="0,10">
+        </div><span class="fee-txt">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a> o <a href="#" class="com-toggle">cambiá la comisión predeterminada</a>.</span></div>
       </div>
       <div class="notes" id="notes-b" hidden>
         <div><b>Cobrás</b> = nominales × cada pago del calendario (intereses + devolución de capital) desde la fecha de liquidación. El precio de mercado de un bono <b>ya incluye los intereses corridos</b>: no se suma nada aparte. <b>TIR</b>: rendimiento anual si lo mantenés hasta el final y cobrás todo lo que dice el calendario, con la comisión incluida.</div>
         <div><b>Mínimos:</b> cada bono tiene un mínimo y un múltiplo de compra (p. ej. 10.000 VN); si el monto no alcanza, la fila lo indica. Si comprás pocos días antes de una fecha de cobro, ese pago puede quedar afuera (fecha de corte): confirmalo con tu broker.</div>
         <div><b>Precio:</b> de BYMA en dólar MEP (la punta vendedora durante la rueda, el último operado fuera de ella). Si un bono no cotiza hoy se usa su último precio conocido y se marca. </div>
-        <div class="fee-note">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.</div>
+        <div class="fee-note"><span class="fee-txt">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a> o <a href="#" class="com-toggle">cambiá la comisión predeterminada</a>.</span></div>
       </div>
     </div>
 
@@ -846,7 +848,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     marcarSeg('seg-modo', 'm', st.modo);
     $('lbl-monto').textContent = b ? 'Monto a invertir (USD)' : 'Monto a invertir ($)';
     $('in-monto').value = b ? (st.montoB || '10.000') : (st.montoL || '1.000.000');
-    $('in-com').value = COM_CUSTOM !== null ? (st.comSes || fmtCom(COM_CUSTOM)) : (b ? '0,50' : '0,10');      // estándar de cada modo; personalizada si el link trae ?com=
+    var host = $(b ? 'notes-b' : 'notes-l').querySelector('.fee-note');           // el editor de comisión vive en el pie del modo activo
+    host.insertBefore($('fld-com'), host.firstChild);
+    $('in-com').value = (b ? st.comSesB : st.comSesL) || (COM_CUSTOM !== null ? fmtCom(COM_CUSTOM) : (b ? '0,50' : '0,10'));      // estándar de cada modo; personalizada si el link trae ?com= o la cargó el usuario
     if ($('bn-cartera') && !b) $('bn-cartera').hidden = true;
     $('fld-pf').hidden = b; $('bn-filtros').hidden = !b; $('notes-l').hidden = b; $('notes-b').hidden = !b;
     $('hint').innerHTML = b ? HINT_B : HINT_L;
@@ -855,7 +859,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   function actualizar(force) { if (st.modo === 'bonos') recargarPreciosBonos(force); else recargarPrecios(force); }
 
   $('seg-modo').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; guardar(); st.modo = b.getAttribute('data-m'); aplicarModo(); guardar(); render(); });
-  ['in-monto', 'in-com', 'in-pf'].forEach(function (id) { $(id).addEventListener('input', function () { if (id === 'in-com') st.comSes = this.value; guardar(); render(); }); });
+  ['in-monto', 'in-com', 'in-pf'].forEach(function (id) { $(id).addEventListener('input', function () { if (id === 'in-com') { if (st.modo === 'bonos') st.comSesB = this.value; else st.comSesL = this.value; } guardar(); render(); }); });
   $('in-monto').addEventListener('blur', function () { var n = num(this.value); if (n > 0) this.value = nf0.format(n); guardar(); });
   $('seg-plazo').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.plazo = b.getAttribute('data-p'); marcarSeg('seg-plazo', 'p', st.plazo); guardar(); render(); });
   $('seg-vista').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.vista = b.getAttribute('data-v'); marcarSeg('seg-vista', 'v', st.vista); guardar(); render(); });
@@ -874,6 +878,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     if (pv !== null && isFinite(parseFloat(pv))) COM_CUSTOM = parseFloat(pv);
   } catch (e) {}
   if (COM_CUSTOM !== null) $('fld-com').hidden = false;
+  document.addEventListener('click', function (e) {          // "cambiá la comisión predeterminada" (pie de las notas)
+    var t = e.target.closest && e.target.closest('.com-toggle'); if (!t) return;
+    e.preventDefault(); $('fld-com').hidden = false; $('in-com').focus(); $('in-com').select();
+  });
 
   restaurar();
   aplicarModo(true);                                    // etiquetas y filtros ya; los datos llegan después
