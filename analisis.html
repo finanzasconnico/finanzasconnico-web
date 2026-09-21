@@ -172,6 +172,8 @@ body { padding-bottom: 64px; }
 .rot-adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
 .rot-adv-grid label { display: block; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); margin-bottom: 4px; }
 .rot-note { font-size: 0.78rem; color: var(--ink-muted); line-height: 1.55; }
+.rot-fee { margin-top: 18px; font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; opacity: 0.85; }
+.rot-fee a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rot-verdict { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 14px 18px; margin: 6px 0 12px; }
 .rot-verdict.win  { background: #d4f0e3; color: #146c47; }
 .rot-verdict.stay { background: #fbe9d0; color: #8a5a12; }
@@ -408,23 +410,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div>
           <label for="rotC">Candidato (comprar)</label>
           <input id="rotC" class="cmp-input" list="bondList" placeholder="Ej: TLCTO" oninput="ROT.onTicker('c')">
-          <p class="rot-note" style="margin-top:10px">Los nominales que comprarías se calculan solos, con la plata que te queda después de vender (y la comisión).</p>
+          <p class="rot-note" style="margin-top:10px">Los nominales que comprarías se calculan solos, con la plata que te queda después de vender .</p>
         </div>
       </div>
       <datalist id="bondList"></datalist>
       <details class="explain-box">
-        <summary>Opciones avanzadas (comisión, precios, lote)</summary>
+        <summary>Opciones avanzadas (precios, lote)</summary>
         <div class="rot-adv-grid">
-          <div><label for="rotCom">Comisión (% por cada punta)</label><input id="rotCom" class="cmp-input" type="number" step="0.01" min="0" value="0.50" oninput="ROT.onChange()"></div>
+          <input id="rotCom" type="hidden" value="0.50">
           <div><label for="rotTipo">Precios a usar</label><select id="rotTipo" class="cmp-input" onchange="ROT.onTipo()"><option value="mep" selected>Dólar MEP</option><option value="cable">Dólar Cable</option></select></div>
           <div><label for="rotPV">Precio de lo que vendés</label><input id="rotPV" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
           <div><label for="rotPC">Precio de lo que comprás</label><input id="rotPC" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
           <div><label for="rotLote">Después del mínimo, el lote va</label><select id="rotLote" class="cmp-input" onchange="ROT.onChange()"><option value="uno" selected>De a 1 (1000, 1001, 1002…)</option><option value="multiplo">Solo múltiplos de la lámina (1000, 2000…)</option></select></div>
         </div>
-        <p style="margin-top:10px">Si tenés una comisión negociada distinta de la estándar, cambiala acá: mueve el punto de equilibrio de "¿conviene rotar?". Los precios vienen del monitor y podés editarlos.</p>
+        <p style="margin-top:10px">Los precios vienen del monitor y podés editarlos.</p>
       </details>
       <div id="rotErr" class="cmp-err" style="display:none"></div>
       <div id="rotResult"><p class="loading-msg">Cargando datos…</p></div>
+      <p class="rot-fee">Los cálculos incluyen una comisión estándar de referencia. Consultá las comisiones vigentes en <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.</p>
     </div>
     </div>
 
@@ -969,7 +972,7 @@ function rotRender() {
   if (r.err) { err.textContent = r.err; err.style.display = ''; res.innerHTML = ''; return; }
   err.style.display = 'none';
   res.innerHTML = rotVeredicto(r) + rotSameMoney(r) + rotControlesHorizonte(r) + rotGrafico(r) + rotTabla(r) +
-    '<p class="rot-note">Cómo se calcula: se vende el 100% de ' + rotEsc(r.venta.ticker) + ' y con esa plata (menos la comisión) se compran los nominales que alcanzan de ' + rotEsc(r.compra.ticker) +
+    '<p class="rot-note">Cómo se calcula: se vende el 100% de ' + rotEsc(r.venta.ticker) + ' y con esa plata se compran los nominales que alcanzan de ' + rotEsc(r.compra.ticker) +
     '. Se supone que los cobros se reinvierten a la misma TIR del bono y que el bono que sigue vivo al horizonte se valúa a esa TIR. Es una estimación con datos de hoy, no una promesa de resultado.</p>';
   rotBindChart(r);
 }
@@ -1069,9 +1072,7 @@ function rotTabla(r) {
     row('Calificación', rotEsc(v.calif || '—'), rotEsc(c.calif || '—'), null) +
     row('Precio de referencia', fmtNum(v.precio, 4), fmtNum(c.precio, 4), null) +
     row('Nominales', fmtNum(v.nominales, 0), fmtNum(c.nominales, 0), null) +
-    row('Monto operado (bruto)', rotUSD(montoV), rotUSD(montoC), null) +
-    row('Comisión (' + fmtNum(com, 2) + '% por punta)', '-' + rotUSD(comV), '-' + rotUSD(comC), null) +
-    row('Neto después de comisión', rotUSD(montoV - comV) + ' (te acreditan)', rotUSD(montoC + comC) + ' (necesitás poner)', null) +
+    row('Monto operado', rotUSD(montoV), rotUSD(montoC), null) +
     '<tr><td><b>' + cashLbl + '</b></td><td>—</td><td>' + cashVal + '</td></tr></tbody></table></div></div>';
 }
 function rotSetHorizon(v) { rotState.horizonte = Math.round(parseFloat(v) * 4) / 4; rotRender(); }
