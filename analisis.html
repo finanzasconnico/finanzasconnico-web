@@ -414,10 +414,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <datalist id="bondList"></datalist>
-      <details class="explain-box">
+      <details class="explain-box" id="rotAvanzado">
         <summary>Opciones avanzadas (precios, lote)</summary>
         <div class="rot-adv-grid">
-          <input id="rotCom" type="hidden" value="0.50">
+          <div id="rotComWrap" hidden><label for="rotCom">Comisión (% por cada punta)</label><input id="rotCom" class="cmp-input" type="number" step="0.01" min="0" value="0.50" oninput="ROT.onChange()"></div>
           <div><label for="rotTipo">Precios a usar</label><select id="rotTipo" class="cmp-input" onchange="ROT.onTipo()"><option value="mep" selected>Dólar MEP</option><option value="cable">Dólar Cable</option></select></div>
           <div><label for="rotPV">Precio de lo que vendés</label><input id="rotPV" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
           <div><label for="rotPC">Precio de lo que comprás</label><input id="rotPC" class="cmp-input" type="number" step="0.0001" min="0" oninput="ROT.onChange()"></div>
@@ -841,7 +841,29 @@ function tirEfectivo(ticker, tipo) {
 }
 
 /* ── Carga de datos (reusa el mismo monitor.xlsx que el tab de ONs: se baja una sola vez) ── */
+var rotComCustom = null, rotComInit = false;
+// Comisión personalizada (clientes con tarifa especial): se activa con ?com=0.25 en el link (queda guardada en el navegador; ?com=off la borra).
+// Sin eso, el cálculo usa la comisión estándar y no se muestra ningún dato de comisión.
+function rotInitComCustom() {
+  if (rotComInit) return; rotComInit = true;
+  try {
+    var p = new URLSearchParams(location.search).get('com');
+    if (p !== null) {
+      if (p === '' || p === 'off') localStorage.removeItem('fcn_com_custom');
+      else { var n = parseFloat(String(p).replace(',', '.')); if (isFinite(n) && n >= 0 && n <= 5) localStorage.setItem('fcn_com_custom', String(n)); }
+    }
+    var v = localStorage.getItem('fcn_com_custom');
+    if (v !== null && isFinite(parseFloat(v))) rotComCustom = parseFloat(v);
+  } catch (e) {}
+  if (rotComCustom === null) return;
+  rotEl('rotCom').value = rotComCustom;
+  rotEl('rotComWrap').hidden = false;
+  var d = rotEl('rotAvanzado'); if (d) d.open = true;
+  var f = document.querySelector('.rot-fee');
+  if (f) f.innerHTML = 'Estás usando tu comisión personalizada (' + fmtNum(rotComCustom, 2) + '% por punta). Comisiones vigentes: <a href="https://balanz.com/comisiones/" target="_blank" rel="noopener">balanz.com/comisiones</a>.';
+}
 function rotEnsure() {
+  rotInitComCustom();
   if (rotState.loading) return rotState.loading;
   rotState.loading = (async function () {
     try {
@@ -1073,6 +1095,8 @@ function rotTabla(r) {
     row('Precio de referencia', fmtNum(v.precio, 4), fmtNum(c.precio, 4), null) +
     row('Nominales', fmtNum(v.nominales, 0), fmtNum(c.nominales, 0), null) +
     row('Monto operado', rotUSD(montoV), rotUSD(montoC), null) +
+    (rotComCustom !== null ? row('Comisión (' + fmtNum(com, 2) + '% por punta)', '-' + rotUSD(comV), '-' + rotUSD(comC), null) +
+      row('Neto después de comisión', rotUSD(montoV - comV) + ' (te acreditan)', rotUSD(montoC + comC) + ' (necesitás poner)', null) : '') +
     '<tr><td><b>' + cashLbl + '</b></td><td>—</td><td>' + cashVal + '</td></tr></tbody></table></div></div>';
 }
 function rotSetHorizon(v) { rotState.horizonte = Math.round(parseFloat(v) * 4) / 4; rotRender(); }
