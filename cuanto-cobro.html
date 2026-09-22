@@ -106,6 +106,14 @@ header.site-header .container { display: flex; align-items: center; justify-cont
 .pill.err { border-color: rgba(192,69,59,.4); color: var(--danger); background: rgba(192,69,59,.08); }
 
 .data-table-wrap { overflow-x: auto; }
+.bn-sinprecio { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px; margin-top: 14px; font-size: 0.85rem; }
+.bn-sinprecio summary { cursor: pointer; font-weight: 600; color: var(--heading); padding: 10px 0; }
+.bn-sinprecio p.rb-hint { margin: 0 0 10px; color: var(--ink-muted); font-size: 0.8rem; line-height: 1.5; }
+.bn-sp-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.bn-sp-row .bn-sp-tk { font-weight: 600; min-width: 70px; }
+.bn-sp-row .sub { display: block; font-family: var(--font-sans); font-size: 0.72rem; color: var(--ink-muted); font-weight: 400; }
+.bn-sp-row input[type=number] { font-family: var(--font-mono); font-size: 0.85rem; padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); width: 100px; text-align: right; }
+.bn-sp-row .bn-sp-ok { font-size: 0.78rem; color: var(--jade); }
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
 .data-table th, .data-table td { text-align: right; padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .data-table th:first-child, .data-table td:first-child { text-align: left; }
@@ -329,6 +337,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="bn-filtros" id="bn-filtros" hidden></div>
       <div class="strip" id="strip"></div>
       <div class="data-table-wrap" id="tabla"><p class="loading-msg">Cargando letras y precios…</p></div>
+      <div class="bn-sinprecio" id="bn-sinprecio" hidden></div>
 
       <div class="notes" id="notes-l">
         <div><b>Comprás (VN):</b> nominales enteros que alcanzan con tu monto; lo que sobra (menos de $ 2) queda sin invertir. <b>Cobrás</b> = nominales × valor final. <b>Ganancia %</b> es lo que ganás hasta el vencimiento, sin anualizar; la <b>TNA</b> la lleva a un año para comparar con otras opciones y la <b>TEM</b> la lleva a un mes.</div>
@@ -424,7 +433,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   var st = { letras: [], precios: {}, pxInfo: null, plazo: '24', vista: 'simple', sortCol: 'vto', sortAsc: true, monitorOk: false, cargado: false,
     modo: 'letras', montoL: '', montoB: '', comL: '', comB: '', cartera: {}, carteraManual: false, bonosJSON: null, monBuf: null, sheetNames: [],
     bonos: [], bonosDesc: [], bonosCargados: false, bonosCargando: false, bPrecios: {}, bPxInfo: null,
-    bCat: 'Soberano', bCalif: 'todas', bQuery: '', bSortCol: 'vto', bSortAsc: true, bAbiertos: {} };
+    bCat: 'Soberano', bCalif: 'todas', bQuery: '', bSortCol: 'vto', bSortAsc: true, bAbiertos: {}, manualPrecios: {} };
 
   function $(id) { return document.getElementById(id); }
   function num(txt) {                                   // "1.000.000" / "0,50" -> número
@@ -681,6 +690,42 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
       '</div>';
   }
 
+  // Igual que FCNBonos.elegirPrecio, pero si no hay precio de BYMA ni del Monitor y el cliente ya
+  // cargó uno a mano (bono validado únicamente — nunca para los que fallaron la validación de
+  // cronograma), arma el mismo shape {px, fuente, ...} que espera calcularBono().
+  function precioConManual(b, hoy) {
+    var pr = FCNBonos.elegirPrecio(b, st.bPrecios, st.plazo, hoy);
+    if (pr) return pr;
+    var manual = st.manualPrecios[b.ticker];
+    if (b.validado && manual > 0) return { px: manual, fuente: 'Manual', simbolo: null, hora: null, variacion: null, sinOperar: false };
+    return null;
+  }
+  function setPrecioManual(ticker, val) {
+    var n = num(val);
+    if (n > 0) st.manualPrecios[ticker] = n; else delete st.manualPrecios[ticker];
+    render();
+  }
+  function renderSinPrecio(bonos) {
+    var box = $('bn-sinprecio');
+    if (!box) return;
+    if (st.modo !== 'bonos' || !bonos.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = '<details' + (st.bSinPrecioAbierto ? ' open' : '') + '><summary>🔧 ' + bonos.length + ' bono' + (bonos.length > 1 ? 's' : '') + ' sin precio hoy — cargalo vos si lo sabés</summary>' +
+      '<p class="rb-hint">BYMA no cotizó estos bonos hoy y no hay un precio guardado lo bastante reciente. Si tenés el precio de hoy (de tu operador, de otra pantalla), cargalo cada 100 VN y calculamos igual que con el resto.</p>' +
+      bonos.map(function (b) {
+        var v = st.manualPrecios[b.ticker];
+        return '<div class="bn-sp-row"><span class="bn-sp-tk">' + esc(b.ticker) + '<span class="sub">' + esc(b.emisor) + '</span></span>' +
+          '<input type="number" step="0.0001" min="0" placeholder="cada 100 VN" value="' + (v || '') + '" data-t="' + esc(b.ticker) + '" class="bn-sp-input">' +
+          (v > 0 ? '<span class="bn-sp-ok">✓ usando ' + nf2.format(v) + '</span>' : '') + '</div>';
+      }).join('') + '</details>';
+    var det = box.querySelector('details');
+    if (det) det.ontoggle = function () { st.bSinPrecioAbierto = det.open; };
+    var inputs = box.querySelectorAll('.bn-sp-input');
+    for (var i = 0; i < inputs.length; i++) {
+      inputs[i].onchange = function () { setPrecioManual(this.getAttribute('data-t'), this.value); };
+      inputs[i].onclick = function (e) { e.stopPropagation(); };
+    }
+  }
   function renderBonos() {
     var monto = num($('in-monto').value), com = num($('in-com').value), hoy = new Date(), pi = st.bPxInfo, chips = [];
     if (!st.bonosCargados) { $('strip').innerHTML = ''; $('tabla').innerHTML = MSG('Cargando bonos y precios…'); return; }
@@ -692,28 +737,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     } else if (pi) chips.push([(pi.error && /sin datos/.test(pi.error)) ? 'BYMA sin cotizaciones todavía' : 'BYMA sin conexión', 'err']); else chips.push(['Trayendo precios…', '']);
     chips.push(['Liquida ' + fdateCorta(FCNLetras.fechaLiquidacion(hoy, st.plazo)) + ' · ' + (st.plazo === 'CI' ? 'CI' : '24 hs'), '']);
 
-    var q = (st.bQuery || '').trim().toLowerCase(), filas = [], sinPrecio = 0, usaMonitor = 0, ocultos = 0;
+    var q = (st.bQuery || '').trim().toLowerCase(), filas = [], sinPrecioBonos = [], usaMonitor = 0, usaManual = 0, ocultos = 0;
     st.bonos.forEach(function (b) {
       if (!b.validado) { ocultos++; return; }
       if (st.bCat !== 'todos' && b.cat !== st.bCat) return;
       if (b.cat === 'ON' && st.bCalif !== 'todas' && grupoCalif(b.calif) !== st.bCalif) return;
       if (q && (b.ticker + ' ' + b.emisor).toLowerCase().indexOf(q) < 0) return;
-      var pr = FCNBonos.elegirPrecio(b, st.bPrecios, st.plazo, hoy);
-      if (!pr) { sinPrecio++; return; }
+      var pr = precioConManual(b, hoy);
+      if (!pr) { sinPrecioBonos.push(b); return; }
       var r = FCNBonos.calcularBono(b, { monto: monto, comisionPct: com, plazo: st.plazo, hoy: hoy, precio: pr });
       if (!r) return;
-      r.b = b; if (r.fuente === 'Monitor') usaMonitor++;
+      r.b = b; if (r.fuente === 'Monitor') usaMonitor++; if (r.fuente === 'Manual') usaManual++;
       filas.push(r);
     });
     renderCartera();
+    renderSinPrecio(sinPrecioBonos);
     chips.push([filas.length + ' bonos', '']);
     if (usaMonitor) chips.push([usaMonitor + ' con precio del Monitor (BYMA no lo cotiza hoy)', 'warn']);
-    if (sinPrecio) chips.push([sinPrecio + ' sin precio disponible (ocultos)', 'warn']);
+    if (usaManual) chips.push([usaManual + ' con precio cargado a mano', 'warn']);
+    if (sinPrecioBonos.length) chips.push([sinPrecioBonos.length + ' sin precio disponible', 'warn']);
     $('strip').innerHTML = chips.map(function (c) { return '<span class="pill ' + c[1] + '">' + esc(c[0]) + '</span>'; }).join('');
     if ($('st-precios')) { $('st-precios').textContent = chips[0][0]; $('st-precios').className = 'pill ' + chips[0][1]; }
     if ($('st-liq')) $('st-liq').textContent = chips[1][0].toLowerCase();
 
-    if (!filas.length) { $('tabla').innerHTML = MSG(sinPrecio ? 'BYMA todavía no publicó cotizaciones (el mercado abre a las 11 hs) o no responde, y no hay un precio guardado lo bastante reciente para usar de referencia. Volvé a probar cuando abra el mercado.' : 'No hay bonos con esos filtros.'); return; }
+    if (!filas.length) { $('tabla').innerHTML = MSG(sinPrecioBonos.length ? 'BYMA todavía no publicó cotizaciones (el mercado abre a las 11 hs) o no responde, y no hay un precio guardado lo bastante reciente para usar de referencia. Volvé a probar cuando abra el mercado.' : 'No hay bonos con esos filtros.'); return; }
     var cols = st.vista === 'simple' ? BN_SIMPLE : BN_FULL, sc = st.bSortCol, asc = st.bSortAsc;
     function val(r, c) {
       if (c === 'ticker') return r.ticker;
@@ -731,6 +778,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
         switch (c[0]) {
           case 'ticker': return '<td class="tk"><input type="checkbox" class="bn-ck" data-t="' + esc(r.ticker) + '"' + (st.cartera[r.ticker] !== undefined ? ' checked' : '') + ' title="Sumar a tu cartera"><span class="bn-flecha">' + (abierto ? '▾' : '▸') + '</span> ' + linkTicker(r.ticker) + '<span class="tag' + (r.cat === 'Soberano' ? '' : ' b') + '">' + esc(r.cat === 'ON' ? (r.calif || 'ON') : r.cat) + '</span>' +
             (r.fuente === 'Monitor' ? '<span class="tag" title="' + esc(r.aviso || 'BYMA no cotiza este bono hoy: precio guardado en el Monitor') + '">Monitor</span>' : '') +
+            (r.fuente === 'Manual' ? '<span class="tag bn-manual-tag" data-t="' + esc(r.ticker) + '" title="Precio que cargaste vos (' + nf2.format(r.precio * 100) + ') — no viene de BYMA ni del Monitor. Clic para quitarlo.">Manual ✕</span>' : '') +
             (r.sinOperar && r.fuente === 'BYMA' ? '<span class="tag" title="Sin operaciones hoy: es el precio del último cierre">s/oper.</span>' : '') +
             '<span class="sub">' + esc(r.emisor) + '</span></td>';
           case 'vto': return '<td>' + fdate(r.vto) + '</td>';
@@ -762,6 +810,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     for (var j = 0; j < rows.length; j++) rows[j].onclick = function (e) {
       if (e.target.closest && e.target.closest('a')) return;               // el link a Balanz no abre el detalle
       if (e.target.classList && e.target.classList.contains('bn-ck')) { toggleCartera(e.target.getAttribute('data-t'), e.target.checked); return; }
+      if (e.target.classList && e.target.classList.contains('bn-manual-tag')) { setPrecioManual(e.target.getAttribute('data-t'), ''); return; }
       var t = this.getAttribute('data-t');
       if (st.bAbiertos[t]) delete st.bAbiertos[t]; else st.bAbiertos[t] = 1;
       render();
@@ -790,7 +839,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
       var b = null; st.bonos.forEach(function (x) { if (x.ticker === t) b = x; });
       if (!b || !b.validado) return;
       var it = { t: t, b: b, color: PALETA[i % PALETA.length], monto: num(st.cartera[t]) };
-      var pr = FCNBonos.elegirPrecio(b, st.bPrecios, st.plazo, hoy);
+      var pr = precioConManual(b, hoy);
       if (!pr) { it.sinPrecio = true; items.push(it); return; }
       var r = FCNBonos.calcularBono(b, { monto: it.monto, comisionPct: com, plazo: st.plazo, hoy: hoy, precio: pr });
       it.r = r; items.push(it);
