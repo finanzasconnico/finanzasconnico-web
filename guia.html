@@ -863,6 +863,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       color: var(--warning);
       margin-top: 16px;
     }
+    .kv-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+    .kv-box dl { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; margin: 0; }
+    .kv-box dt { font-size: 0.78rem; color: var(--ink-muted); font-weight: 500; white-space: nowrap; }
+    .kv-box dd { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text); margin: 0; }
     .tutorial-important {
       background: #fbe0de;
       border-left: 3px solid var(--danger);
@@ -1950,6 +1954,84 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
 
+      <!-- k) Recibir una transferencia desde el exterior -->
+      <div class="accordion-item" data-accordion id="tuto-recibir-exterior">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">📥</span>
+            <span class="accordion-title">Recibir una transferencia desde el exterior</span>
+            <span class="accordion-steps-badge">Datos para dar</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <p style="font-size:0.9rem;color:var(--ink-soft);line-height:1.6;margin-bottom:6px">Si tenés dólares en un banco o broker del exterior (por ejemplo, Interactive Brokers) y querés pasarlos a tu cuenta de Balanz, dale estos datos a esa entidad para que emita la transferencia:</p>
+          <div class="kv-box">
+            <dl>
+              <dt>Banco</dt><dd>Citibank N.A., New York Branch</dd>
+              <dt>Dirección</dt><dd>111 Wall Street, New York, USA 10043</dd>
+              <dt>SWIFT</dt><dd>CITIUS33</dd>
+              <dt>ABA</dt><dd>021000089</dd>
+              <dt>Número de cuenta</dt><dd>36375429</dd>
+              <dt>Beneficiario</dt><dd>Balanz Capital Valores S.A.</dd>
+            </dl>
+          </div>
+          <div class="tutorial-important">⚠️ Pedile a la entidad que incluya tu nombre y número de comitente de Balanz en la referencia del pago, para que se pueda identificar el ingreso. Ante la duda, escribile a tu asesor antes de pedir la transferencia.</div>
+        </div>
+      </div>
+
+      <!-- l) Transferir a Interactive Brokers -->
+      <div class="accordion-item" data-accordion id="tuto-ibkr">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">📤</span>
+            <span class="accordion-title">Transferir a tu cuenta en Interactive Brokers</span>
+            <span class="accordion-steps-badge">3 fases</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="tutorial-important">⚠️ Esto es para mover dinero entre cuentas <strong>de tu misma titularidad</strong> (tu cuenta de Balanz → tu propia cuenta en Interactive Brokers). Nunca compartas estos pasos para transferir a una cuenta que no sea tuya.</div>
+
+          <p style="font-weight:600;color:var(--heading);margin-top:20px;margin-bottom:4px">Fase 1 · Aviso de depósito en Interactive Brokers</p>
+          <p style="font-size:0.84rem;color:var(--ink-muted);margin-bottom:10px">Obligatorio para que IBKR reconozca tus fondos cuando lleguen.</p>
+          <ol class="tutorial-steps">
+            <li><span>Iniciá sesión en tu cuenta de <strong>Interactive Brokers</strong>.</span></li>
+            <li><span>Menú → <strong>Transferencias y pagos</strong> → <strong>Transferencia de fondos</strong> → <strong>Depositar fondos</strong>.</span></li>
+            <li><span>Elegí divisa <strong>Dólar estadounidense (USD)</strong> y método <strong>Transferencia bancaria (Bank Wire)</strong>.</span></li>
+            <li><span>Completá el formulario: institución expedidora <strong>Balanz Capital Valores S.A.</strong>, número de cuenta tu <strong>número de comitente de Balanz</strong> (lo ves en la app), y el monto exacto en USD. "¿Guardar información bancaria?" Sí. "¿Notificación recurrente?" No.</span></li>
+            <li><span>Hacé clic en <strong>Continuar</strong>.</span></li>
+            <li><span>⚠️ En la pantalla final, copiá el texto del campo <strong>Referencia de pago / For Further Credit To (FFC)</strong> — ahí figura tu cuenta U y tu nombre. Dejá esa ventana abierta, la vas a necesitar en la Fase 2.</span></li>
+          </ol>
+
+          <p style="font-weight:600;color:var(--heading);margin-top:24px;margin-bottom:4px">Fase 2 · Vincular la cuenta en Balanz</p>
+          <p style="font-size:0.84rem;color:var(--ink-muted);margin-bottom:10px">Se hace una sola vez, para agendar a Interactive Brokers como destino.</p>
+          <ol class="tutorial-steps">
+            <li><span>En la app o web de Balanz, andá a <strong>Retirá</strong>.</span></li>
+            <li><span>Moneda: <strong>US Dollar (Cable)</strong> → <strong>Vincular cuenta</strong> → <strong>Otro país</strong>.</span></li>
+            <li><span>Marcá el casillero <strong>"Es una cuenta comitente de mi propiedad, en un broker del exterior"</strong>.</span></li>
+            <li><span>En "¿Qué broker es?" elegí <strong>Interactive Brokers LLC (CITI)</strong>. Se cargan solos el SWIFT, ABA y número de cuenta del broker.</span></li>
+            <li><span>Completá a mano: <strong>Beneficiario Final (FFC)</strong> — pegá ahí la Referencia de pago exacta que copiaste en la Fase 1 (ej: "JUAN PEREZ - account #U19585703") — y una <strong>Descripción</strong> para identificar la cuenta.</span></li>
+            <li><span>Confirmá con tu token o reconocimiento facial de la app.</span></li>
+          </ol>
+          <div class="kv-box">
+            <dl>
+              <dt>Beneficiario</dt><dd>Interactive Brokers LLC (CITI)</dd>
+              <dt>SWIFT</dt><dd>CITIUS33</dd>
+              <dt>ABA</dt><dd>021000089</dd>
+              <dt>Número de cuenta</dt><dd>40806826</dd>
+            </dl>
+          </div>
+
+          <p style="font-weight:600;color:var(--heading);margin-top:24px;margin-bottom:4px">Fase 3 · Retiro y espera</p>
+          <ol class="tutorial-steps">
+            <li><span>Una vez que Balanz apruebe la vinculación, volvé a <strong>Retirá</strong> → <strong>US Dollar (Cable)</strong> → elegí la cuenta de IBKR que agendaste.</span></li>
+            <li><span>Ingresá el monto exacto y confirmá.</span></li>
+          </ol>
+          <div class="tutorial-note">⏳ Al ser Dólar Cable, el dinero demora entre <strong>24 y 48 horas hábiles</strong> en acreditarse en Interactive Brokers.</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -2742,6 +2824,23 @@ function fcnToggleTheme() {
   fcnSyncThemeButtons();
 }
 document.addEventListener('DOMContentLoaded', fcnSyncThemeButtons);
+</script>
+<script>
+// Analytics: clicks en WhatsApp y en links a Balanz (cuenta, comisiones, o botones de compra generados dinámicamente)
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.href || '';
+  var evt = null;
+  if (/wa\.me|api\.whatsapp\.com/i.test(href)) evt = 'whatsapp_click';
+  else if (/balanz\.com/i.test(href)) evt = 'balanz_click';
+  if (!evt) return;
+  try {
+    (window.dataLayer = window.dataLayer || []).push({
+      event: evt, link_url: href, link_text: (a.textContent || '').trim().slice(0, 60), page_path: location.pathname
+    });
+  } catch (err) {}
+});
 </script>
 </body>
 </html>

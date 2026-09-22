@@ -1417,5 +1417,22 @@ function fcnToggleTheme() {
 }
 document.addEventListener('DOMContentLoaded', fcnSyncThemeButtons);
 </script>
+<script>
+// Analytics: clicks en WhatsApp y en links a Balanz (cuenta, comisiones, o botones de compra generados dinámicamente)
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.href || '';
+  var evt = null;
+  if (/wa\.me|api\.whatsapp\.com/i.test(href)) evt = 'whatsapp_click';
+  else if (/balanz\.com/i.test(href)) evt = 'balanz_click';
+  if (!evt) return;
+  try {
+    (window.dataLayer = window.dataLayer || []).push({
+      event: evt, link_url: href, link_text: (a.textContent || '').trim().slice(0, 60), page_path: location.pathname
+    });
+  } catch (err) {}
+});
+</script>
 </body>
 </html>
