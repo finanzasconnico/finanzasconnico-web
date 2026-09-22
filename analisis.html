@@ -203,6 +203,8 @@ body { padding-bottom: 64px; }
 .cmp-err { color: var(--danger); font-size: 0.82rem; margin-bottom: 8px; }
 /* Rotar bonos */
 .rot-adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
+.rv-horizonte { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.rv-hor-lbl { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
 .rot-adv-grid label { display: block; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); margin-bottom: 4px; }
 .rot-note { font-size: 0.78rem; color: var(--ink-muted); line-height: 1.55; }
 .rot-fee { margin-top: 18px; font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; opacity: 0.85; }
@@ -371,22 +373,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="tool-sub">Cada acción recibe un puntaje de <strong>−100 a +100</strong>. Arriba de todo, las que hoy mejor puntúan; abajo, las que peor. Tocá cualquier columna para reordenar.</div>
       <details class="explain-box">
         <summary>¿Cómo se calcula el puntaje?</summary>
-        <p style="margin-top:8px">Junta tres miradas, cada una de −100 a +100:</p>
-        <p>• <strong>Negocio (35%)</strong>: qué tan sólida es la empresa — crecimiento de ventas, si gana plata, tendencia del margen, generación de caja y nivel de deuda.<br>
-           • <strong>Precio vs. su historia (35%)</strong>: si hoy cotiza barata o cara frente a su propio promedio de 5 años, usando el múltiplo que corresponde a su sector.<br>
-           • <strong>Tendencia (30%)</strong>: si el precio viene subiendo o bajando (medias móviles, retornos y fuerza contra el resto).</p>
+        <p style="margin-top:8px">Junta miradas, cada una de −100 a +100 — cuánto pesa cada una depende del <strong>horizonte</strong> que elijas abajo:</p>
+        <p>• <strong>Negocio</strong>: qué tan sólida es la empresa — crecimiento de ventas, si gana plata, tendencia del margen, generación de caja y nivel de deuda.<br>
+           • <strong>Precio vs. su historia</strong>: si hoy cotiza barata o cara frente a su propio promedio de 5 años, usando el múltiplo que corresponde a su sector.<br>
+           • <strong>Tendencia</strong>: si el precio viene subiendo o bajando (medias móviles, retornos y fuerza contra el resto).<br>
+           • <strong>Rebote técnico</strong> (solo pesa en Corto plazo): si el precio está justo tocando una media móvil o un nivel de Fibonacci que en el pasado funcionó como soporte o resistencia — el punto de entrada de un trade corto.</p>
         <p><strong>Ojo:</strong> es un ordenamiento cuantitativo con datos de hoy, no una recomendación. Una acción con puntaje alto puede bajar y una con puntaje bajo puede subir. Los ETFs y los papeles que cotizan en pesos no tienen puntaje. Las opiniones de analistas se muestran aparte y no entran en el puntaje.</p>
       </details>
+      <div class="rv-horizonte" id="rv-horizonte">
+        <span class="rv-hor-lbl">Horizonte:</span>
+        <button class="calif-btn" id="rvHorLargo" onclick="rvSetHorizonte('largo')" title="Comprar y mantener — meses a años. El momento exacto de entrada importa poco.">Largo plazo</button>
+        <button class="calif-btn active" id="rvHorMediano" onclick="rvSetHorizonte('mediano')" title="Semanas a pocos meses. Es el equilibrio de siempre (35/35/30).">Mediano plazo</button>
+        <button class="calif-btn" id="rvHorCorto" onclick="rvSetHorizonte('corto')" title="Días a ~30 días, trading. Ahí importa mucho más el momento (tendencia + rebote técnico) que si la empresa es sólida a 5 años.">Corto plazo</button>
+      </div>
       <details class="explain-box" id="rvPesosBox">
-        <summary>Avanzado: ajustar los pesos del puntaje</summary>
-        <p style="margin-top:8px">Por default: Negocio 35% · Precio vs. historia 35% · Tendencia 30%. Si te importa más un aspecto que otro, subilo — se normaliza solo para que el puntaje siga yendo de −100 a +100.</p>
+        <summary>Avanzado: ajustar los pesos a mano</summary>
+        <p style="margin-top:8px">Los botones de arriba ya cargan una combinación pensada para cada horizonte. Si te importa más un aspecto que otro, subilo acá — se normaliza solo para que el puntaje siga yendo de −100 a +100.</p>
         <div class="rot-adv-grid">
           <div><label for="rvPesoNegocio">Negocio (%)</label><input id="rvPesoNegocio" class="cmp-input" type="number" min="0" max="100" step="5" value="35" oninput="rvSetPeso()"></div>
           <div><label for="rvPesoValuacion">Precio vs. historia (%)</label><input id="rvPesoValuacion" class="cmp-input" type="number" min="0" max="100" step="5" value="35" oninput="rvSetPeso()"></div>
           <div><label for="rvPesoTendencia">Tendencia (%)</label><input id="rvPesoTendencia" class="cmp-input" type="number" min="0" max="100" step="5" value="30" oninput="rvSetPeso()"></div>
+          <div><label for="rvPesoRebote">Rebote técnico (%)</label><input id="rvPesoRebote" class="cmp-input" type="number" min="0" max="100" step="5" value="0" oninput="rvSetPeso()"></div>
         </div>
         <p class="rot-note" style="margin-top:10px" id="rvPesosNota">Total: 100% · usando los valores por default.</p>
-        <p style="margin-top:6px"><a href="#" onclick="rvResetPesos(); return false;">Volver a los valores por default</a></p>
+        <p style="margin-top:6px"><a href="#" onclick="rvResetPesos(); return false;">Volver a Mediano plazo (default)</a></p>
       </details>
       <div class="rv-controls">
         <button class="calif-btn active" id="rvBtnMejor" onclick="setRvOrden('mejor')">Mejor puntaje primero</button>
@@ -1643,9 +1653,64 @@ const SECTOR_ES = {
   'Utilities': 'Servicios públicos', 'Real Estate': 'Inmobiliario', 'Communication Services': 'Comunicaciones'
 };
 const REC_LABEL = { strongbuy: 'Compra fuerte', buy: 'Compra', hold: 'Mantener', sell: 'Venta', strongsell: 'Venta fuerte', underperform: 'Venta', outperform: 'Compra', none: '' };
-const PUNTAJE_PESOS_DEFAULT = { negocio: 35, valuacion: 35, tendencia: 30 };
-const PUNTAJE_PESOS = { negocio: 0.35, valuacion: 0.35, tendencia: 0.30 };
+const PUNTAJE_PESOS_DEFAULT = { negocio: 35, valuacion: 35, tendencia: 30, rebote: 0 };
+const PUNTAJE_PESOS = { negocio: 0.35, valuacion: 0.35, tendencia: 0.30, rebote: 0 };
+// presets de "Horizonte" (mismos números que el panel interno del Suite) — Mediano es el default de
+// siempre (35/35/30), así que elegirlo no cambia nada; los otros dos son puntos de partida, y quedan
+// editables a mano en "Avanzado" arriba.
+const HORIZONTE_PESOS = {
+  largo:   { negocio: 45, valuacion: 40, tendencia: 15, rebote: 0 },
+  mediano: { negocio: 35, valuacion: 35, tendencia: 30, rebote: 0 },
+  corto:   { negocio: 10, valuacion: 15, tendencia: 35, rebote: 40 },
+};
+function rvSetHorizonte(h) {
+  const p = HORIZONTE_PESOS[h]; if (!p) return;
+  ['rvHorLargo', 'rvHorMediano', 'rvHorCorto'].forEach(id => document.getElementById(id).classList.toggle('active', id === 'rvHor' + h[0].toUpperCase() + h.slice(1)));
+  document.getElementById('rvPesoNegocio').value = p.negocio;
+  document.getElementById('rvPesoValuacion').value = p.valuacion;
+  document.getElementById('rvPesoTendencia').value = p.tendencia;
+  document.getElementById('rvPesoRebote').value = p.rebote;
+  rvSetPeso();
+  try { localStorage.setItem(RV_HOR_LS, h); } catch (e) {}
+}
+// Rebote técnico: mismo cálculo que el panel interno — ver Valuacion_Multiplos_FCN.html. +100 = está
+// justo tocando un soporte (candidato a rebote de compra), −100 = tocando una resistencia (posible
+// techo). Si no está cerca de ningún nivel da null y el puntaje lo trata como neutral (0).
+const REBOTE_BANDAS = { corto: 0.03, mediano: 0.04, largo: 0.05, fibo: 0.02 };
+function nivelesFibo(hi, lo) {
+  if (hi == null || lo == null || hi <= lo) return null;
+  const rango = hi - lo;
+  return [23.6, 38.2, 50, 61.8].map(pct => ({ pct, nivel: hi - rango * pct / 100 }));
+}
+function puntosRebote(r) {
+  if (r.precio == null) return [];
+  const out = [];
+  const chk = (plazo, ma) => {
+    if (ma == null || ma <= 0) return;
+    const dist = r.precio / ma - 1;
+    if (Math.abs(dist) <= REBOTE_BANDAS[plazo]) out.push({ plazo, dist, tipo: dist >= 0 ? 'soporte' : 'resistencia' });
+  };
+  chk('corto', r.mm200d); chk('mediano', r.mm20s); chk('largo', r.mm20m); chk('largo', r.mm50m);
+  const fibs = nivelesFibo(r.max52, r.min52);
+  if (fibs) {
+    let mejor = null;
+    fibs.forEach(f => {
+      const dist = r.precio / f.nivel - 1;
+      if (Math.abs(dist) <= REBOTE_BANDAS.fibo && (!mejor || Math.abs(dist) < Math.abs(mejor.dist))) mejor = { plazo: 'fibo', dist, tipo: dist >= 0 ? 'soporte' : 'resistencia' };
+    });
+    if (mejor) out.push(mejor);
+  }
+  return out;
+}
+function reboteScore(r) {
+  const pts = puntosRebote(r);
+  if (!pts.length) return null;
+  const banda = p => REBOTE_BANDAS[p.plazo] || REBOTE_BANDAS.fibo;
+  const vals = pts.map(p => { const f = clamp(1 - Math.abs(p.dist) / banda(p), 0, 1) * 100; return p.tipo === 'soporte' ? f : -f; });
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
 const RV_PESOS_LS = 'fcn_puntaje_pesos';
+const RV_HOR_LS = 'fcn_horizonte';
 
 // ── "?" de ayuda: un globito con la explicación en criollo, al lado de cada término ──
 const AYUDA = {
@@ -1712,6 +1777,8 @@ function parseValuacion(buf) {
       precio: num(r['Precio_actual']), m,
       mm21: num(r['MM21_sem']), mm50: num(r['MM50_sem']), mm200: num(r['MM200_sem']),
       ret3m: num(r['Ret_3m']), ret6m: num(r['Ret_6m']), dist52: num(r['Dist_max_52s']),
+      mm200d: num(r['MM200_dia']), mm20s: num(r['MM20_sem']), mm20m: num(r['MM20_mes']), mm50m: num(r['MM50_mes']),
+      max52: num(r['Max_52s']), min52: num(r['Min_52s']),
       f: { revCagr: num(r['Rev_CAGR']), niPos: num(r['NI_pos']), fcfPos: num(r['FCF_pos']), margenTrend: num(r['Margen_trend']), ndEbitda: num(r['ND_EBITDA']) }
     };
   }).filter(r => r.ticker);
@@ -1792,13 +1859,16 @@ function puntajeDetalle(r) {
   const t = tendencia(r), n = fundamental(r), v = valuacion5y(r);
   if (t === null || n === null || v === null) return null;
   const v100 = Math.round(clamp(v / 0.40, -1, 1) * 100);
-  const total = Math.round(clamp(n * PUNTAJE_PESOS.negocio + v100 * PUNTAJE_PESOS.valuacion + t * PUNTAJE_PESOS.tendencia, -100, 100));
-  return { total, negocio: n, valuacion: v100, tendencia: t };
+  const reb = reboteScore(r);
+  const total = Math.round(clamp(n * PUNTAJE_PESOS.negocio + v100 * PUNTAJE_PESOS.valuacion + t * PUNTAJE_PESOS.tendencia + (reb || 0) * PUNTAJE_PESOS.rebote, -100, 100));
+  return { total, negocio: n, valuacion: v100, tendencia: t, rebote: reb };
 }
 function puntajeTitle(p) {
   const s = x => (x > 0 ? '+' : '') + x;
   const pct = w => Math.round(w * 100);
-  return `Negocio ${s(p.negocio)} (${pct(PUNTAJE_PESOS.negocio)}%) · Precio vs. historia ${s(p.valuacion)} (${pct(PUNTAJE_PESOS.valuacion)}%) · Tendencia ${s(p.tendencia)} (${pct(PUNTAJE_PESOS.tendencia)}%)`;
+  let t = `Negocio ${s(p.negocio)} (${pct(PUNTAJE_PESOS.negocio)}%) · Precio vs. historia ${s(p.valuacion)} (${pct(PUNTAJE_PESOS.valuacion)}%) · Tendencia ${s(p.tendencia)} (${pct(PUNTAJE_PESOS.tendencia)}%)`;
+  if (PUNTAJE_PESOS.rebote > 0) t += ` · Rebote técnico ${p.rebote == null ? 'sin señal (0)' : s(p.rebote)} (${pct(PUNTAJE_PESOS.rebote)}%)`;
+  return t;
 }
 function ptBg(score) {
   const a = Math.pow(Math.min(Math.abs(score) / 100, 1), 0.75) * 0.42;
@@ -1876,6 +1946,7 @@ async function loadRV() {
     RV.scored = RV.rows
       .map(r => ({ r, p: puntajeDetalle(r), st: sigTendencia(r), sn: sigNegocio(r), sp: sigPrecio(r), an: analistasDe(r) }))
       .filter(x => x.p);
+    RV.puntuables = RV.scored.map(x => x.r);   // universo fijo para recalcular cuando cambian los pesos (Horizonte/Avanzado)
     poblarSectores();
     poblarTickerList();
     renderRV();
@@ -1910,41 +1981,61 @@ function setRvOrden(modo) {
 function setRvSector(v) { rvSector = v; renderRV(); }
 function setRvQuery(v) { rvQuery = v.trim().toLowerCase(); renderRV(); }
 // Pesos del puntaje: editables desde "Avanzado", se guardan en el navegador (fcn_puntaje_pesos) y valen para toda la página (RV y comparador).
-function rvApplyPesos(neg, val, ten) {
-  var suma = neg + val + ten;
-  if (suma <= 0) { neg = 35; val = 35; ten = 30; suma = 100; }
-  PUNTAJE_PESOS.negocio = neg / suma; PUNTAJE_PESOS.valuacion = val / suma; PUNTAJE_PESOS.tendencia = ten / suma;
+function rvApplyPesos(neg, val, ten, reb) {
+  reb = reb || 0;
+  var suma = neg + val + ten + reb;
+  if (suma <= 0) { neg = 35; val = 35; ten = 30; reb = 0; suma = 100; }
+  PUNTAJE_PESOS.negocio = neg / suma; PUNTAJE_PESOS.valuacion = val / suma; PUNTAJE_PESOS.tendencia = ten / suma; PUNTAJE_PESOS.rebote = reb / suma;
   var el = document.getElementById('rvPesosNota');
   if (el) {
-    var esDefault = neg === PUNTAJE_PESOS_DEFAULT.negocio && val === PUNTAJE_PESOS_DEFAULT.valuacion && ten === PUNTAJE_PESOS_DEFAULT.tendencia;
+    var esDefault = neg === PUNTAJE_PESOS_DEFAULT.negocio && val === PUNTAJE_PESOS_DEFAULT.valuacion && ten === PUNTAJE_PESOS_DEFAULT.tendencia && reb === PUNTAJE_PESOS_DEFAULT.rebote;
     var normNota = suma === 100 ? '' : ' (se normalizan a partir de tus números)';
-    el.textContent = 'Total: ' + suma + '%' + normNota + (esDefault ? ' · usando los valores por default.' : ' · usando tus valores.');
+    el.textContent = 'Total: ' + suma + '%' + normNota + (esDefault ? ' · Mediano plazo, el default.' : ' · usando tus valores.');
   }
+}
+// PUNTAJE_PESOS es global y puntajeDetalle lo lee en vivo, pero RV.scored guarda el resultado ya
+// calculado (para no recalcular en cada tecla del buscador) — hay que rehacerlo a mano cada vez
+// que cambian los pesos, si no los botones de Horizonte y los sliders de Avanzado no mueven nada.
+function rvRecomputarPuntajes() {
+  if (!RV.puntuables) return;
+  RV.scored = RV.puntuables.map(r => ({ r, p: puntajeDetalle(r), st: sigTendencia(r), sn: sigNegocio(r), sp: sigPrecio(r), an: analistasDe(r) })).filter(x => x.p);
 }
 function rvSetPeso() {
   var neg = parseFloat(document.getElementById('rvPesoNegocio').value) || 0;
   var val = parseFloat(document.getElementById('rvPesoValuacion').value) || 0;
   var ten = parseFloat(document.getElementById('rvPesoTendencia').value) || 0;
-  rvApplyPesos(neg, val, ten);
-  try { localStorage.setItem(RV_PESOS_LS, JSON.stringify({ negocio: neg, valuacion: val, tendencia: ten })); } catch (e) {}
+  var reb = parseFloat(document.getElementById('rvPesoRebote').value) || 0;
+  rvApplyPesos(neg, val, ten, reb);
+  try { localStorage.setItem(RV_PESOS_LS, JSON.stringify({ negocio: neg, valuacion: val, tendencia: ten, rebote: reb })); } catch (e) {}
+  rvRecomputarPuntajes();
   renderRV();
 }
 function rvResetPesos() {
   document.getElementById('rvPesoNegocio').value = PUNTAJE_PESOS_DEFAULT.negocio;
   document.getElementById('rvPesoValuacion').value = PUNTAJE_PESOS_DEFAULT.valuacion;
   document.getElementById('rvPesoTendencia').value = PUNTAJE_PESOS_DEFAULT.tendencia;
-  try { localStorage.removeItem(RV_PESOS_LS); } catch (e) {}
-  rvApplyPesos(PUNTAJE_PESOS_DEFAULT.negocio, PUNTAJE_PESOS_DEFAULT.valuacion, PUNTAJE_PESOS_DEFAULT.tendencia);
+  document.getElementById('rvPesoRebote').value = PUNTAJE_PESOS_DEFAULT.rebote;
+  try { localStorage.removeItem(RV_PESOS_LS); localStorage.removeItem(RV_HOR_LS); } catch (e) {}
+  ['rvHorLargo', 'rvHorCorto'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('rvHorMediano').classList.add('active');
+  rvApplyPesos(PUNTAJE_PESOS_DEFAULT.negocio, PUNTAJE_PESOS_DEFAULT.valuacion, PUNTAJE_PESOS_DEFAULT.tendencia, PUNTAJE_PESOS_DEFAULT.rebote);
+  rvRecomputarPuntajes();
   renderRV();
 }
 function rvInitPesos() {
   var p = null;
   try { p = JSON.parse(localStorage.getItem(RV_PESOS_LS) || 'null'); } catch (e) {}
-  if (!p || typeof p.negocio !== 'number' || typeof p.valuacion !== 'number' || typeof p.tendencia !== 'number') return;
-  var elN = document.getElementById('rvPesoNegocio'), elV = document.getElementById('rvPesoValuacion'), elT = document.getElementById('rvPesoTendencia');
-  if (!elN) return;
-  elN.value = p.negocio; elV.value = p.valuacion; elT.value = p.tendencia;
-  rvApplyPesos(p.negocio, p.valuacion, p.tendencia);
+  if (p && typeof p.negocio === 'number' && typeof p.valuacion === 'number' && typeof p.tendencia === 'number') {
+    var elN = document.getElementById('rvPesoNegocio'), elV = document.getElementById('rvPesoValuacion'), elT = document.getElementById('rvPesoTendencia'), elR = document.getElementById('rvPesoRebote');
+    if (!elN) return;
+    elN.value = p.negocio; elV.value = p.valuacion; elT.value = p.tendencia; elR.value = p.rebote || 0;
+    rvApplyPesos(p.negocio, p.valuacion, p.tendencia, p.rebote || 0);
+    ['rvHorLargo', 'rvHorMediano', 'rvHorCorto'].forEach(id => document.getElementById(id).classList.remove('active'));
+    return;
+  }
+  var h = null;
+  try { h = localStorage.getItem(RV_HOR_LS); } catch (e) {}
+  if (h && HORIZONTE_PESOS[h] && h !== 'mediano') rvSetHorizonte(h);
 }
 function setRvSort(col) {
   if (rvSortCol === col) rvSortAsc = !rvSortAsc; else { rvSortCol = col; rvSortAsc = (col === 'ticker' || col === 'empresa' || col === 'sector'); }
