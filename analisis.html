@@ -258,6 +258,11 @@ body { padding-bottom: 64px; }
 .cr-btn:hover { background: var(--petroleo-900); }
 .cr-btn-soft { background: var(--surface); color: var(--heading); border-color: var(--line); }
 .cr-btn-soft:hover { background: var(--surface); }
+.rb-box { margin-top: 14px; }
+.rb-box summary { font-weight: 600; }
+.rb-note { font-size: 0.8rem; color: var(--ink-muted); line-height: 1.55; margin-top: 8px; }
+.rb-row { display: flex; gap: 6px; align-items: center; }
+.rb-row .cmp-input { flex: 1; }
 .cr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
 .cr-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; font: 600 0.78rem var(--font-mono); color: var(--text); }
 .cr-chip input { width: 78px; border: none; border-left: 1px solid var(--line); background: transparent; font: 0.74rem var(--font-mono); color: var(--ink-soft); padding: 2px 6px; text-align: right; outline: none; }
@@ -470,6 +475,43 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div><label for="rotLote">Después del mínimo, el lote va</label><select id="rotLote" class="cmp-input" onchange="ROT.onChange()"><option value="uno" selected>De a 1 (1000, 1001, 1002…)</option><option value="multiplo">Solo múltiplos de la lámina (1000, 2000…)</option></select></div>
         </div>
         <p style="margin-top:10px">Los precios vienen del monitor y podés editarlos.</p>
+
+        <details class="explain-box rb-box" id="rbBox">
+          <summary>➕ Cargar un bono nuevo / licitación</summary>
+          <p class="rb-note">Para una ON que todavía no está en el Monitor (recién licita). Se suma a la lista de arriba como cualquier otro bono, <b>solo en tu navegador</b> — nadie más lo ve. Si el ticker ya existe en el Monitor, se reemplaza por esta versión durante la sesión.</p>
+          <div class="rot-adv-grid">
+            <div><label for="rbTicker">Ticker</label><input id="rbTicker" class="cmp-input" style="text-transform:uppercase" placeholder="Ej: TECPETROL2032"></div>
+            <div><label for="rbEmisor">Empresa</label><input id="rbEmisor" class="cmp-input" placeholder="Tecpetrol"></div>
+            <div><label for="rbTasa">Tasa / cupón anual (%)</label><input id="rbTasa" class="cmp-input" type="number" step="0.01" placeholder="7.25"></div>
+            <div><label for="rbPrecio">Precio (1,00 = a la par)</label><input id="rbPrecio" class="cmp-input" type="number" step="0.0001" value="1"></div>
+            <div><label for="rbVenc">Vencimiento</label><input id="rbVenc" class="cmp-input" type="date"></div>
+            <div><label for="rbLiq">Fecha de liquidación</label><input id="rbLiq" class="cmp-input" type="date"></div>
+            <div><label for="rbCalif">Calificación</label><input id="rbCalif" class="cmp-input" style="text-transform:uppercase" placeholder="AAA"></div>
+            <div><label for="rbFreq">Pagos por año</label><select id="rbFreq" class="cmp-input"><option value="1">1 (anual)</option><option value="2" selected>2 (semestral)</option><option value="4">4 (trimestral)</option><option value="12">12 (mensual)</option></select></div>
+            <div><label for="rbAmort">Amortización</label><select id="rbAmort" class="cmp-input" onchange="ROT.onBondAmortChange()"><option value="bullet" selected>Bullet (todo al final)</option><option value="amortizable">Amortizable</option></select></div>
+            <div><label for="rbLey">Ley</label><select id="rbLey" class="cmp-input" onchange="ROT.onBondLeyChange()"><option value="arg" selected>Argentina</option><option value="ny">Nueva York (cobra en cable)</option></select></div>
+            <div id="rbBrechaWrap" hidden><label for="rbBrecha">Brecha CCL/MEP (%) <span style="font-weight:400">+1% de canje fijo</span></label><input id="rbBrecha" class="cmp-input" type="number" step="0.1" placeholder="Ej: 2.0"></div>
+            <div><label for="rbLamina">Lámina mínima <span style="font-weight:400">— opcional</span></label><input id="rbLamina" class="cmp-input" type="number" step="1" placeholder="Ej: 1000"></div>
+          </div>
+          <div style="margin-top:10px;max-width:280px">
+            <label for="rbTirManual">TIR de la ON (%) <span style="font-weight:400">— opcional, a mano</span></label>
+            <input id="rbTirManual" class="cmp-input" type="number" step="0.01" placeholder="Vacío = se calcula sola">
+          </div>
+          <p class="rb-note" id="rbTirNota">Si la dejás vacía, se calcula sola a partir del precio y el cronograma de pagos — igual que con cualquier otro bono. Si la cargás, se usa esa TIR directamente y no se recalcula.</p>
+          <div id="rbAmortCustomWrap" hidden style="margin-top:10px">
+            <label>Cronograma de amortización <span style="font-weight:400">— opcional; sin fechas, se reparte en partes iguales entre todos los pagos</span></label>
+            <div id="rbAmortRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+              <button type="button" class="cr-btn cr-btn-soft" style="padding:5px 12px;font-size:0.76rem" onclick="ROT.amortAddRow()">+ Agregar fecha</button>
+              <span id="rbAmortSuma" style="font-size:0.72rem;color:var(--ink-muted)"></span>
+            </div>
+          </div>
+          <div id="rbMsg" class="rb-note" style="margin-top:10px"></div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+            <button type="button" class="cr-btn" onclick="ROT.cargarBono()">Cargar bono</button>
+            <button type="button" class="cr-btn cr-btn-soft" onclick="ROT.limpiarBono()">Limpiar formulario</button>
+          </div>
+        </details>
       </details>
       <div id="rotErr" class="cmp-err" style="display:none"></div>
       <div id="rotResult"><p class="loading-msg">Cargando datos…</p></div>
@@ -937,6 +979,7 @@ function rotEnsure() {
       if (shC) ingestRows(parseBlock(wb.Sheets[shC], FIELDS_CORP), 'ON');
       if (shS) ingestRows(parseBlock(wb.Sheets[shS], FIELDS_SOB), 'Soberano');
       parseTickerSheets(wb);
+      rotInitBonoManual();
       rotPoblarLista();
       var a = rotEl('rotV'), b = rotEl('rotC');
       if (!a.value && !b.value && rotOk(ROT_DEFAULT.venta) && rotOk(ROT_DEFAULT.compra)) {
@@ -953,6 +996,168 @@ function rotEnsure() {
   return rotState.loading;
 }
 function rotOk(t) { return !!(BOND_DB[t] && FLUJO_DB[t]); }
+var rbAmortRows = [];
+var RB_LS = 'fcn_rot_bono_manual';
+function rotOnBondLeyChange() { rotEl('rbBrechaWrap').hidden = rotEl('rbLey').value !== 'ny'; }
+function rotOnBondAmortChange() {
+  var es = rotEl('rbAmort').value === 'amortizable';
+  rotEl('rbAmortCustomWrap').hidden = !es;
+  if (es && !rbAmortRows.length) rotRenderAmortRows();
+}
+function rotAmortAddRow() { rbAmortRows.push({ fecha: '', pct: '' }); rotRenderAmortRows(); }
+function rotAmortRemoveRow(i) { rbAmortRows.splice(i, 1); rotRenderAmortRows(); }
+function rotAmortEdit(i, campo, val) { if (rbAmortRows[i]) { rbAmortRows[i][campo] = val; rotAmortSuma(); } }
+function rotRenderAmortRows() {
+  var wrap = rotEl('rbAmortRows');
+  if (!wrap) return;
+  wrap.innerHTML = rbAmortRows.map(function (r, i) {
+    return '<div class="rb-row">' +
+      '<input type="date" class="cmp-input" value="' + (r.fecha || '') + '" oninput="ROT.amortEdit(' + i + ',\'fecha\',this.value)">' +
+      '<input type="number" step="0.01" class="cmp-input" placeholder="% amortizado" value="' + (r.pct || '') + '" oninput="ROT.amortEdit(' + i + ',\'pct\',this.value)">' +
+      '<button type="button" class="cr-btn cr-btn-soft" style="padding:5px 9px" onclick="ROT.amortRemoveRow(' + i + ')">✕</button></div>';
+  }).join('');
+  rotAmortSuma();
+}
+function rotAmortSuma() {
+  var el = rotEl('rbAmortSuma');
+  if (!el) return;
+  if (!rbAmortRows.length) { el.textContent = ''; return; }
+  var suma = rbAmortRows.reduce(function (s, r) { var p = parseFloat(r.pct); return s + (isNaN(p) ? 0 : p); }, 0);
+  var ok = Math.abs(suma - 100) <= 0.05;
+  el.innerHTML = 'Suma: ' + fmtNum(suma, 2) + '%' + (ok ? ' ✓' : ' <span style="color:var(--danger)">⚠ debería sumar 100%</span>');
+}
+function rotLeerAmortRows() {
+  if (rotEl('rbAmort').value !== 'amortizable') return null;
+  var rows = rbAmortRows.map(function (r) { return { fecha: r.fecha, pct: parseFloat(r.pct) }; }).filter(function (r) { return r.fecha && !isNaN(r.pct); });
+  return rows.length ? rows : null;
+}
+// Mismo criterio que leerNuevaON() del Suite (comisión de licitación), acotado a lo que necesita
+// esta página: sin las reglas de búsqueda masiva de clientes.
+function rotLeerNuevoBono() {
+  var ticker = rotEl('rbTicker').value.trim().toUpperCase();
+  var emisor = rotEl('rbEmisor').value.trim();
+  var tasa = parseFloat(rotEl('rbTasa').value);
+  var precio = parseFloat(rotEl('rbPrecio').value);
+  var fechaVenc = parseISO(rotEl('rbVenc').value);
+  var calif = rotEl('rbCalif').value.trim();
+  var freq = parseInt(rotEl('rbFreq').value) || 2;
+  var amortType = rotEl('rbAmort').value;
+  var fechaLiquidacion = parseISO(rotEl('rbLiq').value);
+  var laminaVal = parseFloat(rotEl('rbLamina').value);
+  var laminaMin = (!isNaN(laminaVal) && laminaVal > 0) ? laminaVal : null;
+  if (!ticker || isNaN(tasa) || isNaN(precio) || !fechaVenc) return { error: 'Completá al menos ticker, tasa, precio y vencimiento.' };
+  var fechaEmision = fechaLiquidacion || rotHoy();
+  var esNY = rotEl('rbLey').value === 'ny';
+  var brechaPct = parseFloat(rotEl('rbBrecha').value);
+  var tirManualVal = parseFloat(rotEl('rbTirManual').value);
+  var tirManual = (!isNaN(tirManualVal) && tirManualVal > 0) ? tirManualVal : null;
+  var CANJE_AL30 = 0.01; // 1% round-trip fijo del canje MEP→cable vía AL30 — igual que en el Suite
+  var precioEfec = precio;
+  if (esNY && tirManual == null && !isNaN(brechaPct) && brechaPct > 0) precioEfec = precio * (1 + brechaPct / 100) * (1 + CANJE_AL30);
+  return {
+    ok: true, ticker: ticker, emisor: emisor || ticker, cuponAnual: tasa, freq: freq,
+    fechaEmision: fechaEmision, fechaVenc: fechaVenc, amortType: amortType,
+    ley: esNY ? 'NY' : 'Argentina', calif: calif,
+    precio: precioEfec, precioBruto: precio, tirManual: tirManual, laminaMin: laminaMin
+  };
+}
+// Mismo algoritmo que _licBuildSchedule100() del Suite.
+function rotBuildSchedule100(b, amortRows) {
+  var dates = buildCouponDates(b.fechaEmision, b.fechaVenc, b.freq);
+  var n = dates.length;
+  var customMap = null, sinMatch = [];
+  if (amortRows && amortRows.length) {
+    customMap = {};
+    amortRows.forEach(function (r) {
+      var d = parseISO(r.fecha);
+      if (!d) { sinMatch.push(r.fecha); return; }
+      var mejor = null, mejorDif = Infinity;
+      dates.forEach(function (dd) { var dif = Math.abs(dd.getTime() - d.getTime()); if (dif < mejorDif) { mejorDif = dif; mejor = dd; } });
+      if (mejor && mejorDif <= 10 * 86400000) { var key = isoDate(mejor); customMap[key] = (customMap[key] || 0) + r.pct; }
+      else sinMatch.push(r.fecha);
+    });
+  }
+  var idxAmort = [];
+  if (b.amortType === 'amortizable' && !customMap) dates.forEach(function (d, i) { idxAmort.push(i); });
+  var defaultPct = idxAmort.length > 0 ? 100 / idxAmort.length : 0;
+  var vnResidual = 100, schedule = [];
+  dates.forEach(function (d, i) {
+    var isLast = (i === n - 1), pct;
+    if (b.amortType === 'bullet') pct = isLast ? 100 : 0;
+    else if (customMap) pct = customMap[isoDate(d)] || 0;
+    else if (idxAmort.indexOf(i) >= 0) pct = defaultPct;
+    else pct = 0;
+    var vnStart = vnResidual, cupon = vnStart * (b.cuponAnual / 100) / b.freq;
+    vnResidual = Math.max(0, vnResidual - pct);
+    schedule.push({ date: isoDate(d), cupon: cupon, amort: pct, total: cupon + pct });
+  });
+  return { schedule100: schedule, sinMatch: sinMatch };
+}
+// Mismo criterio que _licRegistrarEnUniverso() del Suite: arma FLUJO_DB/BOND_DB para que el resto
+// del comparador (rotMakeBond, precioEfectivo, tirEfectivo, getScheduleForLeg) lo trate como
+// cualquier bono real del Monitor.
+function rotRegistrarBono(b, amortRows) {
+  var built = rotBuildSchedule100(b, amortRows);
+  var tirSeed = b.tirManual != null ? b.tirManual : b.cuponAnual;
+  delete FLUJO_DB[b.ticker]; delete BOND_DB[b.ticker];
+  FLUJO_DB[b.ticker] = {
+    ticker: b.ticker, emisor: b.emisor, calif: b.calif, cuponAnual: b.cuponAnual, freq: b.freq,
+    amortDesc: b.amortType === 'amortizable' ? 'Amortizable' : 'Bullet', ley: b.ley,
+    fechaEmision: isoDate(b.fechaEmision), fechaVenc: isoDate(b.fechaVenc),
+    nominalesMin: b.laminaMin || null, tirEfectiva: tirSeed, tirManual: b.tirManual,
+    schedule100: built.schedule100
+  };
+  BOND_DB[b.ticker] = {
+    ticker: b.ticker, emisor: b.emisor, cuponAnual: b.cuponAnual, vencimiento: isoDate(b.fechaVenc),
+    amortizacion: b.amortType === 'amortizable' ? 'Amortizable' : 'Bullet', ley: b.ley, calif: b.calif,
+    laminaMin: b.laminaMin || null, tirMep: tirSeed, tirCable: tirSeed, precioMep: b.precio, precioCable: b.precio
+  };
+  return built.sinMatch;
+}
+function rotGuardarBonoManual(b, amortRows) {
+  try { localStorage.setItem(RB_LS, JSON.stringify({ b: b, amortRows: amortRows })); } catch (e) {}
+}
+function rotCargarBono() {
+  var b = rotLeerNuevoBono();
+  var msg = rotEl('rbMsg');
+  if (b.error) { msg.innerHTML = '<span style="color:var(--danger)">⚠ ' + rotEsc(b.error) + '</span>'; return; }
+  var amortRows = rotLeerAmortRows();
+  var sinMatch = rotRegistrarBono(b, amortRows);
+  rotGuardarBonoManual(b, amortRows);
+  rotPoblarLista();
+  var aviso = sinMatch && sinMatch.length ? ' ⚠ ' + sinMatch.length + ' fecha(s) del cronograma no coincidieron con ningún pago y se ignoraron.' : '';
+  msg.innerHTML = '<span style="color:var(--jade)">✓ ' + rotEsc(b.ticker) + ' cargado. Ya lo podés elegir en "Tenés" o "Candidato" arriba.</span>' + aviso;
+  rotOnChange();
+}
+function rotLimpiarBono() {
+  ['rbTicker', 'rbEmisor', 'rbTasa', 'rbCalif', 'rbVenc', 'rbLiq', 'rbBrecha', 'rbTirManual', 'rbLamina'].forEach(function (id) { rotEl(id).value = ''; });
+  rotEl('rbPrecio').value = '1'; rotEl('rbFreq').value = '2'; rotEl('rbAmort').value = 'bullet'; rotEl('rbLey').value = 'arg';
+  rbAmortRows = [];
+  rotRenderAmortRows(); rotOnBondAmortChange(); rotOnBondLeyChange();
+  rotEl('rbMsg').textContent = '';
+  try { localStorage.removeItem(RB_LS); } catch (e) {}
+}
+function rotInitBonoManual() {
+  var raw; try { raw = localStorage.getItem(RB_LS); } catch (e) { return; }
+  if (!raw) return;
+  var o; try { o = JSON.parse(raw); } catch (e) { return; }
+  if (!o || !o.b || !o.b.ticker) return;
+  var b = o.b;
+  b.fechaEmision = parseISO(b.fechaEmision) || parseISO(b.fechaVenc);   // se serializó como ISO string
+  b.fechaVenc = parseISO(b.fechaVenc);
+  if (!b.fechaVenc) return;
+  rotEl('rbTicker').value = b.ticker; rotEl('rbEmisor').value = b.emisor === b.ticker ? '' : b.emisor;
+  rotEl('rbTasa').value = b.cuponAnual; rotEl('rbPrecio').value = b.precioBruto != null ? b.precioBruto : b.precio;
+  rotEl('rbVenc').value = isoDate(b.fechaVenc); rotEl('rbCalif').value = b.calif || '';
+  rotEl('rbFreq').value = b.freq; rotEl('rbAmort').value = b.amortType; rotEl('rbLey').value = b.ley === 'NY' ? 'ny' : 'arg';
+  if (b.tirManual != null) rotEl('rbTirManual').value = b.tirManual;
+  if (b.laminaMin != null) rotEl('rbLamina').value = b.laminaMin;
+  rbAmortRows = Array.isArray(o.amortRows) ? o.amortRows : [];
+  rotOnBondLeyChange(); rotOnBondAmortChange(); rotRenderAmortRows();
+  var sinMatch = rotRegistrarBono(b, o.amortRows);
+  rotPoblarLista();
+  if (sinMatch && sinMatch.length) rotEl('rbMsg').innerHTML = '<span style="color:var(--jade)">✓ ' + rotEsc(b.ticker) + ' (guardado antes) sigue cargado.</span>';
+}
 function rotPoblarLista() {
   var tks = Object.keys(BOND_DB).filter(rotOk).sort();
   rotEl('bondList').innerHTML = tks.map(function (t) {
@@ -994,7 +1199,8 @@ function rotMakeBond(ticker, nominales, precio) {
     ticker: ticker, emisor: real.emisor || b.emisor || '', tir: tirEfectivo(ticker, rotEl('rotTipo').value), duration: null,
     cuponAnual: real.cuponAnual != null ? real.cuponAnual : b.cuponAnual, freq: real.freq || 2,
     fechaEmision: fe, fechaVenc: fv, amortType: /cuota|amortiz/i.test(real.amortDesc || '') ? 'amortizable' : 'bullet', amortStart: fe,
-    ley: real.ley || b.ley || '', calif: real.calif || b.calif || '', precio: precio, nominales: nominales
+    ley: real.ley || b.ley || '', calif: real.calif || b.calif || '', precio: precio, nominales: nominales,
+    tirManual: real.tirManual != null ? real.tirManual : null   // solo lo trae un bono cargado a mano con "TIR de la ON" completa
   };
 }
 
@@ -1025,8 +1231,8 @@ function rotCompute() {
   var venta = rotMakeBond(I.tkV, I.nomV, precioV), compra = rotMakeBond(I.tkC, nomC, precioC);
   var schedV = getScheduleForLeg(venta, hoy), schedC = getScheduleForLeg(compra, hoy);
   if (!schedV.length || !schedC.length) return { err: 'Alguno de los dos bonos ya no tiene pagos futuros.' };
-  venta.tir = tirDesdePrecio(schedV, venta.nominales * venta.precio, hoy, venta.tir);
-  compra.tir = tirDesdePrecio(schedC, compra.nominales * compra.precio, hoy, compra.tir);
+  venta.tir = venta.tirManual != null ? venta.tirManual : tirDesdePrecio(schedV, venta.nominales * venta.precio, hoy, venta.tir);
+  compra.tir = compra.tirManual != null ? compra.tirManual : tirDesdePrecio(schedC, compra.nominales * compra.precio, hoy, compra.tir);
   venta.duration = macaulayDuration(schedV, venta.tir / 100, hoy);
   compra.duration = macaulayDuration(schedC, compra.tir / 100, hoy);
 
@@ -1167,7 +1373,7 @@ function rotSetHorizon(v) { rotState.horizonte = Math.round(parseFloat(v) * 4) /
 function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent = fmtNum(parseFloat(v), 2).replace(',00', '') + ' años'; }
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
-window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista };
+window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
 
 })();
 </script>
