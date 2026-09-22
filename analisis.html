@@ -204,6 +204,7 @@ body { padding-bottom: 64px; }
 /* Rotar bonos */
 .rot-adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
 .rv-horizonte { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.rv-hor-fresh { font-size: 0.72rem; color: #96601f; }
 .rv-hor-lbl { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
 .rot-adv-grid label { display: block; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); margin-bottom: 4px; }
 .rot-note { font-size: 0.78rem; color: var(--ink-muted); line-height: 1.55; }
@@ -385,6 +386,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="calif-btn" id="rvHorLargo" onclick="rvSetHorizonte('largo')" title="Comprar y mantener — meses a años. El momento exacto de entrada importa poco.">Largo plazo</button>
         <button class="calif-btn active" id="rvHorMediano" onclick="rvSetHorizonte('mediano')" title="Semanas a pocos meses. Es el equilibrio de siempre (35/35/30).">Mediano plazo</button>
         <button class="calif-btn" id="rvHorCorto" onclick="rvSetHorizonte('corto')" title="Días a ~30 días, trading. Ahí importa mucho más el momento (tendencia + rebote técnico) que si la empresa es sólida a 5 años.">Corto plazo</button>
+        <span class="rv-hor-fresh" id="rvHorFresh" style="display:none"></span>
       </div>
       <details class="explain-box" id="rvPesosBox">
         <summary>Avanzado: ajustar los pesos a mano</summary>
@@ -1672,6 +1674,7 @@ function rvSetHorizonte(h) {
   document.getElementById('rvPesoRebote').value = p.rebote;
   rvSetPeso();
   try { localStorage.setItem(RV_HOR_LS, h); } catch (e) {}
+  rvActualizarFrescuraHorizonte();
 }
 // Rebote técnico: mismo cálculo que el panel interno — ver Valuacion_Multiplos_FCN.html. +100 = está
 // justo tocando un soporte (candidato a rebote de compra), −100 = tocando una resistencia (posible
@@ -1917,6 +1920,20 @@ function medianaSector(sector, k) {
 
 /* ── Carga de datos (2 archivos livianos: ~100 KB en total) ── */
 let rvPromise = null;
+let RV_DIAS_ACTUALIZADO = null;
+// en Corto plazo, Tendencia + Rebote técnico son 75% del puntaje y son los ejes que más rápido se
+// quedan viejos con el precio -- acá se avisa aparte con un umbral bien más chico que el general.
+function rvActualizarFrescuraHorizonte() {
+  const el = document.getElementById('rvHorFresh');
+  if (!el) return;
+  const corto = document.getElementById('rvHorCorto') && document.getElementById('rvHorCorto').classList.contains('active');
+  if (corto && RV_DIAS_ACTUALIZADO !== null && RV_DIAS_ACTUALIZADO >= 2) {
+    el.textContent = `⚠ precio de hace ${RV_DIAS_ACTUALIZADO} días — confirmalo antes de operar`;
+    el.style.display = 'inline';
+  } else {
+    el.style.display = 'none';
+  }
+}
 function ensureRV() {
   if (!rvPromise) rvPromise = loadRV();
   return rvPromise;
@@ -1930,15 +1947,16 @@ async function loadRV() {
     if (!rv.ok) throw new Error('No se pudo leer la valuación');
     const rvLM = rv.headers.get('Last-Modified');
     const rvUpdEl = document.getElementById('rvUpdated');
+    if (rvLM) { const d = new Date(rvLM); if (!isNaN(d)) RV_DIAS_ACTUALIZADO = Math.floor((Date.now() - d.getTime()) / 86400000); }
     if (rvUpdEl) {
-      if (rvLM) {
+      if (rvLM && RV_DIAS_ACTUALIZADO !== null) {
         const d = new Date(rvLM);
-        const dias = Math.floor((Date.now() - d.getTime()) / 86400000);
-        const cuando = dias <= 0 ? 'hoy' : dias === 1 ? 'ayer' : `hace ${dias} días`;
-        rvUpdEl.textContent = `Última actualización: ${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} (${cuando}) · se actualiza una vez por semana`;
+        const cuando = RV_DIAS_ACTUALIZADO <= 0 ? 'hoy' : RV_DIAS_ACTUALIZADO === 1 ? 'ayer' : `hace ${RV_DIAS_ACTUALIZADO} días`;
+        rvUpdEl.textContent = `Última actualización: ${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} (${cuando}) · el precio y las medias se actualizan todos los días hábiles; los promedios históricos y el negocio, una vez por semana`;
       } else {
-        rvUpdEl.textContent = 'Se actualiza una vez por semana.';
+        rvUpdEl.textContent = 'El precio y las medias se actualizan todos los días hábiles; los promedios históricos y el negocio, una vez por semana.';
       }
+      rvActualizarFrescuraHorizonte();
     }
     RV.rows = parseValuacion(await rv.arrayBuffer());
     RV.analistas = ra.ok ? parseAnalistas(await ra.arrayBuffer()) : {};
