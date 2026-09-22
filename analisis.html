@@ -95,6 +95,7 @@ header.site-header .container { display: flex; align-items: center; justify-cont
 }
 .calif-btn.active { background: var(--petroleo-700); color: #fff; border-color: var(--heading); }
 .monitor-count { font-size: 0.78rem; color: var(--ink-muted); margin-left: auto; }
+.rv-updated-note { font-size: 0.78rem; color: var(--ink-muted); margin-bottom: 10px; }
 
 .data-table-wrap { overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 720px; }
@@ -394,6 +395,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <input id="rvQuery" type="search" placeholder="Buscar ticker o empresa…" oninput="setRvQuery(this.value)">
         <span class="monitor-count" id="rvCount"></span>
       </div>
+      <p class="rv-updated-note" id="rvUpdated"></p>
       <div id="rvTableBox" class="data-table-wrap">
         <p class="loading-msg">Cargando datos de renta variable…</p>
       </div>
@@ -1856,6 +1858,18 @@ async function loadRV() {
       fetch(SUITE_DATA + 'precios_objetivo.xlsx', { cache: 'no-cache' })
     ]);
     if (!rv.ok) throw new Error('No se pudo leer la valuación');
+    const rvLM = rv.headers.get('Last-Modified');
+    const rvUpdEl = document.getElementById('rvUpdated');
+    if (rvUpdEl) {
+      if (rvLM) {
+        const d = new Date(rvLM);
+        const dias = Math.floor((Date.now() - d.getTime()) / 86400000);
+        const cuando = dias <= 0 ? 'hoy' : dias === 1 ? 'ayer' : `hace ${dias} días`;
+        rvUpdEl.textContent = `Última actualización: ${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} (${cuando}) · se actualiza una vez por semana`;
+      } else {
+        rvUpdEl.textContent = 'Se actualiza una vez por semana.';
+      }
+    }
     RV.rows = parseValuacion(await rv.arrayBuffer());
     RV.analistas = ra.ok ? parseAnalistas(await ra.arrayBuffer()) : {};
     calcularFuerzaRelativa(RV.rows);
