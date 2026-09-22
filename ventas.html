@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>(function(){try{if(localStorage.getItem('fcn_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -49,10 +50,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   --font-display: 'Spectral', Georgia, serif;
   --font-sans:    'Hanken Grotesk', system-ui, sans-serif;
   --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
-  --bg:      #081917;
-  --surface: #0E2622;
-  --text:    #EAF1EE;
-  --border:  #1E3A34;
+  --bg:      var(--crema);
+  --surface: #fff;
+  --text:    var(--ink);
+  --border:  var(--line);
+  --heading: var(--petroleo-700);
+}
+:root[data-theme="dark"] {
+  --bg: #081917; --surface: #0E2622; --text: #EAF1EE; --border: #1E3A34;
+  --ink-soft: #C3D6D1; --ink-muted: #7E9891; --line: #1E3A34; --heading: #9FD9C4;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -70,10 +76,17 @@ body {
 
 /* ── UTILITIES ── */
 .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+.theme-toggle {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 0.95rem;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: transform .15s, border-color .15s; line-height: 1;
+}
+.theme-toggle:hover { border-color: var(--jade); transform: scale(1.06); }
 .text-center { text-align: center; }
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-mono); }
-.color-crema { color: var(--crema); }
+.color-crema { color: var(--heading); }
 .color-ambar { color: var(--ambar); }
 .color-jade { color: var(--jade); }
 .color-muted { color: var(--ink-muted); }
@@ -122,7 +135,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(2rem, 6vw, 3.2rem);
   font-weight: 700;
-  color: var(--crema);
+  color: var(--heading);
   letter-spacing: -0.5px;
   line-height: 1.1;
 }
@@ -151,7 +164,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(2rem, 5.5vw, 3.4rem);
   font-weight: 700;
-  color: var(--crema);
+  color: var(--heading);
   line-height: 1.18;
   max-width: 720px;
   margin: 0 auto 20px;
@@ -309,7 +322,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 4vw, 2.4rem);
   font-weight: 700;
-  color: var(--crema);
+  color: var(--heading);
   margin-bottom: 48px;
 }
 .steps-grid {
@@ -338,7 +351,7 @@ body {
   font-family: var(--font-sans);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--crema);
+  color: var(--heading);
   margin-bottom: 8px;
 }
 .step p {
@@ -394,7 +407,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(1.15rem, 3vw, 1.5rem);
   font-weight: 600;
-  color: var(--crema);
+  color: var(--heading);
   margin-bottom: 28px;
   line-height: 1.3;
 }
@@ -438,7 +451,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   font-weight: 700;
-  color: var(--crema);
+  color: var(--heading);
   margin-bottom: 12px;
 }
 .result-desc {
@@ -539,7 +552,7 @@ body {
   font-family: var(--font-mono);
   font-size: 1.3rem;
   font-weight: 600;
-  color: var(--crema);
+  color: var(--heading);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -600,7 +613,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(1.8rem, 5vw, 3rem);
   font-weight: 700;
-  color: var(--crema);
+  color: var(--heading);
   max-width: 640px;
   margin: 0 auto 20px;
   line-height: 1.2;
@@ -646,7 +659,7 @@ footer {
   font-weight: 500;
   transition: color 0.2s;
 }
-.footer-links a:hover { color: var(--crema); }
+.footer-links a:hover { color: var(--heading); }
 .footer-links .wa-link { color: var(--whatsapp); }
 .footer-legal {
   font-size: 0.75rem;
@@ -743,24 +756,24 @@ footer {
 }
 .fb-modal-overlay.open{ display:flex; }
 .fb-modal-box{
-  background:var(--crema);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;
+  background:var(--surface);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;
   position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);
 }
 .fb-modal-close{
   position:absolute;top:14px;right:14px;background:none;border:none;font-size:1.1rem;
   color:var(--ink-muted);cursor:pointer;
 }
-.fb-title{ font-family:var(--font-display);font-size:1.05rem;color:var(--petroleo-700);margin-bottom:14px;padding-right:20px; }
+.fb-title{ font-family:var(--font-display);font-size:1.05rem;color:var(--heading);margin-bottom:14px;padding-right:20px; }
 .fb-emojis{ display:flex;gap:10px;margin-bottom:14px; }
 .fb-emoji{
   flex:1;font-size:1.4rem;padding:10px 0;border-radius:10px;border:1px solid var(--line);
-  background:#fff;cursor:pointer;transition:transform 0.15s, border-color 0.15s;
+  background:var(--surface);cursor:pointer;transition:transform 0.15s, border-color 0.15s;
 }
 .fb-emoji:hover{ transform:scale(1.08); }
 .fb-emoji.active{ border-color:var(--jade);background:#d4f0e3; }
 .fb-textarea{
   width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
-  font-family:var(--font-sans);font-size:0.85rem;color:var(--ink);resize:vertical;margin-bottom:14px;
+  font-family:var(--font-sans);font-size:0.85rem;color:var(--text);resize:vertical;margin-bottom:14px;
 }
 .fb-submit{
   width:100%;background:var(--jade);color:#fff;font-weight:600;padding:11px;border:none;
@@ -784,9 +797,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <!-- ══════════ 1. LOGO ══════════ -->
-<header class="logo-section fade-up">
+<header class="logo-section fade-up" style="position:relative">
   <div class="logo-text">FinanzasconNico</div>
   <div class="logo-badge">Regulado CNV · Bajo Balanz · +700 clientes</div>
+  <div style="position:absolute;top:14px;right:18px;"><button class="theme-toggle" type="button" onclick="fcnToggleTheme()" aria-label="Cambiar a modo oscuro">🌙</button></div>
 </header>
 
 <!-- ══════════ 2. HERO ══════════ -->
@@ -1098,7 +1112,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <div id="fbThanksView" style="display:none;text-align:center;padding:18px 0;">
       <div style="font-size:2rem;">🙌</div>
-      <p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p>
+      <p style="margin-top:8px;font-weight:600;color:var(--heading);">¡Gracias por tu feedback!</p>
     </div>
   </div>
 </div>
@@ -1136,7 +1150,7 @@ function enviarFeedback(){
   window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(txt), '_blank', 'noopener');
   const thanks = document.getElementById('fbThanksView');
   document.getElementById('fbFormView').style.display = 'none';
-  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
+  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--heading);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
   thanks.style.display = 'block';
   setTimeout(cerrarFeedback, 3200);
 }
@@ -1387,5 +1401,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoMo
   <div class="video-modal-close" onclick="closeVideoModal()">✕</div>
   <div class="video-modal-box" id="videoModalBox"></div>
 </div>
+<script>
+function fcnSyncThemeButtons() {
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelectorAll('.theme-toggle').forEach(function (b) {
+    b.textContent = dark ? '☀️' : '🌙';
+    b.setAttribute('aria-label', dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  });
+}
+function fcnToggleTheme() {
+  var html = document.documentElement, dark = html.getAttribute('data-theme') === 'dark';
+  if (dark) { html.removeAttribute('data-theme'); try { localStorage.setItem('fcn_theme', 'light'); } catch (e) {} }
+  else { html.setAttribute('data-theme', 'dark'); try { localStorage.setItem('fcn_theme', 'dark'); } catch (e) {} }
+  fcnSyncThemeButtons();
+}
+document.addEventListener('DOMContentLoaded', fcnSyncThemeButtons);
+</script>
 </body>
 </html>

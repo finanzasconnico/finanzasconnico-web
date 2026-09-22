@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{if(localStorage.getItem('fcn_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta charset="UTF-8" />
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -47,37 +48,52 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   --font-display: 'Spectral', Georgia, serif;
   --font-sans:    'Hanken Grotesk', system-ui, sans-serif;
   --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+  --bg:      var(--crema);
+  --surface: #fff;
+  --text:    var(--ink);
+  --heading: var(--petroleo-700);
+}
+:root[data-theme="dark"] {
+  --bg: #081917; --surface: #0E2622; --text: #EAF1EE;
+  --ink-soft: #C3D6D1; --ink-muted: #7E9891; --line: #1E3A34; --heading: #9FD9C4;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); background: var(--crema); color: var(--ink); font-size: 16px; line-height: 1.5; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.5; }
 a { color: inherit; }
 .container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 
-header.site-header { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; }
+header.site-header { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; }
 header.site-header .container { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; min-width: 0; }
-.logo-text { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--petroleo-700); }
+.logo-text { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--heading); }
 .logo-badge { font-size: 0.68rem; color: var(--ink-muted); }
 .header-links { display: flex; gap: 16px; align-items: center; font-size: 0.85rem; flex-wrap: wrap; }
 .header-links a { text-decoration: none; color: var(--ink-soft); }
 .header-links a:hover { color: var(--jade); }
+.theme-toggle {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 0.95rem;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: transform .15s, border-color .15s; line-height: 1;
+}
+.theme-toggle:hover { border-color: var(--jade); transform: scale(1.06); }
 .badge-adv { font-family: var(--font-mono); font-size: 0.65rem; background: var(--petroleo-700); color: #fff; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
 
 .hero-adv { padding: 40px 0 28px; }
-.hero-adv h1 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2rem); color: var(--petroleo-700); margin-bottom: 8px; }
+.hero-adv h1 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2rem); color: var(--heading); margin-bottom: 8px; }
 .hero-adv p { font-size: 0.95rem; color: var(--ink-soft); max-width: 640px; }
 
 .tool-section { padding: 24px 0 48px; }
-.tool-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
+.tool-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
 .tool-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
-.tool-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--petroleo-700); }
+.tool-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--heading); }
 .tool-sub { font-size: 0.85rem; color: var(--ink-muted); margin-bottom: 18px; }
 
 .monitor-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .calif-btn {
   font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; padding: 7px 14px;
-  border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer;
 }
-.calif-btn.active { background: var(--petroleo-700); color: #fff; border-color: var(--petroleo-700); }
+.calif-btn.active { background: var(--petroleo-700); color: #fff; border-color: var(--heading); }
 .monitor-count { font-size: 0.78rem; color: var(--ink-muted); margin-left: auto; }
 
 .data-table-wrap { overflow-x: auto; }
@@ -87,14 +103,14 @@ header.site-header .container { display: flex; align-items: center; justify-cont
   font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
   color: var(--ink-muted); font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap;
 }
-.data-table th:hover { color: var(--petroleo-700); }
+.data-table th:hover { color: var(--heading); }
 .data-table th.sorted::after { content: ' ▾'; }
 .data-table th.sorted.asc::after { content: ' ▴'; }
 .data-table td.mono { font-family: var(--font-mono); }
 .data-table td.tir-val { color: var(--jade); font-weight: 700; font-family: var(--font-mono); }
-.data-table tr:hover td { background: var(--crema); }
+.data-table tr:hover td { background: var(--surface); }
 .row-sector { font-size: 0.68rem; color: var(--ink-muted); }
-.ticker-link { color: var(--petroleo-700); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+.ticker-link { color: var(--heading); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
 .ticker-link:hover { color: var(--jade); }
 .loading-msg { font-size: 0.85rem; color: var(--ink-muted); padding: 20px 0; text-align: center; }
 
@@ -126,7 +142,7 @@ body { padding-bottom: 64px; }
 }
 .fb-modal-overlay.open{ display:flex; }
 .fb-modal-box{
-  background:var(--crema);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;
+  background:var(--surface);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;
   position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);
 }
 .fb-modal-close{ position:absolute;top:14px;right:14px;background:none;border:none;font-size:1.1rem;color:var(--ink-muted);cursor:pointer; }
@@ -134,7 +150,7 @@ body { padding-bottom: 64px; }
 .fb-emojis{ display:flex;gap:10px;margin-bottom:14px; }
 .fb-emoji{
   flex:1;font-size:1.4rem;padding:10px 0;border-radius:10px;border:1px solid var(--line);
-  background:#fff;cursor:pointer;transition:transform 0.15s, border-color 0.15s;
+  background:var(--surface);cursor:pointer;transition:transform 0.15s, border-color 0.15s;
 }
 .fb-emoji:hover{ transform:scale(1.08); }
 .fb-emoji.active{ border-color:var(--jade);background:#d4f0e3; }
@@ -145,23 +161,23 @@ body { padding-bottom: 64px; }
 .fb-submit{ width:100%;background:var(--jade);color:#fff;font-weight:600;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:0.9rem; }
 .fb-submit:hover{ opacity:0.9; }
 /* Pestañas de herramientas */
-.tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--crema); padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--surface); padding: 10px 0; border-bottom: 1px solid var(--line); }
 .tool-tabs .container { display: flex; gap: 8px; overflow-x: auto; }
 .tab-btn {
   font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; padding: 9px 16px; white-space: nowrap;
-  border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer;
 }
-.tab-btn.active { background: var(--petroleo-700); border-color: var(--petroleo-700); color: #fff; }
+.tab-btn.active { background: var(--petroleo-700); border-color: var(--heading); color: #fff; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
 /* Renta variable + comparador */
-.explain-box { background: var(--crema); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.6; margin-bottom: 16px; }
-.explain-box summary { cursor: pointer; font-weight: 600; color: var(--petroleo-700); }
+.explain-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.6; margin-bottom: 16px; }
+.explain-box summary { cursor: pointer; font-weight: 600; color: var(--heading); }
 .rv-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .rv-controls select, .rv-controls input, .cmp-input {
   font-family: var(--font-sans); font-size: 0.85rem; padding: 8px 12px; border: 1px solid var(--line);
-  border-radius: 10px; background: #fff; color: var(--ink); min-width: 0;
+  border-radius: 10px; background: var(--surface); color: var(--text); min-width: 0;
 }
 .pt { display: inline-block; min-width: 46px; text-align: center; font-family: var(--font-mono); font-weight: 700; padding: 3px 8px; border-radius: 8px; }
 .sig { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
@@ -182,7 +198,7 @@ body { padding-bottom: 64px; }
 .cmp-table td:first-child { color: var(--ink-muted); font-size: 0.78rem; white-space: nowrap; }
 .cmp-table { min-width: 0 !important; }
 .cmp-read p { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 6px; }
-.cmp-read h5 { font-family: var(--font-display); font-size: 0.95rem; color: var(--petroleo-700); margin: 14px 0 6px; }
+.cmp-read h5 { font-family: var(--font-display); font-size: 0.95rem; color: var(--heading); margin: 14px 0 6px; }
 .cmp-err { color: var(--danger); font-size: 0.82rem; margin-bottom: 8px; }
 /* Rotar bonos */
 .rot-adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
@@ -191,25 +207,25 @@ body { padding-bottom: 64px; }
 .rot-fee { margin-top: 18px; font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; opacity: 0.85; }
 .rot-fee a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rot-fee label { font-weight: 600; margin-right: 4px; }
-.rot-fee input { width: 74px; font: inherit; padding: 3px 6px; border: 1px solid var(--line, #d9d4c9); border-radius: 6px; background: #fff; color: var(--ink, inherit); text-align: right; }
+.rot-fee input { width: 74px; font: inherit; padding: 3px 6px; border: 1px solid var(--line, #d9d4c9); border-radius: 6px; background: var(--surface); color: var(--ink, inherit); text-align: right; }
 .rot-verdict { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 14px 18px; margin: 6px 0 12px; }
 .rot-verdict.win  { background: #d4f0e3; color: #146c47; }
 .rot-verdict.stay { background: #fbe9d0; color: #8a5a12; }
 .rot-verdict.tie  { background: #f1ecdf; color: var(--ink-soft); }
 .rot-verdict-icon { font-size: 1.5rem; line-height: 1.2; }
 .rot-verdict-head { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
-.rot-verdict-sub { font-size: 0.86rem; line-height: 1.55; color: var(--ink); }
-.rot-same { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.55; margin-bottom: 14px; }
+.rot-verdict-sub { font-size: 0.86rem; line-height: 1.55; color: var(--text); }
+.rot-same { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.55; margin-bottom: 14px; }
 .rot-horizon { margin-bottom: 14px; }
 .rot-horizon label { font-size: 0.85rem; color: var(--ink-soft); }
 .rot-horizon input[type=range] { width: 100%; margin-top: 8px; accent-color: var(--jade); }
 .rot-chart { margin-top: 18px; }
-.rot-chart h5 { font-family: var(--font-display); font-size: 0.98rem; color: var(--petroleo-700); margin-bottom: 8px; }
+.rot-chart h5 { font-family: var(--font-display); font-size: 0.98rem; color: var(--heading); margin-bottom: 8px; }
 .rot-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.74rem; color: var(--ink-soft); margin-top: 8px; }
 .rot-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .rot-legend i.ring { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--jade); background: none; }
 .rot-legend em { color: var(--ink-muted); font-style: normal; }
-.rot-tip { display: none; position: absolute; top: 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.12); pointer-events: none; z-index: 5; }
+.rot-tip { display: none; position: absolute; top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.12); pointer-events: none; z-index: 5; }
 .rot-best { background: #d4f0e3; font-weight: 600; }
 .tool-tabs .container { scrollbar-width: none; }
 .tool-tabs .container::-webkit-scrollbar { display: none; }
@@ -240,10 +256,10 @@ body { padding-bottom: 64px; }
 .cr-add .cmp-input { flex: 1; min-width: 200px; width: auto; }
 .cr-btn { background: var(--petroleo-700); color: #fff; border: 1px solid var(--petroleo-700); border-radius: 10px; padding: 8px 16px; font: 600 0.82rem var(--font-sans); cursor: pointer; }
 .cr-btn:hover { background: var(--petroleo-900); }
-.cr-btn-soft { background: #fff; color: var(--petroleo-700); border-color: var(--line); }
-.cr-btn-soft:hover { background: var(--crema); }
+.cr-btn-soft { background: var(--surface); color: var(--heading); border-color: var(--line); }
+.cr-btn-soft:hover { background: var(--surface); }
 .cr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-.cr-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--crema); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; font: 600 0.78rem var(--font-mono); color: var(--ink); }
+.cr-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; font: 600 0.78rem var(--font-mono); color: var(--text); }
 .cr-chip input { width: 78px; border: none; border-left: 1px solid var(--line); background: transparent; font: 0.74rem var(--font-mono); color: var(--ink-soft); padding: 2px 6px; text-align: right; outline: none; }
 .cr-chip button { background: none; border: none; color: var(--ink-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 6px; }
 .cr-chip button:hover { color: var(--danger); }
@@ -260,9 +276,9 @@ body { padding-bottom: 64px; }
 .cr-mat-wrap { overflow-x: auto; margin: 6px 0 10px; }
 .cr-mat { border-collapse: separate; border-spacing: 2px; font-family: var(--font-mono); font-size: 0.72rem; }
 .cr-mat th { font-weight: 600; color: var(--ink-muted); padding: 4px 6px; text-align: center; white-space: nowrap; }
-.cr-mat th.rh { text-align: right; color: var(--ink); }
-.cr-mat td { min-width: 38px; height: 30px; text-align: center; border-radius: 4px; color: var(--ink); background: #faf8f2; }
-.cr-mat td.dg { color: var(--ink-muted); background: var(--crema); }
+.cr-mat th.rh { text-align: right; color: var(--text); }
+.cr-mat td { min-width: 38px; height: 30px; text-align: center; border-radius: 4px; color: var(--text); background: var(--surface); }
+.cr-mat td.dg { color: var(--ink-muted); background: var(--surface); }
 .cr-nota { font-size: 0.76rem; color: var(--ink-muted); margin-top: 10px; line-height: 1.55; }
 </style>
 </head>
@@ -282,6 +298,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="badge-adv">Para inversores con experiencia</span>
       <a href="guia.html">← Volver a la guía</a>
       <a href="ventas.html">Página principal</a>
+      <button class="theme-toggle" type="button" onclick="fcnToggleTheme()" aria-label="Cambiar a modo oscuro">🌙</button>
     </div>
   </div>
 </header>
@@ -353,6 +370,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
            • <strong>Precio vs. su historia (35%)</strong>: si hoy cotiza barata o cara frente a su propio promedio de 5 años, usando el múltiplo que corresponde a su sector.<br>
            • <strong>Tendencia (30%)</strong>: si el precio viene subiendo o bajando (medias móviles, retornos y fuerza contra el resto).</p>
         <p><strong>Ojo:</strong> es un ordenamiento cuantitativo con datos de hoy, no una recomendación. Una acción con puntaje alto puede bajar y una con puntaje bajo puede subir. Los ETFs y los papeles que cotizan en pesos no tienen puntaje. Las opiniones de analistas se muestran aparte y no entran en el puntaje.</p>
+      </details>
+      <details class="explain-box" id="rvPesosBox">
+        <summary>Avanzado: ajustar los pesos del puntaje</summary>
+        <p style="margin-top:8px">Por default: Negocio 35% · Precio vs. historia 35% · Tendencia 30%. Si te importa más un aspecto que otro, subilo — se normaliza solo para que el puntaje siga yendo de −100 a +100.</p>
+        <div class="rot-adv-grid">
+          <div><label for="rvPesoNegocio">Negocio (%)</label><input id="rvPesoNegocio" class="cmp-input" type="number" min="0" max="100" step="5" value="35" oninput="rvSetPeso()"></div>
+          <div><label for="rvPesoValuacion">Precio vs. historia (%)</label><input id="rvPesoValuacion" class="cmp-input" type="number" min="0" max="100" step="5" value="35" oninput="rvSetPeso()"></div>
+          <div><label for="rvPesoTendencia">Tendencia (%)</label><input id="rvPesoTendencia" class="cmp-input" type="number" min="0" max="100" step="5" value="30" oninput="rvSetPeso()"></div>
+        </div>
+        <p class="rot-note" style="margin-top:10px" id="rvPesosNota">Total: 100% · usando los valores por default.</p>
+        <p style="margin-top:6px"><a href="#" onclick="rvResetPesos(); return false;">Volver a los valores por default</a></p>
       </details>
       <div class="rv-controls">
         <button class="calif-btn active" id="rvBtnMejor" onclick="setRvOrden('mejor')">Mejor puntaje primero</button>
@@ -1198,7 +1226,7 @@ function enviarFeedback(){
   window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(txt), '_blank', 'noopener');
   const thanks = document.getElementById('fbThanksView');
   document.getElementById('fbFormView').style.display = 'none';
-  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--petroleo-700);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
+  thanks.innerHTML = '<div style="font-size:2rem;">🙌</div><p style="margin-top:8px;font-weight:600;color:var(--heading);">¡Gracias por tu feedback!</p><p style="font-size:0.8rem;color:var(--ink-muted);margin-top:6px;">Se abrió WhatsApp con tu mensaje listo para enviar.</p>';
   thanks.style.display = 'block';
   setTimeout(cerrarFeedback, 3200);
 }
@@ -1407,7 +1435,9 @@ const SECTOR_ES = {
   'Utilities': 'Servicios públicos', 'Real Estate': 'Inmobiliario', 'Communication Services': 'Comunicaciones'
 };
 const REC_LABEL = { strongbuy: 'Compra fuerte', buy: 'Compra', hold: 'Mantener', sell: 'Venta', strongsell: 'Venta fuerte', underperform: 'Venta', outperform: 'Compra', none: '' };
+const PUNTAJE_PESOS_DEFAULT = { negocio: 35, valuacion: 35, tendencia: 30 };
 const PUNTAJE_PESOS = { negocio: 0.35, valuacion: 0.35, tendencia: 0.30 };
+const RV_PESOS_LS = 'fcn_puntaje_pesos';
 
 // ── "?" de ayuda: un globito con la explicación en criollo, al lado de cada término ──
 const AYUDA = {
@@ -1559,7 +1589,8 @@ function puntajeDetalle(r) {
 }
 function puntajeTitle(p) {
   const s = x => (x > 0 ? '+' : '') + x;
-  return `Negocio ${s(p.negocio)} (35%) · Precio vs. historia ${s(p.valuacion)} (35%) · Tendencia ${s(p.tendencia)} (30%)`;
+  const pct = w => Math.round(w * 100);
+  return `Negocio ${s(p.negocio)} (${pct(PUNTAJE_PESOS.negocio)}%) · Precio vs. historia ${s(p.valuacion)} (${pct(PUNTAJE_PESOS.valuacion)}%) · Tendencia ${s(p.tendencia)} (${pct(PUNTAJE_PESOS.tendencia)}%)`;
 }
 function ptBg(score) {
   const a = Math.pow(Math.min(Math.abs(score) / 100, 1), 0.75) * 0.42;
@@ -1658,6 +1689,43 @@ function setRvOrden(modo) {
 }
 function setRvSector(v) { rvSector = v; renderRV(); }
 function setRvQuery(v) { rvQuery = v.trim().toLowerCase(); renderRV(); }
+// Pesos del puntaje: editables desde "Avanzado", se guardan en el navegador (fcn_puntaje_pesos) y valen para toda la página (RV y comparador).
+function rvApplyPesos(neg, val, ten) {
+  var suma = neg + val + ten;
+  if (suma <= 0) { neg = 35; val = 35; ten = 30; suma = 100; }
+  PUNTAJE_PESOS.negocio = neg / suma; PUNTAJE_PESOS.valuacion = val / suma; PUNTAJE_PESOS.tendencia = ten / suma;
+  var el = document.getElementById('rvPesosNota');
+  if (el) {
+    var esDefault = neg === PUNTAJE_PESOS_DEFAULT.negocio && val === PUNTAJE_PESOS_DEFAULT.valuacion && ten === PUNTAJE_PESOS_DEFAULT.tendencia;
+    var normNota = suma === 100 ? '' : ' (se normalizan a partir de tus números)';
+    el.textContent = 'Total: ' + suma + '%' + normNota + (esDefault ? ' · usando los valores por default.' : ' · usando tus valores.');
+  }
+}
+function rvSetPeso() {
+  var neg = parseFloat(document.getElementById('rvPesoNegocio').value) || 0;
+  var val = parseFloat(document.getElementById('rvPesoValuacion').value) || 0;
+  var ten = parseFloat(document.getElementById('rvPesoTendencia').value) || 0;
+  rvApplyPesos(neg, val, ten);
+  try { localStorage.setItem(RV_PESOS_LS, JSON.stringify({ negocio: neg, valuacion: val, tendencia: ten })); } catch (e) {}
+  renderRV();
+}
+function rvResetPesos() {
+  document.getElementById('rvPesoNegocio').value = PUNTAJE_PESOS_DEFAULT.negocio;
+  document.getElementById('rvPesoValuacion').value = PUNTAJE_PESOS_DEFAULT.valuacion;
+  document.getElementById('rvPesoTendencia').value = PUNTAJE_PESOS_DEFAULT.tendencia;
+  try { localStorage.removeItem(RV_PESOS_LS); } catch (e) {}
+  rvApplyPesos(PUNTAJE_PESOS_DEFAULT.negocio, PUNTAJE_PESOS_DEFAULT.valuacion, PUNTAJE_PESOS_DEFAULT.tendencia);
+  renderRV();
+}
+function rvInitPesos() {
+  var p = null;
+  try { p = JSON.parse(localStorage.getItem(RV_PESOS_LS) || 'null'); } catch (e) {}
+  if (!p || typeof p.negocio !== 'number' || typeof p.valuacion !== 'number' || typeof p.tendencia !== 'number') return;
+  var elN = document.getElementById('rvPesoNegocio'), elV = document.getElementById('rvPesoValuacion'), elT = document.getElementById('rvPesoTendencia');
+  if (!elN) return;
+  elN.value = p.negocio; elV.value = p.valuacion; elT.value = p.tendencia;
+  rvApplyPesos(p.negocio, p.valuacion, p.tendencia);
+}
 function setRvSort(col) {
   if (rvSortCol === col) rvSortAsc = !rvSortAsc; else { rvSortCol = col; rvSortAsc = (col === 'ticker' || col === 'empresa' || col === 'sector'); }
   document.getElementById('rvBtnMejor').classList.toggle('active', rvSortCol === 'puntaje' && !rvSortAsc);
@@ -1964,6 +2032,23 @@ function renderCmp() {
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
 (function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
+rvInitPesos();
+</script>
+<script>
+function fcnSyncThemeButtons() {
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelectorAll('.theme-toggle').forEach(function (b) {
+    b.textContent = dark ? '☀️' : '🌙';
+    b.setAttribute('aria-label', dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  });
+}
+function fcnToggleTheme() {
+  var html = document.documentElement, dark = html.getAttribute('data-theme') === 'dark';
+  if (dark) { html.removeAttribute('data-theme'); try { localStorage.setItem('fcn_theme', 'light'); } catch (e) {} }
+  else { html.setAttribute('data-theme', 'dark'); try { localStorage.setItem('fcn_theme', 'dark'); } catch (e) {} }
+  fcnSyncThemeButtons();
+}
+document.addEventListener('DOMContentLoaded', fcnSyncThemeButtons);
 </script>
 </body>
 </html>
