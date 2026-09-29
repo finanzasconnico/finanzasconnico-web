@@ -278,6 +278,7 @@ body { padding-bottom: 64px; }
 .cart-head { display: grid; grid-template-columns: 1fr 110px 90px 100px; gap: 10px; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--line); font-weight: 600; }
 .cart-total.warn { color: var(--danger); }
+.cart-precios-warn { background: #faecd0; border-left: 3px solid var(--ambar); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.82rem; color: #7a5200; line-height: 1.5; margin-top: 14px; }
 @media (max-width: 640px) {
   .cart-head { display: none; }
   .cart-row {
@@ -495,7 +496,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div><label for="cartMonto">Monto total a invertir (USD)</label><input id="cartMonto" class="cmp-input" type="number" min="0" step="100" value="10000" oninput="CARTERA.onChange()"></div>
       </div>
       <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
-      <p class="rot-fee" style="margin-top:14px">Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Editá cualquier línea antes de decidir, y antes de operar hacé tu propia verificación.</p>
+      <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
     </div>
     </div>
 
@@ -602,14 +603,20 @@ function cartGrupoCalif(c) {
   if (/^A[+-]?$/.test(t)) return 'A';
   return 'menorA';
 }
+// Calificación de default (o casi): la emisora ya dejó de pagar o está a un paso — nunca se
+// sugiere sola aunque la TIR no llegue a parecer disparatada (ej: "D" con TIR de "solo" 29%).
+function cartEsDefault(calif) {
+  var t = String(calif || '').toUpperCase().split(/[\s(]/)[0];
+  return /^(D|RD|SD|CC|C)$/.test(t);
+}
 function cartMejorBono(filtro) {
   var mejor = null, mejorTir = -Infinity;
   Object.keys(BOND_DB).forEach(function (tk) {
     var b = BOND_DB[tk];
-    if (!filtro(b)) return;
+    if (!filtro(b) || cartEsDefault(b.calif)) return;
     var tir = tirEfectivo(tk, 'mep');
-    // TIR > 50% suele ser un bono en default (el mercado le pone un precio de remate, no una
-    // tasa real) — mismo corte que ya usa el Suite para marcarlos, así no se sugieren solos.
+    // TIR > 50% suele ser un bono en default de hecho aunque la calificación no lo diga todavía
+    // (el mercado le pone un precio de remate, no una tasa real) — mismo corte que usa el Suite.
     if (tir == null || isNaN(tir) || tir > 50 || tir <= mejorTir) return;
     mejorTir = tir; mejor = { ticker: tk, tir: tir, emisor: b.emisor };
   });
@@ -692,8 +699,9 @@ function carteraArmarPerfil(perfil) {
     push('sob', 'Soberano largo (duration ≥ 3)', 5, cartMejorBono(function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }));
     push('carry', 'Carry en pesos (mejor TNA)', 5, letraOk);
     push('spy', 'S&P 500 (SPY)', 20, { ticker: 'SPY' });
-    var partesAgr = cartSplitPct(25, 3);
-    cartTopCedears(3, ['SPY']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesAgr[i], c); });
+    push('cripto', 'Cripto (Bitcoin vía ETF)', 5, { ticker: 'IBIT' });
+    var partesAgr = cartSplitPct(20, 3);
+    cartTopCedears(3, ['SPY', 'IBIT']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesAgr[i], c); });
     push('rvlocal', 'Acción argentina', 10, cartTopAccionLocal());
   }
   return filas;
@@ -704,6 +712,7 @@ function cartNotaDe(tipo, pick) {
   if (tipo === 'rvlocal') return 'Retorno 12 meses ' + (pick.ret12 * 100).toFixed(1) + '% · ' + esc(pick.empresa || '');
   if (tipo === 'carry') return 'TNA ' + fmtNum(pick.tna * 100, 1) + '% · vence en ' + Math.round(pick.dias) + ' días';
   if (tipo === 'spy') return 'El índice más seguido del mundo — componente central en casi cualquier cartera diversificada.';
+  if (tipo === 'cripto') return 'Exposición a Bitcoin sin manejar la moneda directamente — mucha más volatilidad que el resto de la cartera, pensado como una porción chica.';
   return '';
 }
 function carteraSetPerfil(perfil) {
