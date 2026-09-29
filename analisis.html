@@ -279,6 +279,16 @@ body { padding-bottom: 64px; }
 .cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--line); font-weight: 600; }
 .cart-total.warn { color: var(--danger); }
 .cart-precios-warn { background: #faecd0; border-left: 3px solid var(--ambar); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.82rem; color: #7a5200; line-height: 1.5; margin-top: 14px; }
+.cart-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.cart-print-val { display: none; }
+@media print {
+  body * { visibility: hidden; }
+  #tab-cartera, #tab-cartera * { visibility: visible; }
+  #tab-cartera { position: absolute; left: 0; top: 0; width: 100%; }
+  .rv-controls, .rot-adv-grid, .cart-actions, .cart-row input, .cart-quitar, .wa-float, .fb-trigger, .disclaimer-bar { display: none !important; }
+  .cart-print-val { display: inline !important; }
+  .cart-precios-warn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 @media (max-width: 640px) {
   .cart-head { display: none; }
   .cart-row {
@@ -495,6 +505,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="rot-adv-grid" style="margin-top:10px;max-width:260px">
         <div><label for="cartMonto">Monto total a invertir (USD)</label><input id="cartMonto" class="cmp-input" type="number" min="0" step="100" value="10000" oninput="CARTERA.onChange()"></div>
       </div>
+      <div class="cart-actions">
+        <button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.imprimir()">🖨️ Imprimir</button>
+        <button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.compartir()">📤 Compartir por WhatsApp</button>
+      </div>
       <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
       <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
     </div>
@@ -622,6 +636,20 @@ function cartMejorBono(filtro) {
   });
   return mejor;
 }
+// Cuánto cobrarías y cuándo con el monto de esa línea — mismo cronograma real (FLUJO_DB) que usa
+// el resto de la página, escalado a los nominales que entrarían con ese monto (estimación: no
+// redondea a lotes ni descuenta comisión, alcanza para "más o menos cuánto y cuándo").
+function cartProximoCobro(ticker, monto) {
+  var real = FLUJO_DB[ticker];
+  if (!real || !real.schedule100 || !real.schedule100.length || !(monto > 0)) return null;
+  var precio = precioEfectivo(ticker, 'mep');
+  if (!(precio > 0)) return null;
+  var nominales = monto / precio, hoy = rotHoy();
+  var futuros = real.schedule100
+    .map(function (cf) { return { date: parseISO(cf.date), total: cf.total * (nominales / 100) }; })
+    .filter(function (cf) { return cf.date && cf.date.getTime() > hoy.getTime(); });
+  return futuros.length ? futuros[0] : null;
+}
 function cartTopCedears(n, excluir) {
   if (!RV.scored || !RV.scored.length) return [];
   var vistos = {}, out = [];
@@ -658,16 +686,17 @@ function ensureCarteraLetras() {
     wb.SheetNames.forEach(function (nombre) {
       if (!/^[ST]\d{2}[A-Z]\d$/.test(nombre)) return;
       var rows = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header: 1 });
-      var tna = null, dias = null;
+      var tna = null, dias = null, venc = null;
       rows.forEach(function (r) {
         if (!r) return;
         for (var i = 0; i < r.length; i++) {
           if (r[i] === 'TNA' && typeof r[i + 1] === 'number') tna = r[i + 1];
           if (r[i] === 'Días al vencimiento' && typeof r[i + 1] === 'number') dias = r[i + 1];
+          if (r[i] === 'Fecha de vencimiento' && typeof r[i + 1] === 'number') venc = r[i + 1];
         }
       });
       if (tna == null || dias == null || dias <= 0) return;
-      if (tna > mejorTna) { mejorTna = tna; mejor = { ticker: nombre, tna: tna, dias: dias }; }
+      if (tna > mejorTna) { mejorTna = tna; mejor = { ticker: nombre, tna: tna, dias: dias, vencimiento: venc ? parseISO(excelDateToISO(venc)) : null }; }
     });
     carteraLetraTop = mejor || false;
     return mejor;
@@ -710,7 +739,7 @@ function cartNotaDe(tipo, pick) {
   if (tipo === 'on' || tipo === 'sob') return 'TIR ' + fmtNum(pick.tir, 1) + '% · ' + esc(pick.emisor || '');
   if (tipo === 'cedear') return 'Puntaje ' + (pick.puntaje > 0 ? '+' : '') + pick.puntaje + ' · ' + esc(pick.empresa || '');
   if (tipo === 'rvlocal') return 'Retorno 12 meses ' + (pick.ret12 * 100).toFixed(1) + '% · ' + esc(pick.empresa || '');
-  if (tipo === 'carry') return 'TNA ' + fmtNum(pick.tna * 100, 1) + '% · vence en ' + Math.round(pick.dias) + ' días';
+  if (tipo === 'carry') return 'TNA ' + fmtNum(pick.tna * 100, 1) + '% · vence el ' + (pick.vencimiento ? fmtDateAR(pick.vencimiento) : ('en ' + Math.round(pick.dias) + ' días'));
   if (tipo === 'spy') return 'El índice más seguido del mundo — componente central en casi cualquier cartera diversificada.';
   if (tipo === 'cripto') return 'Exposición a Bitcoin sin manejar la moneda directamente — mucha más volatilidad que el resto de la cartera, pensado como una porción chica.';
   return '';
@@ -744,10 +773,12 @@ function carteraRender() {
   var totalPct = carteraFilas.reduce(function (s, f) { return s + (parseFloat(f.pct) || 0); }, 0);
   var filasHtml = carteraFilas.map(function (f, i) {
     var m = monto * (parseFloat(f.pct) || 0) / 100;
+    var cobro = (f.tipo === 'on' || f.tipo === 'sob') && f.ticker ? cartProximoCobro(f.ticker, m) : null;
+    var notaLinea = (f.nota || '') + (cobro ? '<br>Próximo cobro: ' + rotUSD(cobro.total) + ' el ' + fmtDateAR(cobro.date) : '');
     return '<div class="cart-row">' +
-      '<div class="cart-label">' + esc(f.label) + '<span class="sub">' + (f.nota || '') + '</span></div>' +
-      '<input type="text" value="' + esc(f.ticker) + '" oninput="CARTERA.editarTicker(' + i + ',this.value)" placeholder="Ticker">' +
-      '<input type="number" step="1" min="0" value="' + (f.pct || 0) + '" oninput="CARTERA.editarPct(' + i + ',this.value)">' +
+      '<div class="cart-label">' + esc(f.label) + '<span class="sub">' + notaLinea + '</span></div>' +
+      '<input type="text" value="' + esc(f.ticker) + '" oninput="CARTERA.editarTicker(' + i + ',this.value)" placeholder="Ticker"><span class="cart-print-val">' + esc(f.ticker) + '</span>' +
+      '<input type="number" step="1" min="0" value="' + (f.pct || 0) + '" oninput="CARTERA.editarPct(' + i + ',this.value)"><span class="cart-print-val">' + fmtNum(f.pct || 0, 0) + '%</span>' +
       '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
       '</div>';
   }).join('');
@@ -755,6 +786,23 @@ function carteraRender() {
     '<div class="cart-head"><span>Categoría</span><span>Ticker</span><span>%</span><span style="text-align:right">Monto</span></div>' +
     filasHtml +
     '<div class="cart-total' + (Math.abs(totalPct - 100) > 0.5 ? ' warn' : '') + '">Total<span>' + fmtNum(totalPct, 0) + '% ' + (Math.abs(totalPct - 100) > 0.5 ? '⚠ no suma 100%' : '· US$ ' + fmtNum(monto, 0)) + '</span></div>';
+}
+function carteraImprimir() { window.print(); }
+function carteraCompartir() {
+  var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
+  var nombrePerfil = { conservador: 'Conservador', moderado: 'Moderado', agresivo: 'Agresivo' }[carteraPerfilActual] || '';
+  var lineas = carteraFilas.map(function (f) {
+    var m = monto * (parseFloat(f.pct) || 0) / 100;
+    var cobro = (f.tipo === 'on' || f.tipo === 'sob') && f.ticker ? cartProximoCobro(f.ticker, m) : null;
+    var s = '• ' + f.label + (f.ticker ? ' (' + f.ticker + ')' : '') + ' — ' + fmtNum(f.pct || 0, 0) + '% — ' + rotUSD(m);
+    if (cobro) s += '\n   Próximo cobro: ' + rotUSD(cobro.total) + ' el ' + fmtDateAR(cobro.date);
+    return s;
+  });
+  var texto = '🧩 Mi cartera (perfil ' + nombrePerfil + ') — US$ ' + fmtNum(monto, 0) + ' en total\n\n' +
+    lineas.join('\n') +
+    '\n\n📌 Armada con la herramienta "Arma tu cartera" de FinanzasconNico — es informativa, no una recomendación de inversión. Verificá los precios antes de operar.\n' +
+    'https://finanzasconnico-web.vercel.app/analisis.html#cartera';
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
 }
 function carteraInit() {
   var raw; try { raw = localStorage.getItem(CARTERA_LS); } catch (e) { raw = null; }
@@ -1625,7 +1673,7 @@ function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
 window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
-window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange };
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir };
 
 })();
 </script>
