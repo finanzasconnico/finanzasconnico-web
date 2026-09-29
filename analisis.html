@@ -163,6 +163,7 @@ body { padding-bottom: 64px; }
 .fb-submit:hover{ opacity:0.9; }
 /* Pestañas de herramientas */
 .tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--surface); padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tool-tabs::after { content: ''; position: absolute; top: 0; right: 0; bottom: 1px; width: 36px; background: linear-gradient(to right, transparent, var(--surface)); pointer-events: none; }
 .tool-tabs .container { display: flex; gap: 8px; overflow-x: auto; }
 .tab-btn {
   font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; padding: 9px 16px; white-space: nowrap;
@@ -607,7 +608,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 // getMonitorWorkbook (no vuelve a pedir nada aparte) — y desde acá también se ve todo lo global
 // de la pestaña de Renta Variable (RV, esc, fmtNum, SECTOR_ES, ensureRV).
 const CARTERA_LS = 'fcn_cartera_perfil';
-let carteraFilas = [], carteraPerfilActual = null, carteraLetraTop = null, carteraLetraCargando = null, carteraListo = false;
+let carteraFilas = [], carteraPerfilActual = null, carteraLetraTop = null, carteraLetraCargando = null, carteraListo = false, carteraManual = false;
 
 // Mismo bucket de calificación que usa ¿Cuánto cobro? (AAA/AA/A/menorA) — "HY" = menorA.
 function cartGrupoCalif(c) {
@@ -623,18 +624,39 @@ function cartEsDefault(calif) {
   var t = String(calif || '').toUpperCase().split(/[\s(]/)[0];
   return /^(D|RD|SD|CC|C)$/.test(t);
 }
-function cartMejorBono(filtro) {
-  var mejor = null, mejorTir = -Infinity;
+// Hasta maxN bonos que cumplen el filtro, sin repetir emisor y sin pasar la lámina mínima de
+// ninguno para lo que le tocaría de este bucket — así un monto grande no termina concentrado en
+// una sola ON (y una que pida, por ej., 10.000 nominales mínimos no aparece si no entra).
+function cartMejoresBonos(filtro, montoBucket, maxN) {
+  var candidatos = [];
   Object.keys(BOND_DB).forEach(function (tk) {
     var b = BOND_DB[tk];
     if (!filtro(b) || cartEsDefault(b.calif)) return;
     var tir = tirEfectivo(tk, 'mep');
     // TIR > 50% suele ser un bono en default de hecho aunque la calificación no lo diga todavía
     // (el mercado le pone un precio de remate, no una tasa real) — mismo corte que usa el Suite.
-    if (tir == null || isNaN(tir) || tir > 50 || tir <= mejorTir) return;
-    mejorTir = tir; mejor = { ticker: tk, tir: tir, emisor: b.emisor };
+    if (tir == null || isNaN(tir) || tir > 50) return;
+    var precio = precioEfectivo(tk, 'mep');
+    if (!(precio > 0)) return;
+    candidatos.push({ ticker: tk, tir: tir, emisor: b.emisor, minimoUSD: (b.laminaMin || 1) * precio });
   });
-  return mejor;
+  candidatos.sort(function (a, b) { return b.tir - a.tir; });
+  if (!candidatos.length) return [];
+  var n = Math.max(1, Math.min(maxN, candidatos.length, Math.round(montoBucket / 4000) || 1));
+  var elegidos = [], vistos = {};
+  for (var i = 0; i < candidatos.length && elegidos.length < n; i++) {
+    var c = candidatos[i];
+    if (vistos[c.emisor] || c.minimoUSD > montoBucket / n) continue;
+    vistos[c.emisor] = true;
+    elegidos.push(c);
+  }
+  // Si ninguno entraba con el reparto parejo (montoBucket chico y láminas grandes), mejor ofrecer
+  // el de mejor TIR que sí entre solo que dejar el bucket vacío — se avisa con el % concentrado ahí.
+  if (!elegidos.length) {
+    var soloQueEntra = candidatos.filter(function (c) { return c.minimoUSD <= montoBucket; })[0];
+    elegidos.push(soloQueEntra || candidatos[0]);
+  }
+  return elegidos;
 }
 // Cuánto cobrarías y cuándo con el monto de esa línea — mismo cronograma real (FLUJO_DB) que usa
 // el resto de la página, escalado a los nominales que entrarían con ese monto (estimación: no
@@ -703,30 +725,38 @@ function ensureCarteraLetras() {
   }).catch(function () { carteraLetraTop = false; return null; });
   return carteraLetraCargando;
 }
-function carteraArmarPerfil(perfil) {
+function carteraArmarPerfil(perfil, monto) {
   var filas = [];
+  monto = monto > 0 ? monto : 10000;
   function push(tipo, label, pct, pick) {
     filas.push({ tipo: tipo, label: label, pct: pct, ticker: pick ? pick.ticker : '', nota: pick ? cartNotaDe(tipo, pick) : 'No encontramos un candidato hoy — completalo a mano.' });
   }
-  var letraOk = carteraLetraTop || null;
-  var onAAA = cartMejorBono(function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; });
+  // Reparte el % del bucket entre hasta maxN ONs/Soberanos distintos — cuantos más dólares entren
+  // ahí, más se abre (hasta maxN), sin repetir emisor y respetando la lámina mínima de cada uno.
+  function pushBonos(tipo, label, pctBucket, filtro, maxN) {
+    var montoBucket = monto * pctBucket / 100;
+    var elegidos = cartMejoresBonos(filtro, montoBucket, maxN);
+    if (!elegidos.length) { push(tipo, label, pctBucket, null); return; }
+    var partes = cartSplitPct(pctBucket, elegidos.length);
+    elegidos.forEach(function (c, i) { push(tipo, label, partes[i], c); });
+  }
   if (perfil === 'conservador') {
-    push('on', 'ON calidad (AAA)', 80, onAAA);
+    pushBonos('on', 'ON calidad (AAA)', 80, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
     push('spy', 'S&P 500 (SPY)', 5, { ticker: 'SPY' });
     cartTopCedears(1, ['SPY']).forEach(function (c) { push('cedear', 'CEDEAR — ' + c.sector, 5, c); });
     filas.push({ tipo: 'fijo', label: 'Fondo común de inversión', pct: 10, ticker: 'ESTRA1', nota: 'Fondo común de inversión de Balanz — no tiene ranking propio, se sugiere fijo.' });
   } else if (perfil === 'moderado') {
-    push('on', 'ON calidad (AAA)', 50, onAAA);
+    pushBonos('on', 'ON calidad (AAA)', 50, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
     push('spy', 'S&P 500 (SPY)', 10, { ticker: 'SPY' });
     var partesMod = cartSplitPct(35, 3);
     cartTopCedears(3, ['SPY']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesMod[i], c); });
     push('rvlocal', 'Acción argentina', 5, cartTopAccionLocal());
   } else {
-    push('on', 'ON calidad (AAA)', 20, onAAA);
-    push('on', 'ON de mayor riesgo (HY)', 10, cartMejorBono(function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }));
-    push('sob', 'Soberano corto (duration < 3)', 5, cartMejorBono(function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration < 3; }));
-    push('sob', 'Soberano largo (duration ≥ 3)', 5, cartMejorBono(function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }));
-    push('carry', 'Carry en pesos (mejor TNA)', 5, letraOk);
+    pushBonos('on', 'ON calidad (AAA)', 20, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 3);
+    pushBonos('on', 'ON de mayor riesgo (HY)', 10, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }, 2);
+    pushBonos('sob', 'Soberano corto (duration < 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration < 3; }, 2);
+    pushBonos('sob', 'Soberano largo (duration ≥ 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }, 2);
+    push('carry', 'Carry en pesos (mejor TNA)', 5, carteraLetraTop || null);
     push('spy', 'S&P 500 (SPY)', 20, { ticker: 'SPY' });
     push('cripto', 'Cripto (Bitcoin vía ETF)', 5, { ticker: 'IBIT' });
     var partesAgr = cartSplitPct(20, 3);
@@ -746,24 +776,33 @@ function cartNotaDe(tipo, pick) {
 }
 function carteraSetPerfil(perfil) {
   carteraPerfilActual = perfil;
+  carteraManual = false; // elegir perfil de nuevo pisa cualquier edición anterior, a propósito
   ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === perfil); });
-  carteraFilas = carteraArmarPerfil(perfil);
+  carteraFilas = carteraArmarPerfil(perfil, parseFloat(document.getElementById('cartMonto').value));
   carteraGuardar();
   carteraRender();
 }
-function carteraQuitarFila(i) { carteraFilas.splice(i, 1); carteraGuardar(); carteraRender(); }
+function carteraQuitarFila(i) { carteraManual = true; carteraFilas.splice(i, 1); carteraGuardar(); carteraRender(); }
 function carteraEditarTicker(i, val) {
+  carteraManual = true;
   carteraFilas[i].ticker = val.trim().toUpperCase();
   carteraFilas[i].nota = 'Editado a mano.';
   carteraGuardar(); carteraRender();
 }
 function carteraEditarPct(i, val) {
+  carteraManual = true;
   var n = parseFloat(val); carteraFilas[i].pct = isNaN(n) ? 0 : n;
   carteraGuardar(); carteraRender();
 }
-function carteraOnChange() { carteraGuardar(); carteraRender(); }
+// Cambiar el monto no cuenta como "edición manual": mientras el cliente no tocó ningún ticker/%,
+// conviene re-armar (más plata, se abre a más ONs distintas en vez de concentrar en una sola).
+// Apenas edita algo a mano, se respeta tal cual quedó y el monto ya solo recalcula los US$ de cada línea.
+function carteraOnChange() {
+  if (!carteraManual && carteraPerfilActual) carteraFilas = carteraArmarPerfil(carteraPerfilActual, parseFloat(document.getElementById('cartMonto').value));
+  carteraGuardar(); carteraRender();
+}
 function carteraGuardar() {
-  try { localStorage.setItem(CARTERA_LS, JSON.stringify({ perfil: carteraPerfilActual, monto: document.getElementById('cartMonto').value, filas: carteraFilas })); } catch (e) {}
+  try { localStorage.setItem(CARTERA_LS, JSON.stringify({ perfil: carteraPerfilActual, monto: document.getElementById('cartMonto').value, filas: carteraFilas, manual: carteraManual })); } catch (e) {}
 }
 function carteraRender() {
   var box = document.getElementById('cartResult');
@@ -808,7 +847,7 @@ function carteraInit() {
   var raw; try { raw = localStorage.getItem(CARTERA_LS); } catch (e) { raw = null; }
   var o = null; try { o = raw ? JSON.parse(raw) : null; } catch (e) {}
   if (o && o.perfil && Array.isArray(o.filas) && o.filas.length) {
-    carteraPerfilActual = o.perfil; carteraFilas = o.filas;
+    carteraPerfilActual = o.perfil; carteraFilas = o.filas; carteraManual = !!o.manual;
     if (o.monto) document.getElementById('cartMonto').value = o.monto;
     ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === o.perfil); });
     carteraRender();
@@ -2648,6 +2687,18 @@ function renderCmp() {
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
 (function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
+// La barra de pestañas no entra entera en pantallas de hasta ~1200px y depende de scroll
+// horizontal — con mouse (sin trackpad) no hay forma de llegar a las últimas. Esto traduce la
+// rueda vertical normal a scroll horizontal mientras el mouse está arriba de la barra.
+(function () {
+  const tabsBox = document.querySelector('.tool-tabs .container');
+  if (!tabsBox) return;
+  tabsBox.addEventListener('wheel', function (e) {
+    if (e.deltaY === 0 || tabsBox.scrollWidth <= tabsBox.clientWidth) return;
+    tabsBox.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+})();
 rvInitPesos();
 </script>
 <script>
