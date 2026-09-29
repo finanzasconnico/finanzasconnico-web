@@ -163,7 +163,18 @@ body { padding-bottom: 64px; }
 .fb-submit:hover{ opacity:0.9; }
 /* Pestañas de herramientas */
 .tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--surface); padding: 10px 0; border-bottom: 1px solid var(--line); }
-.tool-tabs::after { content: ''; position: absolute; top: 0; right: 0; bottom: 1px; width: 36px; background: linear-gradient(to right, transparent, var(--surface)); pointer-events: none; }
+.tool-tabs::after { content: ''; position: absolute; top: 0; right: 0; bottom: 1px; width: 44px; background: linear-gradient(to right, transparent, var(--surface)); pointer-events: none; }
+.tool-tabs::before { content: ''; position: absolute; top: 0; left: 0; bottom: 1px; width: 44px; background: linear-gradient(to left, transparent, var(--surface)); pointer-events: none; z-index: 1; }
+.tab-scroll {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+.tab-scroll:hover { border-color: var(--jade); color: var(--heading); }
+.tab-scroll-left { left: 4px; }
+.tab-scroll-right { right: 4px; }
+.tab-scroll[hidden] { display: none; }
 .tool-tabs .container { display: flex; gap: 8px; overflow-x: auto; }
 .tab-btn {
   font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; padding: 9px 16px; white-space: nowrap;
@@ -356,6 +367,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </section>
 
 <nav class="tool-tabs">
+  <button class="tab-scroll tab-scroll-left" id="tabScrollLeft" aria-label="Ver herramientas anteriores" hidden>‹</button>
   <div class="container">
     <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
     <button class="tab-btn" data-tab="cobro" onclick="switchTab('cobro')">💰 ¿Cuánto cobro?</button>
@@ -365,6 +377,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
     <button class="tab-btn" data-tab="cartera" onclick="switchTab('cartera')">🧩 Arma tu cartera</button>
   </div>
+  <button class="tab-scroll tab-scroll-right" id="tabScrollRight" aria-label="Ver más herramientas">›</button>
 </nav>
 
 <section class="tool-section">
@@ -2709,17 +2722,30 @@ function renderCmp() {
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
 (function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
-// La barra de pestañas no entra entera en pantallas de hasta ~1200px y depende de scroll
-// horizontal — con mouse (sin trackpad) no hay forma de llegar a las últimas. Esto traduce la
-// rueda vertical normal a scroll horizontal mientras el mouse está arriba de la barra.
+// La barra de pestañas no entra entera en pantallas de hasta ~1200px (menos todavía con cada
+// herramienta nueva) y depende de scroll horizontal — sin flechas ni trackpad no hay forma de
+// notar que hay más, ni de llegar. Rueda del mouse = scroll horizontal, flechas que aparecen
+// solo cuando hay algo para ese lado, y las mismas dos cosas sirven en los dos temas.
 (function () {
   const tabsBox = document.querySelector('.tool-tabs .container');
+  const left = document.getElementById('tabScrollLeft'), right = document.getElementById('tabScrollRight');
   if (!tabsBox) return;
   tabsBox.addEventListener('wheel', function (e) {
     if (e.deltaY === 0 || tabsBox.scrollWidth <= tabsBox.clientWidth) return;
     tabsBox.scrollLeft += e.deltaY;
     e.preventDefault();
   }, { passive: false });
+  if (!left || !right) return;
+  function actualizarFlechas() {
+    const max = tabsBox.scrollWidth - tabsBox.clientWidth;
+    left.hidden = tabsBox.scrollLeft <= 2;
+    right.hidden = max <= 2 || tabsBox.scrollLeft >= max - 2;
+  }
+  left.onclick = function () { tabsBox.scrollBy({ left: -220, behavior: 'smooth' }); };
+  right.onclick = function () { tabsBox.scrollBy({ left: 220, behavior: 'smooth' }); };
+  tabsBox.addEventListener('scroll', actualizarFlechas);
+  window.addEventListener('resize', actualizarFlechas);
+  actualizarFlechas();
 })();
 rvInitPesos();
 </script>
