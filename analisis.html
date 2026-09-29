@@ -692,12 +692,18 @@ function cartSplitPct(total, n) {
   for (var i = 0; i < n; i++) out.push(base + (i < resto ? 1 : 0));
   return out;
 }
-function cartTopAccionLocal() {
-  if (!RV.rows || !RV.rows.length) return null;
+// Mismo criterio de diversificación que los bonos, pero para lo que no tiene lámina mínima real
+// (CEDEARs, acciones): con poca plata en el bucket, 1 solo activo (no pasa nada); con más, se abre
+// hasta maxN — así tampoco una cartera grande termina con el 30% en una sola acción.
+function cartNPosiciones(montoBucket, maxN, umbralUSD) {
+  return Math.max(1, Math.min(maxN, Math.round(montoBucket / umbralUSD) || 1));
+}
+function cartTopAccionesLocal(n) {
+  if (!RV.rows || !RV.rows.length) return [];
   var cands = RV.rows.filter(function (r) {
     return r.moneda === 'ARS' && r.ret12 != null && r.f && r.f.niPos >= 0.5 && r.f.fcfPos >= 0.5 && r.precio;
   }).sort(function (a, b) { return b.ret12 - a.ret12; });
-  return cands.length ? { ticker: cands[0].ticker, empresa: cands[0].empresa, ret12: cands[0].ret12 } : null;
+  return cands.slice(0, n).map(function (c) { return { ticker: c.ticker, empresa: c.empresa, ret12: c.ret12 }; });
 }
 // La LECAP/BONCAP de mejor TNA hoy, leída directo de las hojas del Monitor (mismo dato base que
 // ¿Cuánto cobro?, sin repetir todo su motor de precios en vivo — alcanza con la TNA de cada hoja).
@@ -740,17 +746,34 @@ function carteraArmarPerfil(perfil, monto) {
     var partes = cartSplitPct(pctBucket, elegidos.length);
     elegidos.forEach(function (c, i) { push(tipo, label, partes[i], c); });
   }
+  // Mismo criterio: con poca plata en el bucket, 1 solo CEDEAR/acción no es un problema de
+  // concentración — con más, se abre a varios (sectores distintos, en el caso de CEDEARs).
+  function pushCedears(pctBucket, excluir, maxN) {
+    var montoBucket = monto * pctBucket / 100;
+    var n = cartNPosiciones(montoBucket, maxN, 1800);
+    var elegidos = cartTopCedears(n, excluir);
+    if (!elegidos.length) { push('cedear', 'CEDEAR', pctBucket, null); return; }
+    var partes = cartSplitPct(pctBucket, elegidos.length);
+    elegidos.forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partes[i], c); });
+  }
+  function pushAccionesLocales(pctBucket, maxN) {
+    var montoBucket = monto * pctBucket / 100;
+    var n = cartNPosiciones(montoBucket, maxN, 2500);
+    var elegidos = cartTopAccionesLocal(n);
+    if (!elegidos.length) { push('rvlocal', 'Acción argentina', pctBucket, null); return; }
+    var partes = cartSplitPct(pctBucket, elegidos.length);
+    elegidos.forEach(function (c, i) { push('rvlocal', 'Acción argentina', partes[i], c); });
+  }
   if (perfil === 'conservador') {
     pushBonos('on', 'ON calidad (AAA)', 80, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
     push('spy', 'S&P 500 (SPY)', 5, { ticker: 'SPY' });
-    cartTopCedears(1, ['SPY']).forEach(function (c) { push('cedear', 'CEDEAR — ' + c.sector, 5, c); });
+    pushCedears(5, ['SPY'], 3);
     filas.push({ tipo: 'fijo', label: 'Fondo común de inversión', pct: 10, ticker: 'ESTRA1', nota: 'Fondo común de inversión de Balanz — no tiene ranking propio, se sugiere fijo.' });
   } else if (perfil === 'moderado') {
     pushBonos('on', 'ON calidad (AAA)', 50, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
     push('spy', 'S&P 500 (SPY)', 10, { ticker: 'SPY' });
-    var partesMod = cartSplitPct(35, 3);
-    cartTopCedears(3, ['SPY']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesMod[i], c); });
-    push('rvlocal', 'Acción argentina', 5, cartTopAccionLocal());
+    pushCedears(35, ['SPY'], 5);
+    pushAccionesLocales(5, 2);
   } else {
     pushBonos('on', 'ON calidad (AAA)', 20, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 3);
     pushBonos('on', 'ON de mayor riesgo (HY)', 10, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }, 2);
@@ -759,9 +782,8 @@ function carteraArmarPerfil(perfil, monto) {
     push('carry', 'Carry en pesos (mejor TNA)', 5, carteraLetraTop || null);
     push('spy', 'S&P 500 (SPY)', 20, { ticker: 'SPY' });
     push('cripto', 'Cripto (Bitcoin vía ETF)', 5, { ticker: 'IBIT' });
-    var partesAgr = cartSplitPct(20, 3);
-    cartTopCedears(3, ['SPY', 'IBIT']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesAgr[i], c); });
-    push('rvlocal', 'Acción argentina', 10, cartTopAccionLocal());
+    pushCedears(20, ['SPY', 'IBIT'], 5);
+    pushAccionesLocales(10, 2);
   }
   return filas;
 }
