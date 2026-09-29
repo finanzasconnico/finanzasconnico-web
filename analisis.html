@@ -266,6 +266,30 @@ body { padding-bottom: 64px; }
 .rb-box summary { font-weight: 600; }
 .rb-note { font-size: 0.8rem; color: var(--ink-muted); line-height: 1.55; margin-top: 8px; }
 .rb-row { display: flex; gap: 6px; align-items: center; }
+.cart-row { display: grid; grid-template-columns: 1fr 110px 90px 100px; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.cart-row:first-child { border-top: none; }
+.cart-row .cart-label { font-size: 0.82rem; color: var(--ink-soft); }
+.cart-row .cart-label .sub { display: block; font-size: 0.72rem; color: var(--ink-muted); margin-top: 2px; }
+.cart-row input[type=text] { font-family: var(--font-mono); font-size: 0.85rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); width: 100%; text-transform: uppercase; }
+.cart-row input[type=number] { font-family: var(--font-mono); font-size: 0.85rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); width: 100%; text-align: right; }
+.cart-row .cart-monto { font-family: var(--font-mono); font-size: 0.85rem; text-align: right; }
+.cart-row .cart-quitar { background: none; border: none; color: var(--ink-muted); cursor: pointer; font-size: 0.9rem; padding: 4px; }
+.cart-row .cart-quitar:hover { color: var(--danger); }
+.cart-head { display: grid; grid-template-columns: 1fr 110px 90px 100px; gap: 10px; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--line); font-weight: 600; }
+.cart-total.warn { color: var(--danger); }
+@media (max-width: 640px) {
+  .cart-head { display: none; }
+  .cart-row {
+    display: grid; grid-template-columns: 1fr 90px;
+    grid-template-areas: "label label" "ticker pct" "monto monto";
+    gap: 6px 10px;
+  }
+  .cart-row .cart-label { grid-area: label; }
+  .cart-row input[type=text] { grid-area: ticker; }
+  .cart-row input[type=number] { grid-area: pct; }
+  .cart-row .cart-monto { grid-area: monto; display: flex; justify-content: space-between; align-items: center; }
+}
 .rb-row .cmp-input { flex: 1; }
 .cr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
 .cr-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; font: 600 0.78rem var(--font-mono); color: var(--text); }
@@ -327,6 +351,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
     <button class="tab-btn" data-tab="corr" onclick="switchTab('corr')">🔗 Correlación</button>
     <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
+    <button class="tab-btn" data-tab="cartera" onclick="switchTab('cartera')">🧩 Arma tu cartera</button>
   </div>
 </nav>
 
@@ -454,6 +479,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     </div>
 
+    <!-- ══ Arma tu cartera ══ -->
+    <div class="tab-panel" id="tab-cartera">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">🧩 Arma tu cartera</div>
+      </div>
+      <div class="tool-sub">Elegí un perfil y armamos una sugerencia con los tickers que hoy mejor puntúan en cada categoría — el mismo ranking que viste en las otras pestañas, ahora armado como una cartera completa. <strong>Cada línea es editable</strong>: cambiá el ticker, el % o sacala.</div>
+      <div class="rv-controls">
+        <button class="calif-btn" id="cartPerfilconservador" onclick="CARTERA.setPerfil('conservador')">🛡️ Conservador</button>
+        <button class="calif-btn" id="cartPerfilmoderado" onclick="CARTERA.setPerfil('moderado')">⚖️ Moderado</button>
+        <button class="calif-btn" id="cartPerfilagresivo" onclick="CARTERA.setPerfil('agresivo')">🚀 Agresivo</button>
+      </div>
+      <div class="rot-adv-grid" style="margin-top:10px;max-width:260px">
+        <div><label for="cartMonto">Monto total a invertir (USD)</label><input id="cartMonto" class="cmp-input" type="number" min="0" step="100" value="10000" oninput="CARTERA.onChange()"></div>
+      </div>
+      <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
+      <p class="rot-fee" style="margin-top:14px">Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Editá cualquier línea antes de decidir, y antes de operar hacé tu propia verificación.</p>
+    </div>
+    </div>
+
     <!-- ══ Rotar bonos ══ -->
     <div class="tab-panel" id="tab-rot">
     <div class="tool-card">
@@ -541,6 +586,189 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!--ROT-SCRIPT-BEGIN-->
 <script>
 (function () {
+
+// ═════════════ "Arma tu cartera": perfiles con selección automática (editable) ═════════════
+// Vive en el mismo cierre que Rotar bonos porque acá ya están BOND_DB/FLUJO_DB/tirEfectivo/
+// getMonitorWorkbook (no vuelve a pedir nada aparte) — y desde acá también se ve todo lo global
+// de la pestaña de Renta Variable (RV, esc, fmtNum, SECTOR_ES, ensureRV).
+const CARTERA_LS = 'fcn_cartera_perfil';
+let carteraFilas = [], carteraPerfilActual = null, carteraLetraTop = null, carteraLetraCargando = null, carteraListo = false;
+
+// Mismo bucket de calificación que usa ¿Cuánto cobro? (AAA/AA/A/menorA) — "HY" = menorA.
+function cartGrupoCalif(c) {
+  var t = String(c || '').toUpperCase().split(/[\s(]/)[0];
+  if (/^AAA/.test(t)) return 'AAA';
+  if (/^AA/.test(t)) return 'AA';
+  if (/^A[+-]?$/.test(t)) return 'A';
+  return 'menorA';
+}
+function cartMejorBono(filtro) {
+  var mejor = null, mejorTir = -Infinity;
+  Object.keys(BOND_DB).forEach(function (tk) {
+    var b = BOND_DB[tk];
+    if (!filtro(b)) return;
+    var tir = tirEfectivo(tk, 'mep');
+    // TIR > 50% suele ser un bono en default (el mercado le pone un precio de remate, no una
+    // tasa real) — mismo corte que ya usa el Suite para marcarlos, así no se sugieren solos.
+    if (tir == null || isNaN(tir) || tir > 50 || tir <= mejorTir) return;
+    mejorTir = tir; mejor = { ticker: tk, tir: tir, emisor: b.emisor };
+  });
+  return mejor;
+}
+function cartTopCedears(n, excluir) {
+  if (!RV.scored || !RV.scored.length) return [];
+  var vistos = {}, out = [];
+  RV.scored.filter(function (x) { return x.r.moneda !== 'ARS' && excluir.indexOf(x.r.ticker) < 0 && x.p; })
+    .sort(function (a, b) { return b.p.total - a.p.total; })
+    .forEach(function (x) {
+      if (out.length >= n) return;
+      var sec = x.r.sector || '—';
+      if (vistos[sec]) return;
+      vistos[sec] = true;
+      out.push({ ticker: x.r.ticker, empresa: x.r.empresa, sector: SECTOR_ES[sec] || sec, puntaje: x.p.total });
+    });
+  return out;
+}
+// Reparte un % entero entre n líneas sin perder ni sobrar por el redondeo (ej: splitPct(35,3) -> [12,12,11]).
+function cartSplitPct(total, n) {
+  var base = Math.floor(total / n), resto = total - base * n, out = [];
+  for (var i = 0; i < n; i++) out.push(base + (i < resto ? 1 : 0));
+  return out;
+}
+function cartTopAccionLocal() {
+  if (!RV.rows || !RV.rows.length) return null;
+  var cands = RV.rows.filter(function (r) {
+    return r.moneda === 'ARS' && r.ret12 != null && r.f && r.f.niPos >= 0.5 && r.f.fcfPos >= 0.5 && r.precio;
+  }).sort(function (a, b) { return b.ret12 - a.ret12; });
+  return cands.length ? { ticker: cands[0].ticker, empresa: cands[0].empresa, ret12: cands[0].ret12 } : null;
+}
+// La LECAP/BONCAP de mejor TNA hoy, leída directo de las hojas del Monitor (mismo dato base que
+// ¿Cuánto cobro?, sin repetir todo su motor de precios en vivo — alcanza con la TNA de cada hoja).
+function ensureCarteraLetras() {
+  if (carteraLetraTop !== null || carteraLetraCargando) return carteraLetraCargando || Promise.resolve(carteraLetraTop);
+  carteraLetraCargando = getMonitorWorkbook().then(function (wb) {
+    var mejor = null, mejorTna = -Infinity;
+    wb.SheetNames.forEach(function (nombre) {
+      if (!/^[ST]\d{2}[A-Z]\d$/.test(nombre)) return;
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header: 1 });
+      var tna = null, dias = null;
+      rows.forEach(function (r) {
+        if (!r) return;
+        for (var i = 0; i < r.length; i++) {
+          if (r[i] === 'TNA' && typeof r[i + 1] === 'number') tna = r[i + 1];
+          if (r[i] === 'Días al vencimiento' && typeof r[i + 1] === 'number') dias = r[i + 1];
+        }
+      });
+      if (tna == null || dias == null || dias <= 0) return;
+      if (tna > mejorTna) { mejorTna = tna; mejor = { ticker: nombre, tna: tna, dias: dias }; }
+    });
+    carteraLetraTop = mejor || false;
+    return mejor;
+  }).catch(function () { carteraLetraTop = false; return null; });
+  return carteraLetraCargando;
+}
+function carteraArmarPerfil(perfil) {
+  var filas = [];
+  function push(tipo, label, pct, pick) {
+    filas.push({ tipo: tipo, label: label, pct: pct, ticker: pick ? pick.ticker : '', nota: pick ? cartNotaDe(tipo, pick) : 'No encontramos un candidato hoy — completalo a mano.' });
+  }
+  var letraOk = carteraLetraTop || null;
+  var onAAA = cartMejorBono(function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; });
+  if (perfil === 'conservador') {
+    push('on', 'ON calidad (AAA)', 80, onAAA);
+    push('spy', 'S&P 500 (SPY)', 5, { ticker: 'SPY' });
+    cartTopCedears(1, ['SPY']).forEach(function (c) { push('cedear', 'CEDEAR — ' + c.sector, 5, c); });
+    filas.push({ tipo: 'fijo', label: 'Fondo común de inversión', pct: 10, ticker: 'ESTRA1', nota: 'Fondo común de inversión de Balanz — no tiene ranking propio, se sugiere fijo.' });
+  } else if (perfil === 'moderado') {
+    push('on', 'ON calidad (AAA)', 50, onAAA);
+    push('spy', 'S&P 500 (SPY)', 10, { ticker: 'SPY' });
+    var partesMod = cartSplitPct(35, 3);
+    cartTopCedears(3, ['SPY']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesMod[i], c); });
+    push('rvlocal', 'Acción argentina', 5, cartTopAccionLocal());
+  } else {
+    push('on', 'ON calidad (AAA)', 20, onAAA);
+    push('on', 'ON de mayor riesgo (HY)', 10, cartMejorBono(function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }));
+    push('sob', 'Soberano corto (duration < 3)', 5, cartMejorBono(function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration < 3; }));
+    push('sob', 'Soberano largo (duration ≥ 3)', 5, cartMejorBono(function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }));
+    push('carry', 'Carry en pesos (mejor TNA)', 5, letraOk);
+    push('spy', 'S&P 500 (SPY)', 20, { ticker: 'SPY' });
+    var partesAgr = cartSplitPct(25, 3);
+    cartTopCedears(3, ['SPY']).forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partesAgr[i], c); });
+    push('rvlocal', 'Acción argentina', 10, cartTopAccionLocal());
+  }
+  return filas;
+}
+function cartNotaDe(tipo, pick) {
+  if (tipo === 'on' || tipo === 'sob') return 'TIR ' + fmtNum(pick.tir, 1) + '% · ' + esc(pick.emisor || '');
+  if (tipo === 'cedear') return 'Puntaje ' + (pick.puntaje > 0 ? '+' : '') + pick.puntaje + ' · ' + esc(pick.empresa || '');
+  if (tipo === 'rvlocal') return 'Retorno 12 meses ' + (pick.ret12 * 100).toFixed(1) + '% · ' + esc(pick.empresa || '');
+  if (tipo === 'carry') return 'TNA ' + fmtNum(pick.tna * 100, 1) + '% · vence en ' + Math.round(pick.dias) + ' días';
+  if (tipo === 'spy') return 'El índice más seguido del mundo — componente central en casi cualquier cartera diversificada.';
+  return '';
+}
+function carteraSetPerfil(perfil) {
+  carteraPerfilActual = perfil;
+  ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === perfil); });
+  carteraFilas = carteraArmarPerfil(perfil);
+  carteraGuardar();
+  carteraRender();
+}
+function carteraQuitarFila(i) { carteraFilas.splice(i, 1); carteraGuardar(); carteraRender(); }
+function carteraEditarTicker(i, val) {
+  carteraFilas[i].ticker = val.trim().toUpperCase();
+  carteraFilas[i].nota = 'Editado a mano.';
+  carteraGuardar(); carteraRender();
+}
+function carteraEditarPct(i, val) {
+  var n = parseFloat(val); carteraFilas[i].pct = isNaN(n) ? 0 : n;
+  carteraGuardar(); carteraRender();
+}
+function carteraOnChange() { carteraGuardar(); carteraRender(); }
+function carteraGuardar() {
+  try { localStorage.setItem(CARTERA_LS, JSON.stringify({ perfil: carteraPerfilActual, monto: document.getElementById('cartMonto').value, filas: carteraFilas })); } catch (e) {}
+}
+function carteraRender() {
+  var box = document.getElementById('cartResult');
+  if (!box) return;
+  if (!carteraPerfilActual) { box.innerHTML = '<p class="loading-msg">Elegí un perfil para armar la sugerencia.</p>'; return; }
+  var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
+  var totalPct = carteraFilas.reduce(function (s, f) { return s + (parseFloat(f.pct) || 0); }, 0);
+  var filasHtml = carteraFilas.map(function (f, i) {
+    var m = monto * (parseFloat(f.pct) || 0) / 100;
+    return '<div class="cart-row">' +
+      '<div class="cart-label">' + esc(f.label) + '<span class="sub">' + (f.nota || '') + '</span></div>' +
+      '<input type="text" value="' + esc(f.ticker) + '" oninput="CARTERA.editarTicker(' + i + ',this.value)" placeholder="Ticker">' +
+      '<input type="number" step="1" min="0" value="' + (f.pct || 0) + '" oninput="CARTERA.editarPct(' + i + ',this.value)">' +
+      '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
+      '</div>';
+  }).join('');
+  box.innerHTML =
+    '<div class="cart-head"><span>Categoría</span><span>Ticker</span><span>%</span><span style="text-align:right">Monto</span></div>' +
+    filasHtml +
+    '<div class="cart-total' + (Math.abs(totalPct - 100) > 0.5 ? ' warn' : '') + '">Total<span>' + fmtNum(totalPct, 0) + '% ' + (Math.abs(totalPct - 100) > 0.5 ? '⚠ no suma 100%' : '· US$ ' + fmtNum(monto, 0)) + '</span></div>';
+}
+function carteraInit() {
+  var raw; try { raw = localStorage.getItem(CARTERA_LS); } catch (e) { raw = null; }
+  var o = null; try { o = raw ? JSON.parse(raw) : null; } catch (e) {}
+  if (o && o.perfil && Array.isArray(o.filas) && o.filas.length) {
+    carteraPerfilActual = o.perfil; carteraFilas = o.filas;
+    if (o.monto) document.getElementById('cartMonto').value = o.monto;
+    ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === o.perfil); });
+    carteraRender();
+  } else {
+    carteraSetPerfil('moderado');
+  }
+}
+// Se llama al abrir la pestaña — trae RV, el Monitor (vía ROT.init) y la mejor letra, todo en
+// paralelo y una sola vez; recién con eso arma la primera sugerencia (o restaura la guardada).
+function carteraReady() {
+  if (carteraListo) { carteraRender(); return; }
+  Promise.all([ensureRV(), rotEnsure(), ensureCarteraLetras()]).then(function () {
+    carteraListo = true;
+    carteraInit();
+  });
+}
+
 /* ROT-CORE: copiado SIN cambios de Calculadora_Rotaciones_FinanzasconNico_4.html (líneas 807-975 y 980-1187) */
 // ═══════════════════════════════════════════════════════
 // UTILIDADES
@@ -1388,6 +1616,7 @@ function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
 window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange };
 
 })();
 </script>
@@ -1596,7 +1825,7 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot'];
+const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot', 'cartera'];
 
 /* ¿Cuánto cobro?: la herramienta es cuanto-cobro.html (una sola fuente, así no se desincroniza). Acá se carga
    recién al abrir la pestaña y se le sacan el encabezado, el cartel legal y los botones flotantes — esta página ya
@@ -1631,6 +1860,7 @@ function switchTab(name) {
   if (name === 'rv' || name === 'cmp' || name === 'corr') ensureRV();
   if (name === 'cobro') initCobro();
   if (name === 'rot' && window.ROT) ROT.init();
+  if (name === 'cartera' && window.CARTERA) CARTERA.ready();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
 }
 
@@ -1779,7 +2009,7 @@ function parseValuacion(buf) {
       moneda: String(r['Moneda'] || '').trim(),
       precio: num(r['Precio_actual']), m,
       mm21: num(r['MM21_sem']), mm50: num(r['MM50_sem']), mm200: num(r['MM200_sem']),
-      ret3m: num(r['Ret_3m']), ret6m: num(r['Ret_6m']), dist52: num(r['Dist_max_52s']),
+      ret3m: num(r['Ret_3m']), ret6m: num(r['Ret_6m']), ret12: num(r['Ret_12m']), dist52: num(r['Dist_max_52s']),
       mm200d: num(r['MM200_dia']), mm20s: num(r['MM20_sem']), mm20m: num(r['MM20_mes']), mm50m: num(r['MM50_mes']),
       max52: num(r['Max_52s']), min52: num(r['Min_52s']),
       f: { revCagr: num(r['Rev_CAGR']), niPos: num(r['NI_pos']), fcfPos: num(r['FCF_pos']), margenTrend: num(r['Margen_trend']), ndEbitda: num(r['ND_EBITDA']) }
