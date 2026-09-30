@@ -307,13 +307,23 @@ body { padding-bottom: 64px; }
   .cart-calendario { grid-template-columns: repeat(3, 1fr); }
   .cart-chart-wrap { justify-content: center; }
 }
+.cart-print-header { display: none; }
 @media print {
+  @page { margin: 16mm 14mm; }
   body * { visibility: hidden; }
   #tab-cartera, #tab-cartera * { visibility: visible; }
   #tab-cartera { position: absolute; left: 0; top: 0; width: 100%; }
-  .rv-controls, .rot-adv-grid, .cart-actions, .cart-row input, .cart-quitar, .wa-float, .fb-trigger, .disclaimer-bar { display: none !important; }
+  .rv-controls, .rot-adv-grid, .cart-actions, .cart-row input, .cart-quitar, .wa-float, .fb-trigger, .disclaimer-bar, .tool-card-header, .tool-sub { display: none !important; }
   .cart-print-val { display: inline !important; }
   .cart-precios-warn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cart-print-header { display: block; border-bottom: 2px solid #0F3A34; padding-bottom: 10px; margin-bottom: 16px; }
+  .cart-print-brand { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #0F3A34; }
+  .cart-print-title { font-size: 1.5rem; font-weight: 700; color: #0F3A34; margin-top: 2px; }
+  .cart-print-meta { font-size: 0.8rem; color: #444; margin-top: 6px; }
+  /* Nada de filas, meses o la torta se corta a la mitad entre una página y la siguiente —
+     si no entra entero en lo que queda de la página, se pasa en bloque a la próxima. */
+  .cart-row, .cart-total, .cart-mes, .cart-chart-wrap, .cart-chart-title { break-inside: avoid; page-break-inside: avoid; }
+  .cart-calendario { break-inside: avoid; page-break-inside: avoid; }
 }
 @media (max-width: 640px) {
   .cart-head { display: none; }
@@ -521,6 +531,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- ══ Arma tu cartera ══ -->
     <div class="tab-panel" id="tab-cartera">
     <div class="tool-card">
+      <div class="cart-print-header">
+        <div class="cart-print-brand">FinanzasconNico</div>
+        <div class="cart-print-title">Propuesta de cartera</div>
+        <div class="cart-print-meta" id="cartPrintMeta"></div>
+      </div>
       <div class="tool-card-header">
         <div class="tool-title">🧩 Arma tu cartera</div>
       </div>
@@ -998,7 +1013,14 @@ function carteraRender() {
     carteraGraficoHtml() +
     carteraCalendarioHtml();
 }
-function carteraImprimir() { window.print(); }
+function carteraImprimir() {
+  var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
+  var nombrePerfil = { conservador: 'Conservador', moderado: 'Moderado', agresivo: 'Agresivo' }[carteraPerfilActual] || '';
+  var nombreHorizonte = { todos: 'Todos los plazos', corto: 'Corto plazo (< 2 años)', mediano: 'Mediano plazo (2-5 años)', largo: 'Largo plazo (> 5 años)' }[carteraHorizonteActual] || '';
+  var meta = document.getElementById('cartPrintMeta');
+  if (meta) meta.textContent = 'Perfil ' + nombrePerfil + ' · ' + nombreHorizonte + ' · US$ ' + fmtNum(monto, 0) + ' · Generado el ' + fmtDateAR(rotHoy());
+  window.print();
+}
 function carteraCompartir() {
   var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
   var nombrePerfil = { conservador: 'Conservador', moderado: 'Moderado', agresivo: 'Agresivo' }[carteraPerfilActual] || '';
