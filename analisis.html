@@ -163,19 +163,7 @@ body { padding-bottom: 64px; }
 .fb-submit:hover{ opacity:0.9; }
 /* Pestañas de herramientas */
 .tool-tabs { position: sticky; top: 61px; z-index: 40; background: var(--surface); padding: 10px 0; border-bottom: 1px solid var(--line); }
-.tool-tabs::after { content: ''; position: absolute; top: 0; right: 0; bottom: 1px; width: 44px; background: linear-gradient(to right, transparent, var(--surface)); pointer-events: none; }
-.tool-tabs::before { content: ''; position: absolute; top: 0; left: 0; bottom: 1px; width: 44px; background: linear-gradient(to left, transparent, var(--surface)); pointer-events: none; z-index: 1; }
-.tab-scroll {
-  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
-  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
-  color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.1);
-}
-.tab-scroll:hover { border-color: var(--jade); color: var(--heading); }
-.tab-scroll-left { left: 4px; }
-.tab-scroll-right { right: 4px; }
-.tab-scroll[hidden] { display: none; }
-.tool-tabs .container { display: flex; gap: 8px; overflow-x: auto; }
+.tool-tabs .container { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab-btn {
   font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; padding: 9px 16px; white-space: nowrap;
   border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer;
@@ -243,8 +231,6 @@ body { padding-bottom: 64px; }
 .rot-legend em { color: var(--ink-muted); font-style: normal; }
 .rot-tip { display: none; position: absolute; top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(0,0,0,0.12); pointer-events: none; z-index: 5; }
 .rot-best { background: #d4f0e3; font-weight: 600; }
-.tool-tabs .container { scrollbar-width: none; }
-.tool-tabs .container::-webkit-scrollbar { display: none; }
 @media (max-width: 640px) {
   .cmp-grid { grid-template-columns: 1fr; }
   header.site-header .container { flex-wrap: wrap; gap: 6px 12px; padding: 12px 16px; }
@@ -406,7 +392,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </section>
 
 <nav class="tool-tabs">
-  <button class="tab-scroll tab-scroll-left" id="tabScrollLeft" aria-label="Ver herramientas anteriores" hidden>‹</button>
   <div class="container">
     <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
     <button class="tab-btn" data-tab="cobro" onclick="switchTab('cobro')">💰 ¿Cuánto cobro?</button>
@@ -416,8 +401,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
     <button class="tab-btn" data-tab="cartera" onclick="switchTab('cartera')">🧩 Arma tu cartera</button>
     <button class="tab-btn" data-tab="jubilacion" onclick="switchTab('jubilacion')">🎯 Cuándo me jubilo</button>
+    <button class="tab-btn" data-tab="renta" onclick="switchTab('renta')">💵 Renta mensual</button>
   </div>
-  <button class="tab-scroll tab-scroll-right" id="tabScrollRight" aria-label="Ver más herramientas">›</button>
 </nav>
 
 <section class="tool-section">
@@ -781,10 +766,18 @@ function cartProximoCobro(ticker, monto) {
     .filter(function (cf) { return cf.date && cf.date.getTime() > hoy.getTime(); });
   return futuros.length ? futuros[0] : null;
 }
-function cartTopCedears(n, excluir) {
+// Para Conservador el CEDEAR tiene que ser una mega-cap global conocida — de las 7 magníficas y
+// unas pocas gigantes "aburridas" (consumo, salud, pagos) se elige la de mejor puntaje del momento,
+// nunca una empresa chica o cíclica (ej: una acerera) aunque puntúe alto ese día.
+const CART_MEGACAPS_CONSERVADOR = ['AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 'TSLA', 'BRK.B', 'JNJ', 'PG', 'KO', 'WMT', 'V', 'MA', 'COST', 'PEP'];
+function cartTopCedears(n, excluir, soloMegacaps) {
   if (!RV.scored || !RV.scored.length) return [];
   var vistos = {}, out = [];
-  RV.scored.filter(function (x) { return x.r.moneda !== 'ARS' && excluir.indexOf(x.r.ticker) < 0 && x.p; })
+  RV.scored.filter(function (x) {
+    if (x.r.moneda === 'ARS' || excluir.indexOf(x.r.ticker) >= 0 || !x.p) return false;
+    if (soloMegacaps && CART_MEGACAPS_CONSERVADOR.indexOf(x.r.ticker.toUpperCase()) < 0) return false;
+    return true;
+  })
     .sort(function (a, b) { return b.p.total - a.p.total; })
     .forEach(function (x) {
       if (out.length >= n) return;
@@ -865,10 +858,10 @@ function carteraArmarPerfil(perfil, monto) {
   }
   // Mismo criterio: con poca plata en el bucket, 1 solo CEDEAR/acción no es un problema de
   // concentración — con más, se abre a varios (sectores distintos, en el caso de CEDEARs).
-  function pushCedears(pctBucket, excluir, maxN) {
+  function pushCedears(pctBucket, excluir, maxN, soloMegacaps) {
     var montoBucket = monto * pctBucket / 100;
     var n = cartNPosiciones(montoBucket, maxN, 1800);
-    var elegidos = cartTopCedears(n, excluir);
+    var elegidos = cartTopCedears(n, excluir, soloMegacaps);
     if (!elegidos.length) { push('cedear', 'CEDEAR', pctBucket, null); return; }
     var partes = cartSplitPct(pctBucket, elegidos.length);
     elegidos.forEach(function (c, i) { push('cedear', 'CEDEAR — ' + c.sector, partes[i], c); });
@@ -884,7 +877,7 @@ function carteraArmarPerfil(perfil, monto) {
   if (perfil === 'conservador') {
     pushBonos('on', 'ON calidad (AAA)', 80, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4, true);
     push('spy', 'S&P 500 (SPY)', 5, { ticker: 'SPY' });
-    pushCedears(5, ['SPY'], 3);
+    pushCedears(5, ['SPY'], 2, true);
     filas.push({ tipo: 'fijo', label: 'Fondo común de inversión', pct: 10, ticker: 'ESTRA1', nota: 'Fondo común de inversión de Balanz — no tiene ranking propio, se sugiere fijo.' });
   } else if (perfil === 'moderado') {
     pushBonos('on', 'ON calidad (AAA)', 50, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4, true);
@@ -2430,8 +2423,14 @@ function parseValuacion(buf) {
       max52: num(r['Max_52s']), min52: num(r['Min_52s']),
       f: { revCagr: num(r['Rev_CAGR']), niPos: num(r['NI_pos']), fcfPos: num(r['FCF_pos']), margenTrend: num(r['Margen_trend']), ndEbitda: num(r['ND_EBITDA']) }
     };
-  }).filter(r => r.ticker);
+  }).filter(r => r.ticker && RV_TICKERS_EXCLUIDOS.indexOf(r.ticker.toUpperCase()) < 0);
 }
+// TXAR en la planilla de Múltiplos viene mapeado a "TX" (Ternium S.A., NYSE, en USD) para traer sus
+// fundamentals vía yfinance — pero TXAR en el mercado local es Ternium Argentina, una acción propia
+// que cotiza en pesos, no ese CEDEAR. Con fundamentals de la empresa equivocada no hay forma de
+// mostrarlo bien en ningún lado de la página (ranking, comparador, correlación, Arma tu cartera),
+// así que se saca acá una sola vez y desaparece de todos los consumidores de RV.rows/RV.scored.
+const RV_TICKERS_EXCLUIDOS = ['TXAR'];
 function parseAnalistas(buf) {
   const wb = XLSX.read(buf, { type: 'array' });
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
@@ -3007,31 +3006,6 @@ function renderCmp() {
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
 (function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
-// La barra de pestañas no entra entera en pantallas de hasta ~1200px (menos todavía con cada
-// herramienta nueva) y depende de scroll horizontal — sin flechas ni trackpad no hay forma de
-// notar que hay más, ni de llegar. Rueda del mouse = scroll horizontal, flechas que aparecen
-// solo cuando hay algo para ese lado, y las mismas dos cosas sirven en los dos temas.
-(function () {
-  const tabsBox = document.querySelector('.tool-tabs .container');
-  const left = document.getElementById('tabScrollLeft'), right = document.getElementById('tabScrollRight');
-  if (!tabsBox) return;
-  tabsBox.addEventListener('wheel', function (e) {
-    if (e.deltaY === 0 || tabsBox.scrollWidth <= tabsBox.clientWidth) return;
-    tabsBox.scrollLeft += e.deltaY;
-    e.preventDefault();
-  }, { passive: false });
-  if (!left || !right) return;
-  function actualizarFlechas() {
-    const max = tabsBox.scrollWidth - tabsBox.clientWidth;
-    left.hidden = tabsBox.scrollLeft <= 2;
-    right.hidden = max <= 2 || tabsBox.scrollLeft >= max - 2;
-  }
-  left.onclick = function () { tabsBox.scrollBy({ left: -220, behavior: 'smooth' }); };
-  right.onclick = function () { tabsBox.scrollBy({ left: 220, behavior: 'smooth' }); };
-  tabsBox.addEventListener('scroll', actualizarFlechas);
-  window.addEventListener('resize', actualizarFlechas);
-  actualizarFlechas();
-})();
 rvInitPesos();
 </script>
 <script>
