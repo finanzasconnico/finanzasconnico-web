@@ -621,11 +621,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="tool-card-header">
         <div class="tool-title">💵 Renta mensual</div>
       </div>
-      <div class="tool-sub">Decís cuánto querés cobrar y con qué frecuencia, y armamos una selección de instrumentos escalonados para que te vaya pagando en esos meses — en dólares (ONs, por su cupón real) o en pesos (LECAPs/BONCAPs a tasa fija: el cobro queda fijado desde el día que comprás, sin CER ni duales, que dependen de la inflación futura). También podés elegir vos un instrumento puntual y ver cuánto y cuándo cobrarías.</div>
-      <div class="rv-controls">
-        <button class="calif-btn active" id="rentaModoarmar" onclick="RENTA.setModo('armar')">🎯 ¿Cuánto tengo que invertir?</button>
-        <button class="calif-btn" id="rentaModoconsultar" onclick="RENTA.setModo('consultar')">🔍 Ya elegí un instrumento</button>
-      </div>
+      <div class="tool-sub">Decís cuánto querés cobrar y con qué frecuencia, y armamos una selección de instrumentos escalonados para que te vaya pagando en esos meses — en dólares (ONs, por su cupón real) o en pesos (LECAPs/BONCAPs a tasa fija: el cobro queda fijado desde el día que comprás, sin CER ni duales, que dependen de la inflación futura). ¿Ya elegiste vos el instrumento? Mirá cuánto y cuándo cobrarías en <a href="analisis.html#cobro" style="color:var(--jade);font-weight:700;text-decoration:none">¿Cuánto cobro? →</a></div>
 
       <div id="rentaArmarPanel">
         <div class="rv-controls" style="margin-top:14px">
@@ -642,14 +638,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <button class="calif-btn" id="rentaFrecsemestral" onclick="RENTA.setFrecuencia('semestral')">Cada 6 meses</button>
         </div>
         <div id="rentaResult" style="margin-top:16px"><p class="loading-msg">Cargando datos…</p></div>
-      </div>
-
-      <div id="rentaConsultarPanel" style="display:none">
-        <div class="rot-adv-grid" style="margin-top:14px">
-          <div><label for="rentaTicker">Ticker (ON, Soberano, LECAP o BONCAP)</label><input id="rentaTicker" class="cmp-input" list="rentaTickerList" placeholder="Ej: CIC8O, S30O6" style="text-transform:uppercase" oninput="RENTA.onChangeConsulta()"><datalist id="rentaTickerList"></datalist></div>
-          <div><label for="rentaMontoConsulta">Monto a invertir</label><input id="rentaMontoConsulta" class="cmp-input" type="number" min="0" step="100" value="1000" oninput="RENTA.onChangeConsulta()"></div>
-        </div>
-        <div id="rentaConsultaResult" style="margin-top:16px"><p class="loading-msg">Elegí un ticker.</p></div>
       </div>
 
       <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es una estimación con los datos del Monitor de esta semana — el precio de cada fila es editable: si tenés el precio actual de tu cuenta de Balanz, pisalo ahí para recalcular con ese dato. El monto y la fecha exacta de cada cobro pueden variar. No es una recomendación de inversión.</div>
@@ -1157,6 +1145,14 @@ function carteraCompartir() {
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
 }
 function carteraInit() {
+  // Si se llegó con un perfil en la URL (ej. desde el resultado del quiz de la guía), pisa
+  // cualquier cartera guardada — el cliente vino a ver ESTE perfil, no el que dejó la última vez.
+  if (window.CARTERA_PERFIL_INICIAL) {
+    var perfilUrl = window.CARTERA_PERFIL_INICIAL;
+    window.CARTERA_PERFIL_INICIAL = null;
+    carteraSetPerfil(perfilUrl);
+    return;
+  }
   var raw; try { raw = localStorage.getItem(CARTERA_LS); } catch (e) { raw = null; }
   var o = null; try { o = raw ? JSON.parse(raw) : null; } catch (e) {}
   if (o && o.perfil && Array.isArray(o.filas) && o.filas.length) {
@@ -2121,7 +2117,7 @@ window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizont
 // — así que se laddea por VENCIMIENTO, usando fcn-letras.js (el mismo motor ya probado de "¿Cuánto
 // cobro?"): esas hojas del Monitor son justo el universo "tasa fija, pago único" — nunca un CER ni un
 // dual, que dependen de la inflación futura y no son un cobro "garantizado".
-let rentaModoActual = 'armar', rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral';
+let rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral';
 let rentaLetrasCache = null, rentaLetrasCargando = null, rentaListo = false;
 let rentaPreciosManual = {}; // ticker -> precio editado a mano, pisa el precio del Monitor solo en pantalla
 const RENTA_FREQ_MESES = { mensual: 1, trimestral: 3, semestral: 6 };
@@ -2280,13 +2276,6 @@ function rentaRender() {
   var sinCobHtml = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos cobros quedarían sin cubrir por ahora.</div>' : '';
   box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + sinCobHtml;
 }
-function rentaSetModo(modo) {
-  rentaModoActual = modo;
-  ['armar', 'consultar'].forEach(function (m) { var b = document.getElementById('rentaModo' + m); if (b) b.classList.toggle('active', m === modo); });
-  var pa = document.getElementById('rentaArmarPanel'), pc = document.getElementById('rentaConsultarPanel');
-  if (pa) pa.style.display = modo === 'armar' ? '' : 'none';
-  if (pc) pc.style.display = modo === 'consultar' ? '' : 'none';
-}
 function rentaSetMoneda(moneda) {
   rentaMonedaActual = moneda;
   ['usd', 'ars'].forEach(function (m) { var b = document.getElementById('rentaMoneda' + m); if (b) b.classList.toggle('active', m === moneda); });
@@ -2305,72 +2294,14 @@ function rentaEditarPrecio(ticker, val) {
   if (n > 0) rentaPreciosManual[ticker] = n; else delete rentaPreciosManual[ticker];
   rentaRender();
 }
-// ── Modo "ya tengo un instrumento": consulta puntual por ticker (ON/Soberano en USD, LECAP/BONCAP en ARS) ──
-function rentaTickerListHtml() {
-  var out = Object.keys(BOND_DB || {}).slice();
-  (rentaLetrasCache || []).forEach(function (l) { out.push(l.ticker); });
-  out.sort();
-  return out.map(function (t) { return '<option value="' + t + '">'; }).join('');
-}
-function rentaConsultar(ticker, monto) {
-  ticker = String(ticker || '').trim().toUpperCase();
-  if (!ticker) return null;
-  if (BOND_DB[ticker]) {
-    var b = BOND_DB[ticker];
-    var precioBase = precioEfectivo(ticker, 'mep');
-    if (!(precioBase > 0)) return { error: 'No tenemos precio para ' + ticker + '.' };
-    var precio = rentaPrecio(ticker, precioBase);
-    var nominal = monto > 0 ? monto / precio : 0;
-    var real = FLUJO_DB[ticker], hoy = rotHoy();
-    var pagos = (real && real.schedule100 ? real.schedule100 : [])
-      .map(function (cf) { return { date: parseISO(cf.date), total: cf.total * (nominal / 100) }; })
-      .filter(function (cf) { return cf.date && cf.date.getTime() > hoy.getTime(); });
-    return { moneda: 'usd', ticker: ticker, emisor: b.emisor + ' · calif. ' + (b.calif || '—'), precio: precio, nominal: nominal, pagos: pagos };
-  }
-  var letra = (rentaLetrasCache || []).filter(function (l) { return l.ticker === ticker; })[0];
-  if (letra) {
-    var precio2 = rentaPrecio(ticker, letra.precioMonitor);
-    if (!(precio2 > 0)) return { error: 'No tenemos precio para ' + ticker + '.' };
-    var nominal2 = monto > 0 ? monto / precio2 : 0;
-    return { moneda: 'ars', ticker: ticker, emisor: letra.tipo, precio: precio2, nominal: nominal2, pagos: [{ date: letra.vto, total: nominal2 * letra.vf }] };
-  }
-  return { error: 'No encontramos "' + ticker + '" entre las ONs, Soberanos, LECAPs o BONCAPs vigentes.' };
-}
-function rentaOnChangeConsulta() {
-  var box = document.getElementById('rentaConsultaResult');
-  if (!box) return;
-  var tickerInput = document.getElementById('rentaTicker'), montoInput = document.getElementById('rentaMontoConsulta');
-  if (!tickerInput || !tickerInput.value.trim()) { box.innerHTML = '<p class="loading-msg">Elegí un ticker.</p>'; return; }
-  var monto = parseFloat(montoInput.value) || 0;
-  var r = rentaConsultar(tickerInput.value, monto);
-  if (!r) { box.innerHTML = '<p class="loading-msg">Elegí un ticker.</p>'; return; }
-  if (r.error) { box.innerHTML = '<p class="cmp-err">' + esc(r.error) + '</p>'; return; }
-  var fmt = r.moneda === 'ars' ? rotARS : rotUSD;
-  var pagosHtml = r.pagos.length
-    ? r.pagos.map(function (p) { return '<div class="renta-row"><div class="renta-label">' + fmtDateAR(p.date) + '</div><div class="renta-monto">' + fmt(p.total) + '</div></div>'; }).join('')
-    : '<p class="loading-msg">No encontramos cobros futuros para este ticker.</p>';
-  box.innerHTML =
-    '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.emisor || '') + '<span class="sub">' + fmtNum(r.nominal, 2) + ' nominales/VN al precio de abajo</span></div>' +
-    '<div class="renta-precio">Precio<br><input type="number" step="0.01" min="0" value="' + r.precio.toFixed(2) + '" oninput="RENTA.editarPrecioConsulta(this.value)"></div></div>' +
-    pagosHtml;
-}
-function rentaEditarPrecioConsulta(val) {
-  var tickerInput = document.getElementById('rentaTicker');
-  if (!tickerInput) return;
-  var ticker = tickerInput.value.trim().toUpperCase(), n = parseFloat(val);
-  if (n > 0) rentaPreciosManual[ticker] = n; else delete rentaPreciosManual[ticker];
-  rentaOnChangeConsulta();
-}
 function rentaReady() {
   if (rentaListo) { rentaRender(); return; }
   Promise.all([rotEnsure(), ensureRentaLetras()]).then(function () {
     rentaListo = true;
-    var dl = document.getElementById('rentaTickerList');
-    if (dl) dl.innerHTML = rentaTickerListHtml();
     rentaRender();
   });
 }
-window.RENTA = { ready: rentaReady, setModo: rentaSetModo, setMoneda: rentaSetMoneda, setFrecuencia: rentaSetFrecuencia, onChange: rentaOnChange, editarPrecio: rentaEditarPrecio, onChangeConsulta: rentaOnChangeConsulta, editarPrecioConsulta: rentaEditarPrecioConsulta };
+window.RENTA = { ready: rentaReady, setMoneda: rentaSetMoneda, setFrecuencia: rentaSetFrecuencia, onChange: rentaOnChange, editarPrecio: rentaEditarPrecio };
 
 })();
 </script>
@@ -3568,7 +3499,18 @@ function renderCmp() {
 }
 
 // abrir directo una pestaña desde el link (#rv, #cmp)
-(function () { const h = (location.hash || '').replace('#', ''); if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h); })();
+// El hash puede traer un query propio (analisis.html#cartera?perfil=conservador, desde la guía) —
+// no es el location.search del navegador, va todo pegado al fragment, así que se parsea a mano.
+(function () {
+  const raw = (location.hash || '').replace('#', '');
+  const partes = raw.split('?');
+  const h = partes[0];
+  if (TABS_ANALISIS.includes(h) && h !== 'ons') switchTab(h);
+  if (h === 'cartera' && partes[1]) {
+    const perfil = new URLSearchParams(partes[1]).get('perfil');
+    if (['conservador', 'moderado', 'agresivo'].indexOf(perfil) >= 0) window.CARTERA_PERFIL_INICIAL = perfil;
+  }
+})();
 rvInitPesos();
 </script>
 <script>

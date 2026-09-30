@@ -1349,6 +1349,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <a id="btnWaResult" href="#" target="_blank" class="btn-result-wa">💬 Que Nico arme mi cartera</a>
         </div>
         <div class="jubilacion-callout">
+          <div class="jubilacion-callout-text">🧩 <strong>Armá esta cartera con tickers y precios reales</strong>, editable, con calendario de cobros y gráfico de composición — en Análisis avanzado.</div>
+          <a id="btnCarteraResult" href="analisis.html#cartera" class="jubilacion-callout-btn">Armarla →</a>
+        </div>
+        <div class="jubilacion-callout">
           <div class="jubilacion-callout-text">🎯 <strong>¿A qué edad te podrías jubilar</strong> si seguís invirtiendo así? Es una cuenta simple, pero te da una idea.</div>
           <a href="analisis.html#jubilacion" class="jubilacion-callout-btn">Calcularlo →</a>
         </div>
@@ -2385,6 +2389,13 @@ function buildResultado() {
   const activos = assets.map(a => `${a.ticker} ${a.pct}`).join(', ');
   const waMsg = encodeURIComponent(`Hola Nico! Usé el flujo guiado y me salió el perfil ${perfilText}. Activos: ${activos}. ¿Podés revisar si esta cartera se adapta a mi situación?`);
   document.getElementById('btnWaResult').href = `https://wa.me/5491123284509?text=${waMsg}`;
+
+  // "Arma tu cartera" solo tiene 3 perfiles (conservador/moderado/agresivo) — "dinámico" de acá
+  // mapea a "agresivo" allá. Para el caso "pesos" no forzamos perfil: esa herramienta está pensada
+  // para carteras en dólares (SPY, CEDEARs, ONs en USD), así que dejamos que arranque en su default.
+  const carteraPerfilMap = { conservador: 'conservador', moderado: 'moderado', dinamico: 'agresivo' };
+  const carteraPerfil = flowState.moneda === 'pesos' ? null : carteraPerfilMap[flowState.perfil];
+  document.getElementById('btnCarteraResult').href = 'analisis.html#cartera' + (carteraPerfil ? '?perfil=' + carteraPerfil : '');
 
   showStep('step-resultado', 4);
 }
