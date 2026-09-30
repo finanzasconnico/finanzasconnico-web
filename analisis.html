@@ -307,6 +307,19 @@ body { padding-bottom: 64px; }
   .cart-calendario { grid-template-columns: repeat(3, 1fr); }
   .cart-chart-wrap { justify-content: center; }
 }
+/* El disclaimer más fuerte de todo el sitio a propósito: acá se le está prometiendo a alguien una
+   edad de jubilación con una cuenta de 4 variables — tiene que quedar clarísimo que es una estimación
+   simplificada y no una promesa, más todavía que en el resto de las herramientas de la página. */
+.jubil-disclaimer { background: rgba(192, 69, 59, 0.08); border: 1.5px solid var(--danger); border-radius: 10px; padding: 14px 16px; font-size: 0.88rem; line-height: 1.55; color: var(--text); margin: 14px 0; }
+.jubil-disclaimer strong { color: var(--danger); }
+.jubil-resultado { text-align: center; padding: 18px 10px; }
+.jubil-resultado-label { font-size: 1.3rem; font-weight: 700; color: var(--heading); }
+.jubil-resultado-sub { font-size: 0.85rem; color: var(--ink-soft); margin-top: 6px; }
+.jubil-resultado-no .jubil-resultado-label { color: var(--danger); font-size: 1.05rem; }
+.jubil-barra { height: 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+.jubil-barra-fill { height: 100%; background: var(--jade); border-radius: 999px; transition: width 0.3s; }
+.jubil-barra-label { font-size: 0.78rem; color: var(--ink-muted); text-align: center; margin-top: 6px; }
+.jubil-detalle { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.6; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
 .cart-print-header, .cart-print-footer { display: none; }
 @media print {
   @page { margin: 16mm 14mm; }
@@ -402,6 +415,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="tab-btn" data-tab="corr" onclick="switchTab('corr')">🔗 Correlación</button>
     <button class="tab-btn" data-tab="rot" onclick="switchTab('rot')">🔁 Rotar bonos</button>
     <button class="tab-btn" data-tab="cartera" onclick="switchTab('cartera')">🧩 Arma tu cartera</button>
+    <button class="tab-btn" data-tab="jubilacion" onclick="switchTab('jubilacion')">🎯 Cuándo me jubilo</button>
   </div>
   <button class="tab-scroll tab-scroll-right" id="tabScrollRight" aria-label="Ver más herramientas">›</button>
 </nav>
@@ -564,6 +578,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
       <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
       <div class="cart-print-footer">Armá o actualizá esta cartera en vivo en <a href="https://finanzasconnico-web.vercel.app/analisis.html#cartera">finanzasconnico-web.vercel.app/analisis.html#cartera</a></div>
+    </div>
+    </div>
+
+    <!-- ══ Cuándo me jubilo ══ -->
+    <div class="tab-panel" id="tab-jubilacion">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">🎯 Cuándo me jubilo</div>
+      </div>
+      <div class="tool-sub">Con tu ahorro actual, cuánto aportás por mes y qué rendimiento esperás, estimamos a qué edad podrías juntar lo necesario para vivir del ingreso mensual que elijas. Cambiá cualquier número y se recalcula al toque.</div>
+      <div class="jubil-disclaimer">⚠️ <strong>Esto es una cuenta matemática simple, no un asesoramiento financiero ni una proyección real.</strong> No tiene en cuenta inflación más allá del rendimiento que elijas, cambios futuros de ingresos o gastos, aportes jubilatorios del Estado (ANSES), impuestos, ni lo que pase en los mercados en el medio. Es un punto de partida para pensar el tema — antes de tomar cualquier decisión, hablá con Nico.</div>
+      <div class="rot-adv-grid" style="margin-top:14px">
+        <div><label for="jubilEdad">Tu edad actual</label><input id="jubilEdad" class="cmp-input" type="number" min="18" max="90" step="1" value="35" oninput="jubilOnChange()"></div>
+        <div><label for="jubilAhorro">Ahorro/inversión actual (USD)</label><input id="jubilAhorro" class="cmp-input" type="number" min="0" step="100" value="5000" oninput="jubilOnChange()"></div>
+        <div><label for="jubilAporte">Aporte mensual (USD)</label><input id="jubilAporte" class="cmp-input" type="number" min="0" step="10" value="300" oninput="jubilOnChange()"></div>
+        <div><label for="jubilIngreso">Ingreso mensual deseado al jubilarte (USD de hoy)</label><input id="jubilIngreso" class="cmp-input" type="number" min="0" step="50" value="1500" oninput="jubilOnChange()"></div>
+      </div>
+      <div class="tool-sub" style="margin:14px 0 6px">Rendimiento anual esperado (real, ya descontada la inflación):</div>
+      <div class="rv-controls">
+        <button class="calif-btn" id="jubilPerfilconservador" onclick="jubilSetPerfil('conservador')">🛡️ Conservador (4%)</button>
+        <button class="calif-btn active" id="jubilPerfilmoderado" onclick="jubilSetPerfil('moderado')">⚖️ Moderado (6%)</button>
+        <button class="calif-btn" id="jubilPerfilagresivo" onclick="jubilSetPerfil('agresivo')">🚀 Agresivo (8%)</button>
+      </div>
+      <div id="jubilResult" style="margin-top:16px"><p class="loading-msg">Cargando…</p></div>
     </div>
     </div>
 
@@ -2119,7 +2157,7 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot', 'cartera'];
+const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot', 'cartera', 'jubilacion'];
 
 /* ¿Cuánto cobro?: la herramienta es cuanto-cobro.html (una sola fuente, así no se desincroniza). Acá se carga
    recién al abrir la pestaña y se le sacan el encabezado, el cartel legal y los botones flotantes — esta página ya
@@ -2155,7 +2193,91 @@ function switchTab(name) {
   if (name === 'cobro') initCobro();
   if (name === 'rot' && window.ROT) ROT.init();
   if (name === 'cartera' && window.CARTERA) CARTERA.ready();
+  if (name === 'jubilacion') jubilRender();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
+}
+
+/* ═════════════ "Cuándo me jubilo": cuenta simple de interés compuesto + aportes mensuales ═════════════
+   Nada de datos de mercado ni del Monitor — es un calculador aislado, así que no necesita vivir en el
+   cierre de Rotar bonos/Arma tu cartera. Objetivo = regla del 4% (ingreso deseado × 12 / 0.04): el monto
+   que, retirado a un 4% anual, no se agotaría. El rendimiento que elige el cliente ya se asume real
+   (descontada la inflación), así el resultado queda en poder de compra de hoy sin modelar inflación aparte. */
+const JUBIL_LS = 'fcn_jubilacion';
+const JUBIL_PERFIL_TASA = { conservador: 0.04, moderado: 0.06, agresivo: 0.08 };
+let jubilPerfilActual = 'moderado', jubilListo = false;
+function jubilFmtNum(n, dec) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  dec = dec === undefined ? 0 : dec;
+  return Number(n).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function jubilSetPerfil(perfil) {
+  jubilPerfilActual = perfil;
+  ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('jubilPerfil' + p); if (b) b.classList.toggle('active', p === perfil); });
+  jubilOnChange();
+}
+function jubilOnChange() { jubilGuardar(); jubilRender(); }
+function jubilGuardar() {
+  try {
+    localStorage.setItem(JUBIL_LS, JSON.stringify({
+      edad: document.getElementById('jubilEdad').value,
+      ahorro: document.getElementById('jubilAhorro').value,
+      aporte: document.getElementById('jubilAporte').value,
+      ingreso: document.getElementById('jubilIngreso').value,
+      perfil: jubilPerfilActual
+    }));
+  } catch (e) {}
+}
+function jubilCargar() {
+  var raw; try { raw = localStorage.getItem(JUBIL_LS); } catch (e) { raw = null; }
+  var o = null; try { o = raw ? JSON.parse(raw) : null; } catch (e) {}
+  if (o) {
+    if (o.edad) document.getElementById('jubilEdad').value = o.edad;
+    if (o.ahorro) document.getElementById('jubilAhorro').value = o.ahorro;
+    if (o.aporte != null && o.aporte !== '') document.getElementById('jubilAporte').value = o.aporte;
+    if (o.ingreso) document.getElementById('jubilIngreso').value = o.ingreso;
+    if (o.perfil) jubilPerfilActual = o.perfil;
+  }
+  ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('jubilPerfil' + p); if (b) b.classList.toggle('active', p === jubilPerfilActual); });
+}
+// Simulación mes a mes (no hay fórmula cerrada prolija con aportes + tope de 70 años) — con los montos
+// habituales de esta cuenta, 840 iteraciones no cuestan nada y evitan errores de redondeo de la anualidad.
+function jubilCalcular() {
+  var edad = parseFloat(document.getElementById('jubilEdad').value) || 0;
+  var ahorro = parseFloat(document.getElementById('jubilAhorro').value) || 0;
+  var aporte = parseFloat(document.getElementById('jubilAporte').value) || 0;
+  var ingreso = parseFloat(document.getElementById('jubilIngreso').value) || 0;
+  var rAnual = JUBIL_PERFIL_TASA[jubilPerfilActual] || 0.06;
+  var objetivo = ingreso * 12 / 0.04; // regla del 4%: retirar eso por mes de por vida sin agotar el capital
+  if (!(objetivo > 0)) return { edad: edad, ahorro: ahorro, ingreso: ingreso, objetivo: 0 };
+  var i = Math.pow(1 + rAnual, 1 / 12) - 1, monto = ahorro, meses = 0, MAX_MESES = 70 * 12;
+  while (monto < objetivo && meses < MAX_MESES) { monto = monto * (1 + i) + aporte; meses++; }
+  return { edad: edad, ahorro: ahorro, ingreso: ingreso, rAnual: rAnual, objetivo: objetivo, meses: meses, alcanzable: monto >= objetivo };
+}
+function jubilRender() {
+  if (!jubilListo) { jubilCargar(); jubilListo = true; }
+  var box = document.getElementById('jubilResult');
+  if (!box) return;
+  var r = jubilCalcular();
+  if (!(r.objetivo > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto querés poder gastar por mes al jubilarte.</p>'; return; }
+  if (!r.alcanzable) {
+    box.innerHTML = '<div class="jubil-resultado jubil-resultado-no">' +
+      '<div class="jubil-resultado-label">Con estos números no llegarías a juntarlo antes de los ' + jubilFmtNum(r.edad + 70) + ' años</div>' +
+      '<div class="jubil-resultado-sub">Necesitás unos US$ ' + jubilFmtNum(r.objetivo) + ' para retirar US$ ' + jubilFmtNum(r.ingreso) + ' por mes (regla del 4%). Probá subir el aporte mensual, bajar el ingreso deseado o revisar el rendimiento esperado.</div>' +
+      '</div>';
+    return;
+  }
+  var anios = Math.floor(r.meses / 12), mesesResto = r.meses % 12;
+  var edadFinal = r.edad + r.meses / 12;
+  var fecha = new Date(); fecha.setMonth(fecha.getMonth() + r.meses);
+  var pctYa = Math.max(0, Math.min(100, r.ahorro / r.objetivo * 100));
+  box.innerHTML =
+    '<div class="jubil-resultado">' +
+      '<div class="jubil-resultado-label">Te podrías jubilar a los <strong>' + Math.floor(edadFinal) + ' años' + (mesesResto ? ' y ' + mesesResto + (mesesResto === 1 ? ' mes' : ' meses') : '') + '</strong></div>' +
+      '<div class="jubil-resultado-sub">Alrededor de ' + fecha.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) + ' — en ' + anios + (anios === 1 ? ' año' : ' años') + (mesesResto ? ' y ' + mesesResto + (mesesResto === 1 ? ' mes' : ' meses') : '') + '</div>' +
+    '</div>' +
+    '<div class="jubil-barra"><div class="jubil-barra-fill" style="width:' + pctYa.toFixed(1) + '%"></div></div>' +
+    '<div class="jubil-barra-label">Ya tenés el ' + jubilFmtNum(pctYa) + '% de los US$ ' + jubilFmtNum(r.objetivo) + ' que necesitás juntar</div>' +
+    '<div class="jubil-detalle">Para retirar <strong>US$ ' + jubilFmtNum(r.ingreso) + '</strong> por mes de por vida sin agotar el capital (regla del 4%) hacen falta unos <strong>US$ ' + jubilFmtNum(r.objetivo) + '</strong>, asumiendo un rendimiento real de <strong>' + jubilFmtNum(r.rAnual * 100) + '%</strong> anual (ya descontada la inflación).</div>';
 }
 
 /* ═════════════ Renta variable — mismo motor de puntaje que la Valuación por Múltiplos del Suite ═════════════

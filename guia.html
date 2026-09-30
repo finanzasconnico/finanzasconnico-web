@@ -557,6 +557,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       transition: opacity 0.2s;
     }
     .btn-result-wa:hover { opacity: 0.9; }
+    .jubilacion-callout {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      padding: 16px 18px; margin-top: 16px;
+    }
+    .jubilacion-callout-text { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+    .jubilacion-callout-btn {
+      background: var(--petroleo-700); color: #fff; font-weight: 600; font-size: 0.85rem;
+      padding: 10px 16px; border-radius: 8px; white-space: nowrap; transition: opacity 0.2s;
+    }
+    .jubilacion-callout-btn:hover { opacity: 0.9; }
 
     /* Cuenta sub-pantalla */
     .cuenta-steps {
@@ -1336,6 +1347,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="result-actions">
           <a href="#tutoriales" class="btn-result-primary">📖 Ver cómo comprar estos activos</a>
           <a id="btnWaResult" href="#" target="_blank" class="btn-result-wa">💬 Que Nico arme mi cartera</a>
+        </div>
+        <div class="jubilacion-callout">
+          <div class="jubilacion-callout-text">🎯 <strong>¿A qué edad te podrías jubilar</strong> si seguís invirtiendo así? Es una cuenta simple, pero te da una idea.</div>
+          <a href="analisis.html#jubilacion" class="jubilacion-callout-btn">Calcularlo →</a>
         </div>
       </div>
     </div>
