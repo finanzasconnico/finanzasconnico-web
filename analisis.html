@@ -444,6 +444,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="calif-btn" data-calif="A" onclick="setMonitorCalif('A', this)">A</button>
         <button class="calif-btn" data-calif="menorA" onclick="setMonitorCalif('menorA', this)">Menor a A</button>
       </div>
+      <div class="monitor-controls">
+        <button class="calif-btn active" id="monitorPlazotodos" onclick="monitorSetPlazo('todos')">Todos los plazos</button>
+        <button class="calif-btn" id="monitorPlazocorto" onclick="monitorSetPlazo('corto')">Corto (&lt; 2 años)</button>
+        <button class="calif-btn" id="monitorPlazomediano" onclick="monitorSetPlazo('mediano')">Mediano (2-5 años)</button>
+        <button class="calif-btn" id="monitorPlazolargo" onclick="monitorSetPlazo('largo')">Largo (&gt; 5 años)</button>
+      </div>
       <div id="monitorTableBox" class="data-table-wrap">
         <p class="loading-msg">Cargando el monitor…</p>
       </div>
@@ -2461,6 +2467,26 @@ function monitorFiltrar(data, campos) {
   if (!monitorBuscarTexto) return data;
   return data.filter(o => campos.some(c => String(o[c] || '').toLowerCase().indexOf(monitorBuscarTexto) >= 0));
 }
+// Mismos 3 cortes que ya usa "Arma tu cartera" (Corto/Mediano/Largo), pero por fecha de
+// vencimiento real en vez de duration — es lo que pidió Nico explícitamente para el Monitor.
+let monitorPlazoActual = 'todos';
+function monitorSetPlazo(plazo) {
+  monitorPlazoActual = plazo;
+  ['todos', 'corto', 'mediano', 'largo'].forEach(p => { const b = document.getElementById('monitorPlazo' + p); if (b) b.classList.toggle('active', p === plazo); });
+  loadMonitor();
+}
+function monitorEnPlazo(fechaVto) {
+  if (monitorPlazoActual === 'todos') return true;
+  if (!fechaVto) return false;
+  const anios = (fechaVto.getTime() - Date.now()) / (365.25 * 86400000);
+  if (monitorPlazoActual === 'corto') return anios < 2;
+  if (monitorPlazoActual === 'mediano') return anios >= 2 && anios < 5;
+  return anios >= 5; // largo
+}
+function monitorFiltrarPlazo(data, campoFecha) {
+  if (monitorPlazoActual === 'todos') return data;
+  return data.filter(o => monitorEnPlazo(o[campoFecha]));
+}
 
 async function getMonitorWorkbook() {
   if (monitorWb) return monitorWb;
@@ -2505,9 +2531,9 @@ async function fetchMonitorCalif(calif) {
 function renderMonitorTable(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  const data = monitorFiltrar(dataOriginal, ['ticker', 'emisor']);
+  const data = monitorFiltrarPlazo(monitorFiltrar(dataOriginal, ['ticker', 'emisor']), 'vencimiento');
   if (!data.length) {
-    box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay datos para esta calificación en este momento.') + '</p>';
+    box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto || monitorPlazoActual !== 'todos' ? 'Ningún bono coincide con ese filtro.' : 'No hay datos para esta calificación en este momento.') + '</p>';
     countEl.textContent = '';
     return;
   }
@@ -2576,8 +2602,8 @@ async function fetchMonitorSoberanos() {
 function renderMonitorTableSoberanos(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  const data = monitorFiltrar(dataOriginal, ['ticker', 'emisor']);
-  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay datos de Soberanos en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
+  const data = monitorFiltrarPlazo(monitorFiltrar(dataOriginal, ['ticker', 'emisor']), 'vencimiento');
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto || monitorPlazoActual !== 'todos' ? 'Ningún bono coincide con ese filtro.' : 'No hay datos de Soberanos en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
   const sorted = data.slice().sort((a, b) => {
     let va = a[monitorSortCol], vb = b[monitorSortCol];
     if (va instanceof Date) va = va.getTime();
@@ -2623,8 +2649,8 @@ async function fetchMonitorPesos() {
 function renderMonitorTablePesos(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  const data = monitorFiltrar(dataOriginal, ['ticker']);
-  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay LECAPs/BONCAPs vigentes en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
+  const data = monitorFiltrarPlazo(monitorFiltrar(dataOriginal, ['ticker']), 'vto');
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto || monitorPlazoActual !== 'todos' ? 'Ningún bono coincide con ese filtro.' : 'No hay LECAPs/BONCAPs vigentes en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
   const hoy = new Date();
   const sorted = data.slice().sort((a, b) => a.vto - b.vto);
   if (countEl) countEl.textContent = sorted.length + ' en pesos';
