@@ -583,6 +583,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.compartir()">📤 Compartir por WhatsApp</button>
       </div>
       <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
+      <div class="tool-sub" style="margin:18px 0 6px">➕ Agregar un activo a mano — se ordenan por lo más conveniente para tu perfil, tu plazo, el rendimiento y (en CEDEARs/acciones) qué tan poco correlacionan con lo que ya tenés:</div>
+      <input type="text" id="cartBuscarInput" class="cmp-input" placeholder="Buscar ticker o nombre…" oninput="CARTERA.buscar(this.value)" style="max-width:280px">
+      <div id="cartBuscarResult" style="margin-top:10px"></div>
       <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
       <div class="cart-print-footer">Armá o actualizá esta cartera en vivo en <a href="https://finanzasconnico-web.vercel.app/analisis.html#cartera">finanzasconnico-web.vercel.app/analisis.html#cartera</a></div>
     </div>
@@ -2023,7 +2026,93 @@ function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
 window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
-window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir };
+
+// ═════════════ Buscador de activos para sumar a mano a Arma tu cartera ═════════════
+// Rankea por perfil (calidad para bonos, mega-cap para Conservador), plazo (duration vs. el horizonte
+// elegido, solo bonos), rendimiento (TIR o puntaje) y correlación con lo que ya hay en la cartera —
+// esto último SOLO para CEDEARs/acciones: retornos_semanales.json no tiene series de bonos, así que
+// ahí no se inventa un número sin datos detrás.
+let carteraBuscarUltimos = [];
+const CART_GRADO_PESO = {
+  conservador: { AAA: 3, AA: 1, A: 0, menorA: -3 },
+  moderado: { AAA: 2, AA: 1.5, A: 1, menorA: -1 },
+  agresivo: { AAA: 1, AA: 1, A: 1.5, menorA: 2 }
+};
+function cartCorrelacionPromedio(ticker) {
+  if (typeof CR === 'undefined' || !CR || !CR.serie[ticker]) return null;
+  var otros = carteraFilas.filter(function (f) { return (f.tipo === 'cedear' || f.tipo === 'rvlocal' || f.tipo === 'spy') && f.ticker && f.ticker !== ticker && CR.serie[f.ticker]; });
+  if (!otros.length) return null;
+  var suma = 0, n = 0;
+  otros.forEach(function (f) {
+    var r = crPar(CR.serie[ticker], CR.serie[f.ticker]);
+    if (r) { suma += Math.abs(r.rho); n++; }
+  });
+  return n ? suma / n : null;
+}
+function cartBuscarActivos(query) {
+  var texto = String(query || '').trim().toUpperCase();
+  if (texto.length < 2) return [];
+  var perfil = carteraPerfilActual || 'moderado';
+  var horizonte = carteraHorizonteActual;
+  var gradoPeso = CART_GRADO_PESO[perfil] || CART_GRADO_PESO.moderado;
+  var bonos = [];
+  Object.keys(BOND_DB).forEach(function (tk) {
+    var b = BOND_DB[tk];
+    if ((b.categoria !== 'ON' && b.categoria !== 'Soberano') || cartEsDefault(b.calif)) return;
+    if (tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
+    var tir = tirEfectivo(tk, 'mep');
+    if (tir == null || isNaN(tir) || tir > 50) return;
+    var grado = cartGrupoCalif(b.calif);
+    var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
+    var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5;
+    var motivo = 'TIR ' + fmtNum(tir, 1) + '% · calif. ' + (b.calif || '—') + (b.duration != null ? ' · duration ' + fmtNum(b.duration, 1) : '');
+    bonos.push({ ticker: tk, tipo: b.categoria === 'ON' ? 'on' : 'sob', label: b.emisor, motivo: motivo, score: score });
+  });
+  var equities = [];
+  if (RV.scored) {
+    RV.scored.forEach(function (x) {
+      if (!x.p) return;
+      if (x.r.ticker.toUpperCase().indexOf(texto) < 0 && String(x.r.empresa || '').toUpperCase().indexOf(texto) < 0) return;
+      var esMega = CART_MEGACAPS_CONSERVADOR.indexOf(x.r.ticker.toUpperCase()) >= 0;
+      var perfilScore = perfil === 'conservador' ? (esMega ? 3 : -2) : 0;
+      var corr = cartCorrelacionPromedio(x.r.ticker.toUpperCase());
+      var corrScore = corr != null ? (1 - corr) * 3 : 0;
+      var score = perfilScore + x.p.total * 0.05 + corrScore;
+      var motivo = 'Puntaje ' + (x.p.total > 0 ? '+' : '') + x.p.total + (corr != null ? ' · correlación ' + fmtNum(corr * 100, 0) + '% con tu cartera' : '');
+      equities.push({ ticker: x.r.ticker, tipo: x.r.moneda === 'ARS' ? 'rvlocal' : 'cedear', label: x.r.empresa, motivo: motivo, score: score });
+    });
+  }
+  return bonos.concat(equities).sort(function (a, b) { return b.score - a.score; }).slice(0, 8);
+}
+function carteraBuscarRender(query) {
+  var box = document.getElementById('cartBuscarResult');
+  if (!box) return;
+  var texto = String(query || '').trim();
+  if (texto.length < 2) { box.innerHTML = ''; return; }
+  box.innerHTML = '<p class="loading-msg">Buscando…</p>';
+  Promise.all([ensureRV(), ensureCR()]).then(function () {
+    var res = cartBuscarActivos(texto);
+    carteraBuscarUltimos = res;
+    if (!res.length) { box.innerHTML = '<p class="loading-msg">No encontramos nada que coincida con "' + esc(texto) + '".</p>'; return; }
+    box.innerHTML = res.map(function (r, i) {
+      return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + '</span></div>' +
+        '<button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.agregarBusqueda(' + i + ')">+ Agregar</button></div>';
+    }).join('');
+  });
+}
+function carteraAgregarBusqueda(i) {
+  var r = carteraBuscarUltimos[i];
+  if (!r) return;
+  carteraManual = true;
+  var labelPorTipo = { on: 'ON calidad', sob: 'Soberano', cedear: 'CEDEAR', rvlocal: 'Acción argentina' };
+  carteraFilas.push({ tipo: r.tipo, label: labelPorTipo[r.tipo] || r.tipo, pct: 5, ticker: r.ticker, nota: r.motivo + ' · agregado a mano.' });
+  var input = document.getElementById('cartBuscarInput');
+  if (input) input.value = '';
+  document.getElementById('cartBuscarResult').innerHTML = '';
+  carteraGuardar();
+  carteraRender();
+}
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir, buscar: carteraBuscarRender, agregarBusqueda: carteraAgregarBusqueda };
 
 // ═════════════ "Renta mensual": armar un escalonamiento de ONs (USD) o LECAPs/BONCAPs (ARS) para
 // cobrar en los meses elegidos, o consultar cuánto/cuándo cobraría un instrumento puntual ═════════════
