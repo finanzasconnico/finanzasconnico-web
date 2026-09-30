@@ -32,6 +32,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="fcn-letras.js"></script>
 <style>
 :root {
   --petroleo-700: #0F3A34;
@@ -308,6 +309,19 @@ body { padding-bottom: 64px; }
 .jubil-barra-fill { height: 100%; background: var(--jade); border-radius: 999px; transition: width 0.3s; }
 .jubil-barra-label { font-size: 0.78rem; color: var(--ink-muted); text-align: center; margin-top: 6px; }
 .jubil-detalle { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.6; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.renta-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.renta-row:first-child { border-top: none; }
+.renta-row .renta-label { font-size: 0.85rem; color: var(--ink-soft); flex: 1; min-width: 160px; }
+.renta-row .renta-label .sub { display: block; font-size: 0.75rem; color: var(--ink-muted); margin-top: 3px; }
+.renta-row .renta-precio { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); text-align: right; }
+.renta-row .renta-precio input { width: 92px; font-family: var(--font-mono); font-size: 0.82rem; padding: 5px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); text-align: right; margin-top: 3px; }
+.renta-row .renta-monto { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; color: var(--text); white-space: nowrap; min-width: 90px; text-align: right; }
+.renta-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--line); font-weight: 700; }
+.renta-sin-cobertura { background: rgba(192,69,59,0.08); border: 1px solid var(--danger); border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: var(--text); margin-top: 14px; }
+@media (max-width: 640px) {
+  .renta-row { flex-direction: column; align-items: stretch; }
+  .renta-row .renta-precio, .renta-row .renta-monto { text-align: left; }
+}
 .cart-print-header, .cart-print-footer { display: none; }
 @media print {
   @page { margin: 16mm 14mm; }
@@ -589,6 +603,47 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="calif-btn" id="jubilPerfilagresivo" onclick="jubilSetPerfil('agresivo')">🚀 Agresivo (8%)</button>
       </div>
       <div id="jubilResult" style="margin-top:16px"><p class="loading-msg">Cargando…</p></div>
+    </div>
+    </div>
+
+    <!-- ══ Renta mensual ══ -->
+    <div class="tab-panel" id="tab-renta">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-title">💵 Renta mensual</div>
+      </div>
+      <div class="tool-sub">Decís cuánto querés cobrar y con qué frecuencia, y armamos una selección de instrumentos escalonados para que te vaya pagando en esos meses — en dólares (ONs, por su cupón real) o en pesos (LECAPs/BONCAPs a tasa fija: el cobro queda fijado desde el día que comprás, sin CER ni duales, que dependen de la inflación futura). También podés elegir vos un instrumento puntual y ver cuánto y cuándo cobrarías.</div>
+      <div class="rv-controls">
+        <button class="calif-btn active" id="rentaModoarmar" onclick="RENTA.setModo('armar')">🎯 ¿Cuánto tengo que invertir?</button>
+        <button class="calif-btn" id="rentaModoconsultar" onclick="RENTA.setModo('consultar')">🔍 Ya elegí un instrumento</button>
+      </div>
+
+      <div id="rentaArmarPanel">
+        <div class="rv-controls" style="margin-top:14px">
+          <button class="calif-btn active" id="rentaMonedausd" onclick="RENTA.setMoneda('usd')">💵 Dólares (ONs)</button>
+          <button class="calif-btn" id="rentaMonedaars" onclick="RENTA.setMoneda('ars')">💲 Pesos (LECAPs/BONCAPs)</button>
+        </div>
+        <div class="rot-adv-grid" style="margin-top:10px;max-width:260px">
+          <div><label for="rentaIngreso" id="rentaIngresoLabel">Ingreso deseado (USD)</label><input id="rentaIngreso" class="cmp-input" type="number" min="0" step="50" value="500" oninput="RENTA.onChange()"></div>
+        </div>
+        <div class="tool-sub" style="margin:14px 0 6px">¿Cada cuánto querés cobrar?</div>
+        <div class="rv-controls">
+          <button class="calif-btn" id="rentaFrecmensual" onclick="RENTA.setFrecuencia('mensual')">Todos los meses</button>
+          <button class="calif-btn active" id="rentaFrectrimestral" onclick="RENTA.setFrecuencia('trimestral')">Cada 3 meses</button>
+          <button class="calif-btn" id="rentaFrecsemestral" onclick="RENTA.setFrecuencia('semestral')">Cada 6 meses</button>
+        </div>
+        <div id="rentaResult" style="margin-top:16px"><p class="loading-msg">Cargando datos…</p></div>
+      </div>
+
+      <div id="rentaConsultarPanel" style="display:none">
+        <div class="rot-adv-grid" style="margin-top:14px">
+          <div><label for="rentaTicker">Ticker (ON, Soberano, LECAP o BONCAP)</label><input id="rentaTicker" class="cmp-input" list="rentaTickerList" placeholder="Ej: CIC8O, S30O6" style="text-transform:uppercase" oninput="RENTA.onChangeConsulta()"><datalist id="rentaTickerList"></datalist></div>
+          <div><label for="rentaMontoConsulta">Monto a invertir</label><input id="rentaMontoConsulta" class="cmp-input" type="number" min="0" step="100" value="1000" oninput="RENTA.onChangeConsulta()"></div>
+        </div>
+        <div id="rentaConsultaResult" style="margin-top:16px"><p class="loading-msg">Elegí un ticker.</p></div>
+      </div>
+
+      <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es una estimación con los datos del Monitor de esta semana — el precio de cada fila es editable: si tenés el precio actual de tu cuenta de Balanz, pisalo ahí para recalcular con ese dato. El monto y la fecha exacta de cada cobro pueden variar. No es una recomendación de inversión.</div>
     </div>
     </div>
 
@@ -1964,6 +2019,264 @@ function rotSetVista(m) { rotState.vista = m; rotRender(); }
 window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
 window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir };
 
+// ═════════════ "Renta mensual": armar un escalonamiento de ONs (USD) o LECAPs/BONCAPs (ARS) para
+// cobrar en los meses elegidos, o consultar cuánto/cuándo cobraría un instrumento puntual ═════════════
+// En dólares se laddea por CUPÓN real (FLUJO_DB, mismo dato que "próximo cobro" y el calendario de
+// Arma tu cartera). En pesos no hay cupón periódico — LECAPs/BONCAPs pagan una sola vez al vencimiento
+// — así que se laddea por VENCIMIENTO, usando fcn-letras.js (el mismo motor ya probado de "¿Cuánto
+// cobro?"): esas hojas del Monitor son justo el universo "tasa fija, pago único" — nunca un CER ni un
+// dual, que dependen de la inflación futura y no son un cobro "garantizado".
+let rentaModoActual = 'armar', rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral';
+let rentaLetrasCache = null, rentaLetrasCargando = null, rentaListo = false;
+let rentaPreciosManual = {}; // ticker -> precio editado a mano, pisa el precio del Monitor solo en pantalla
+const RENTA_FREQ_MESES = { mensual: 1, trimestral: 3, semestral: 6 };
+const RENTA_GRADO_RANK = { AAA: 0, AA: 1, A: 2, menorA: 3 };
+const RENTA_MESES_NOM = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function rotARS(n) { if (n === null || n === undefined || isNaN(n)) return '—'; return (n < 0 ? '-' : '') + '$ ' + fmtNum(Math.abs(n), 0); }
+function rentaPrecio(ticker, base) { var m = rentaPreciosManual[ticker]; return (m != null && m > 0) ? m : base; }
+
+function ensureRentaLetras() {
+  if (rentaLetrasCache) return Promise.resolve(rentaLetrasCache);
+  if (rentaLetrasCargando) return rentaLetrasCargando;
+  rentaLetrasCargando = getMonitorWorkbook().then(function (wb) {
+    rentaLetrasCache = FCNLetras.letrasDesdeLibro(XLSX, wb, rotHoy());
+    return rentaLetrasCache;
+  }).catch(function () { rentaLetrasCache = []; return []; });
+  return rentaLetrasCargando;
+}
+// Meses (1-12) en que un ticker de ON paga CUPÓN real (no amortización sola), mirando todo su
+// cronograma — así un semestral con próximo pago en marzo también "cubre" setiembre.
+function rentaMesesCupon(ticker) {
+  var real = FLUJO_DB[ticker];
+  if (!real || !real.schedule100) return [];
+  var meses = {};
+  real.schedule100.forEach(function (cf) { if (cf.cupon > 0) { var d = parseISO(cf.date); if (d) meses[d.getMonth() + 1] = true; } });
+  return Object.keys(meses).map(Number);
+}
+function rentaProximoCuponEnMeses(ticker, desde, meses) {
+  var real = FLUJO_DB[ticker];
+  if (!real || !real.schedule100) return null;
+  var out = null;
+  real.schedule100.forEach(function (cf) {
+    if (!(cf.cupon > 0)) return;
+    var d = parseISO(cf.date);
+    if (!d || d.getTime() < desde.getTime() || meses.indexOf(d.getMonth() + 1) < 0) return;
+    if (!out || d.getTime() < out.date.getTime()) out = { date: d, cuponPor100: cf.cupon };
+  });
+  return out;
+}
+// Agrupa el año en "buckets" de N meses según la frecuencia elegida (mensual=12 de a 1,
+// trimestral=4 de a 3, semestral=2 de a 6), arrancando del mes que sea.
+function rentaBuckets(frecMeses) {
+  var n = 12 / frecMeses, buckets = [];
+  for (var i = 0; i < n; i++) {
+    var meses = [];
+    for (var m = 0; m < frecMeses; m++) meses.push((i * frecMeses + m) % 12 + 1);
+    buckets.push(meses);
+  }
+  return buckets;
+}
+function rentaCandidatosUSD() {
+  var out = [];
+  Object.keys(BOND_DB).forEach(function (tk) {
+    var b = BOND_DB[tk];
+    if (b.categoria !== 'ON' || cartEsDefault(b.calif)) return;
+    var tir = tirEfectivo(tk, 'mep');
+    if (tir == null || isNaN(tir) || tir > 50) return;
+    var precio = precioEfectivo(tk, 'mep');
+    if (!(precio > 0)) return;
+    var meses = rentaMesesCupon(tk);
+    if (!meses.length) return;
+    out.push({ ticker: tk, emisor: b.emisor, grado: cartGrupoCalif(b.calif), tir: tir, precio: precio, laminaMin: b.laminaMin || 1, meses: meses });
+  });
+  return out;
+}
+// Set-cover simple: para cada bucket sin cubrir, el mejor candidato (calidad y después TIR) que
+// pague ahí, sin repetir emisor salvo que no quede otra opción; el nominal se dimensiona para que
+// ESE cupón (el real, con su fecha) dé el monto pedido, y si un ticker cubre más de un bucket en el
+// año (ej. semestral) se marcan los dos como resueltos con la misma tenencia.
+function rentaArmarUSD(ingreso, frecuencia) {
+  var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
+  var buckets = rentaBuckets(frecMeses);
+  var candidatos = rentaCandidatosUSD();
+  candidatos.sort(function (a, b) { return (RENTA_GRADO_RANK[a.grado] - RENTA_GRADO_RANK[b.grado]) || (b.tir - a.tir); });
+  var hoy = rotHoy(), cubiertos = {}, vistos = {}, filas = [];
+  buckets.forEach(function (mesesBucket, bi) {
+    if (cubiertos[bi]) return;
+    for (var pase = 0; pase < 2 && !cubiertos[bi]; pase++) {
+      for (var ci = 0; ci < candidatos.length; ci++) {
+        var c = candidatos[ci];
+        if (pase === 0 && vistos[c.emisor]) continue;
+        var paga = false;
+        for (var k = 0; k < c.meses.length; k++) { if (mesesBucket.indexOf(c.meses[k]) >= 0) { paga = true; break; } }
+        if (!paga) continue;
+        var prox = rentaProximoCuponEnMeses(c.ticker, hoy, mesesBucket);
+        if (!prox) continue;
+        var objetivo = ingreso * frecMeses;
+        var nominal = objetivo * 100 / prox.cuponPor100;
+        var limitado = nominal < c.laminaMin;
+        if (limitado) nominal = c.laminaMin;
+        var precio = rentaPrecio(c.ticker, c.precio);
+        var monto = nominal * precio;
+        var cobroReal = prox.cuponPor100 * (nominal / 100);
+        filas.push({ ticker: c.ticker, emisor: c.emisor, moneda: 'usd', nominal: nominal, precioBase: c.precio, fecha: prox.date, monto: monto, cobroReal: cobroReal, limitado: limitado });
+        buckets.forEach(function (mb2, bi2) {
+          if (cubiertos[bi2]) return;
+          for (var k2 = 0; k2 < c.meses.length; k2++) { if (mb2.indexOf(c.meses[k2]) >= 0) { cubiertos[bi2] = true; break; } }
+        });
+        vistos[c.emisor] = true;
+        break;
+      }
+    }
+  });
+  filas.sort(function (a, b) { return a.fecha - b.fecha; });
+  var sinCobertura = buckets.filter(function (mb, bi) { return !cubiertos[bi]; }).map(function (mb) { return mb[0]; });
+  return { filas: filas, sinCobertura: sinCobertura };
+}
+// En pesos no hay cupón: se busca, para cada bucket, la LECAP/BONCAP vigente que venza en alguno de
+// esos meses (la de vencimiento más próximo si hay más de una) y se dimensiona el nominal para que
+// SU valor final (fijo desde el día que se compra, no depende de inflación futura) dé el monto pedido.
+function rentaArmarARS(ingreso, frecuencia) {
+  var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
+  var buckets = rentaBuckets(frecMeses);
+  var candidatos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0; });
+  var hoy = rotHoy(), usados = {}, filas = [];
+  buckets.forEach(function (mesesBucket) {
+    var mejor = null, mejorDist = Infinity;
+    candidatos.forEach(function (c) {
+      if (usados[c.ticker] || mesesBucket.indexOf(c.vto.getMonth() + 1) < 0) return;
+      var dist = Math.abs(c.vto.getTime() - hoy.getTime());
+      if (dist < mejorDist) { mejorDist = dist; mejor = c; }
+    });
+    if (!mejor) return;
+    var objetivo = ingreso * frecMeses;
+    var nominal = objetivo / mejor.vf;
+    var precio = rentaPrecio(mejor.ticker, mejor.precioMonitor);
+    var monto = nominal * precio;
+    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, limitado: false });
+    usados[mejor.ticker] = true;
+  });
+  filas.sort(function (a, b) { return a.fecha - b.fecha; });
+  var sinCobertura = buckets.filter(function (mb) { return !filas.some(function (f) { return mb.indexOf(f.fecha.getMonth() + 1) >= 0; }); }).map(function (mb) { return mb[0]; });
+  return { filas: filas, sinCobertura: sinCobertura };
+}
+function rentaFilaHtml(f) {
+  var precioActual = rentaPrecio(f.ticker, f.precioBase);
+  var fmt = f.moneda === 'ars' ? rotARS : rotUSD;
+  var sub = esc(f.emisor || '') + (f.limitado ? ' · ajustado a la lámina/VN mínimo' : '') + '<br>Cobrás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha);
+  return '<div class="renta-row">' +
+    '<div class="renta-label">' + esc(f.ticker) + '<span class="sub">' + sub + '</span></div>' +
+    '<div class="renta-precio">Precio<br><input type="number" step="0.01" min="0" value="' + precioActual.toFixed(2) + '" oninput="RENTA.editarPrecio(\'' + f.ticker + '\',this.value)"></div>' +
+    '<div class="renta-monto">' + fmt(f.monto) + '</div>' +
+    '</div>';
+}
+function rentaRender() {
+  var box = document.getElementById('rentaResult');
+  if (!box) return;
+  var ingresoInput = document.getElementById('rentaIngreso');
+  if (!ingresoInput) return;
+  var ingreso = parseFloat(ingresoInput.value) || 0;
+  if (!(ingreso > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto querés cobrar.</p>'; return; }
+  var r = rentaMonedaActual === 'ars' ? rentaArmarARS(ingreso, rentaFrecuenciaActual) : rentaArmarUSD(ingreso, rentaFrecuenciaActual);
+  if (!r.filas.length) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos que cubran ese plan con los datos de hoy. Probá con otra frecuencia' + (rentaMonedaActual === 'ars' ? ' — en pesos solo hay ' + ((rentaLetrasCache || []).length) + ' LECAPs/BONCAPs vigentes en este momento' : '') + '.</p>'; return; }
+  var fmt = rentaMonedaActual === 'ars' ? rotARS : rotUSD;
+  var total = r.filas.reduce(function (s, f) { return s + f.monto; }, 0);
+  var filasHtml = r.filas.map(rentaFilaHtml).join('');
+  var sinCobHtml = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos cobros quedarían sin cubrir por ahora.</div>' : '';
+  box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + sinCobHtml;
+}
+function rentaSetModo(modo) {
+  rentaModoActual = modo;
+  ['armar', 'consultar'].forEach(function (m) { var b = document.getElementById('rentaModo' + m); if (b) b.classList.toggle('active', m === modo); });
+  var pa = document.getElementById('rentaArmarPanel'), pc = document.getElementById('rentaConsultarPanel');
+  if (pa) pa.style.display = modo === 'armar' ? '' : 'none';
+  if (pc) pc.style.display = modo === 'consultar' ? '' : 'none';
+}
+function rentaSetMoneda(moneda) {
+  rentaMonedaActual = moneda;
+  ['usd', 'ars'].forEach(function (m) { var b = document.getElementById('rentaMoneda' + m); if (b) b.classList.toggle('active', m === moneda); });
+  var lbl = document.getElementById('rentaIngresoLabel');
+  if (lbl) lbl.textContent = 'Ingreso deseado (' + (moneda === 'ars' ? 'pesos' : 'USD') + ')';
+  rentaRender();
+}
+function rentaSetFrecuencia(frec) {
+  rentaFrecuenciaActual = frec;
+  ['mensual', 'trimestral', 'semestral'].forEach(function (f) { var b = document.getElementById('rentaFrec' + f); if (b) b.classList.toggle('active', f === frec); });
+  rentaRender();
+}
+function rentaOnChange() { rentaRender(); }
+function rentaEditarPrecio(ticker, val) {
+  var n = parseFloat(val);
+  if (n > 0) rentaPreciosManual[ticker] = n; else delete rentaPreciosManual[ticker];
+  rentaRender();
+}
+// ── Modo "ya tengo un instrumento": consulta puntual por ticker (ON/Soberano en USD, LECAP/BONCAP en ARS) ──
+function rentaTickerListHtml() {
+  var out = Object.keys(BOND_DB || {}).slice();
+  (rentaLetrasCache || []).forEach(function (l) { out.push(l.ticker); });
+  out.sort();
+  return out.map(function (t) { return '<option value="' + t + '">'; }).join('');
+}
+function rentaConsultar(ticker, monto) {
+  ticker = String(ticker || '').trim().toUpperCase();
+  if (!ticker) return null;
+  if (BOND_DB[ticker]) {
+    var b = BOND_DB[ticker];
+    var precioBase = precioEfectivo(ticker, 'mep');
+    if (!(precioBase > 0)) return { error: 'No tenemos precio para ' + ticker + '.' };
+    var precio = rentaPrecio(ticker, precioBase);
+    var nominal = monto > 0 ? monto / precio : 0;
+    var real = FLUJO_DB[ticker], hoy = rotHoy();
+    var pagos = (real && real.schedule100 ? real.schedule100 : [])
+      .map(function (cf) { return { date: parseISO(cf.date), total: cf.total * (nominal / 100) }; })
+      .filter(function (cf) { return cf.date && cf.date.getTime() > hoy.getTime(); });
+    return { moneda: 'usd', ticker: ticker, emisor: b.emisor + ' · calif. ' + (b.calif || '—'), precio: precio, nominal: nominal, pagos: pagos };
+  }
+  var letra = (rentaLetrasCache || []).filter(function (l) { return l.ticker === ticker; })[0];
+  if (letra) {
+    var precio2 = rentaPrecio(ticker, letra.precioMonitor);
+    if (!(precio2 > 0)) return { error: 'No tenemos precio para ' + ticker + '.' };
+    var nominal2 = monto > 0 ? monto / precio2 : 0;
+    return { moneda: 'ars', ticker: ticker, emisor: letra.tipo, precio: precio2, nominal: nominal2, pagos: [{ date: letra.vto, total: nominal2 * letra.vf }] };
+  }
+  return { error: 'No encontramos "' + ticker + '" entre las ONs, Soberanos, LECAPs o BONCAPs vigentes.' };
+}
+function rentaOnChangeConsulta() {
+  var box = document.getElementById('rentaConsultaResult');
+  if (!box) return;
+  var tickerInput = document.getElementById('rentaTicker'), montoInput = document.getElementById('rentaMontoConsulta');
+  if (!tickerInput || !tickerInput.value.trim()) { box.innerHTML = '<p class="loading-msg">Elegí un ticker.</p>'; return; }
+  var monto = parseFloat(montoInput.value) || 0;
+  var r = rentaConsultar(tickerInput.value, monto);
+  if (!r) { box.innerHTML = '<p class="loading-msg">Elegí un ticker.</p>'; return; }
+  if (r.error) { box.innerHTML = '<p class="cmp-err">' + esc(r.error) + '</p>'; return; }
+  var fmt = r.moneda === 'ars' ? rotARS : rotUSD;
+  var pagosHtml = r.pagos.length
+    ? r.pagos.map(function (p) { return '<div class="renta-row"><div class="renta-label">' + fmtDateAR(p.date) + '</div><div class="renta-monto">' + fmt(p.total) + '</div></div>'; }).join('')
+    : '<p class="loading-msg">No encontramos cobros futuros para este ticker.</p>';
+  box.innerHTML =
+    '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.emisor || '') + '<span class="sub">' + fmtNum(r.nominal, 2) + ' nominales/VN al precio de abajo</span></div>' +
+    '<div class="renta-precio">Precio<br><input type="number" step="0.01" min="0" value="' + r.precio.toFixed(2) + '" oninput="RENTA.editarPrecioConsulta(this.value)"></div></div>' +
+    pagosHtml;
+}
+function rentaEditarPrecioConsulta(val) {
+  var tickerInput = document.getElementById('rentaTicker');
+  if (!tickerInput) return;
+  var ticker = tickerInput.value.trim().toUpperCase(), n = parseFloat(val);
+  if (n > 0) rentaPreciosManual[ticker] = n; else delete rentaPreciosManual[ticker];
+  rentaOnChangeConsulta();
+}
+function rentaReady() {
+  if (rentaListo) { rentaRender(); return; }
+  Promise.all([rotEnsure(), ensureRentaLetras()]).then(function () {
+    rentaListo = true;
+    var dl = document.getElementById('rentaTickerList');
+    if (dl) dl.innerHTML = rentaTickerListHtml();
+    rentaRender();
+  });
+}
+window.RENTA = { ready: rentaReady, setModo: rentaSetModo, setMoneda: rentaSetMoneda, setFrecuencia: rentaSetFrecuencia, onChange: rentaOnChange, editarPrecio: rentaEditarPrecio, onChangeConsulta: rentaOnChangeConsulta, editarPrecioConsulta: rentaEditarPrecioConsulta };
+
 })();
 </script>
 <!--ROT-SCRIPT-END-->
@@ -2171,7 +2484,7 @@ loadMonitor();
 
 <script>
 /* ═════════════ Pestañas (cada herramienta baja sus datos recién cuando se abre) ═════════════ */
-const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot', 'cartera', 'jubilacion'];
+const TABS_ANALISIS = ['ons', 'cobro', 'rv', 'cmp', 'corr', 'rot', 'cartera', 'jubilacion', 'renta'];
 
 /* ¿Cuánto cobro?: la herramienta es cuanto-cobro.html (una sola fuente, así no se desincroniza). Acá se carga
    recién al abrir la pestaña y se le sacan el encabezado, el cartel legal y los botones flotantes — esta página ya
@@ -2208,6 +2521,7 @@ function switchTab(name) {
   if (name === 'rot' && window.ROT) ROT.init();
   if (name === 'cartera' && window.CARTERA) CARTERA.ready();
   if (name === 'jubilacion') jubilRender();
+  if (name === 'renta' && window.RENTA) RENTA.ready();
   try { history.replaceState(null, '', '#' + name); } catch (e) {}
 }
 
