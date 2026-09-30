@@ -293,6 +293,20 @@ body { padding-bottom: 64px; }
 .cart-precios-warn { background: #faecd0; border-left: 3px solid var(--ambar); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.82rem; color: #7a5200; line-height: 1.5; margin-top: 14px; }
 .cart-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
 .cart-print-val { display: none; }
+.cart-chart-title { font-weight: 600; font-size: 0.9rem; color: var(--heading); margin: 22px 0 10px; }
+.cart-chart-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.cart-leyenda { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: var(--ink-soft); }
+.cart-leyenda-item { display: flex; align-items: center; gap: 8px; }
+.cart-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.cart-calendario { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.cart-mes { border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; text-align: center; background: var(--surface); }
+.cart-mes-nombre { display: block; font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
+.cart-mes.activo { background: rgba(28, 140, 95, 0.14); border-color: var(--jade); }
+.cart-mes-monto { display: block; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; color: var(--text); margin-top: 3px; }
+@media (max-width: 640px) {
+  .cart-calendario { grid-template-columns: repeat(3, 1fr); }
+  .cart-chart-wrap { justify-content: center; }
+}
 @media print {
   body * { visibility: hidden; }
   #tab-cartera, #tab-cartera * { visibility: visible; }
@@ -516,6 +530,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="calif-btn" id="cartPerfilmoderado" onclick="CARTERA.setPerfil('moderado')">⚖️ Moderado</button>
         <button class="calif-btn" id="cartPerfilagresivo" onclick="CARTERA.setPerfil('agresivo')">🚀 Agresivo</button>
       </div>
+      <div class="tool-sub" style="margin:10px 0 6px">Plazo de las ONs de la cartera (a qué distancia está su vencimiento):</div>
+      <div class="rv-controls">
+        <button class="calif-btn active" id="cartHorizontetodos" onclick="CARTERA.setHorizonte('todos')">Todos los plazos</button>
+        <button class="calif-btn" id="cartHorizontecorto" onclick="CARTERA.setHorizonte('corto')">Corto (&lt; 2 años)</button>
+        <button class="calif-btn" id="cartHorizontemediano" onclick="CARTERA.setHorizonte('mediano')">Mediano (2-5 años)</button>
+        <button class="calif-btn" id="cartHorizontelargo" onclick="CARTERA.setHorizonte('largo')">Largo (&gt; 5 años)</button>
+      </div>
       <div class="rot-adv-grid" style="margin-top:10px;max-width:260px">
         <div><label for="cartMonto">Monto total a invertir (USD)</label><input id="cartMonto" class="cmp-input" type="number" min="0" step="100" value="10000" oninput="CARTERA.onChange()"></div>
       </div>
@@ -621,7 +642,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 // getMonitorWorkbook (no vuelve a pedir nada aparte) — y desde acá también se ve todo lo global
 // de la pestaña de Renta Variable (RV, esc, fmtNum, SECTOR_ES, ensureRV).
 const CARTERA_LS = 'fcn_cartera_perfil';
-let carteraFilas = [], carteraPerfilActual = null, carteraLetraTop = null, carteraLetraCargando = null, carteraListo = false, carteraManual = false;
+let carteraFilas = [], carteraPerfilActual = null, carteraHorizonteActual = 'todos', carteraLetraTop = null, carteraLetraCargando = null, carteraListo = false, carteraManual = false;
+// Fondo fijo de Balanz que se sugiere cuando el plazo+calidad elegidos no dejan ninguna ON en pie
+// (ej: Conservador + Corto sin ninguna AA+/AAA que venza tan pronto) — mismo criterio para las dos:
+// sin ranking propio, se ofrece fijo, igual que ya se hacía con ESTRA1 en Conservador.
+const FALLBACK_FIJO = {
+  conservador: { ticker: 'ESTRA1', label: 'Fondo común de inversión', nota: 'No encontramos una ON que cumpla el plazo y la calidad elegidos — se sugiere este fondo de Balanz en su lugar.' },
+  moderado:    { ticker: 'BAHUSDA', label: 'Fondo de liquidez en USD', nota: 'No encontramos una ON que cumpla el plazo y la calidad elegidos — se sugiere este fondo de Balanz en su lugar.' },
+  agresivo:    { ticker: 'BAHUSDA', label: 'Fondo de liquidez en USD', nota: 'No encontramos una ON que cumpla el plazo y la calidad elegidos — se sugiere este fondo de Balanz en su lugar.' }
+};
+// Plazo elegido vs. duration del bono (mismo campo que ya usaba el corte fijo de Soberanos).
+// 'todos' no filtra nada — mantiene el comportamiento de siempre si el cliente no elige plazo.
+function cartEnHorizonte(b, horizonte) {
+  if (!horizonte || horizonte === 'todos') return true;
+  var d = b.duration;
+  if (d == null || isNaN(d)) return false;
+  if (horizonte === 'corto') return d < 2;
+  if (horizonte === 'mediano') return d >= 2 && d < 5;
+  return d >= 5; // largo
+}
 
 // Mismo bucket de calificación que usa ¿Cuánto cobro? (AAA/AA/A/menorA) — "HY" = menorA.
 function cartGrupoCalif(c) {
@@ -640,11 +679,12 @@ function cartEsDefault(calif) {
 // Hasta maxN bonos que cumplen el filtro, sin repetir emisor y sin pasar la lámina mínima de
 // ninguno para lo que le tocaría de este bucket — así un monto grande no termina concentrado en
 // una sola ON (y una que pida, por ej., 10.000 nominales mínimos no aparece si no entra).
-function cartMejoresBonos(filtro, montoBucket, maxN) {
+function cartMejoresBonos(filtro, montoBucket, maxN, aplicaHorizonte) {
   var candidatos = [];
   Object.keys(BOND_DB).forEach(function (tk) {
     var b = BOND_DB[tk];
     if (!filtro(b) || cartEsDefault(b.calif)) return;
+    if (aplicaHorizonte && !cartEnHorizonte(b, carteraHorizonteActual)) return;
     var tir = tirEfectivo(tk, 'mep');
     // TIR > 50% suele ser un bono en default de hecho aunque la calificación no lo diga todavía
     // (el mercado le pone un precio de remate, no una tasa real) — mismo corte que usa el Suite.
@@ -752,10 +792,18 @@ function carteraArmarPerfil(perfil, monto) {
   }
   // Reparte el % del bucket entre hasta maxN ONs/Soberanos distintos — cuantos más dólares entren
   // ahí, más se abre (hasta maxN), sin repetir emisor y respetando la lámina mínima de cada uno.
-  function pushBonos(tipo, label, pctBucket, filtro, maxN) {
+  // aplicaHorizonte=true (ONs): si el plazo elegido no deja ninguna ON en pie, cae al fondo fijo del
+  // perfil en vez de dejar la línea vacía — el Soberano corto/largo de Agresivo no usa este filtro
+  // (tiene su propio corte por duration) para no chocar con el plazo elegido y vaciarse siempre.
+  function pushBonos(tipo, label, pctBucket, filtro, maxN, aplicaHorizonte) {
     var montoBucket = monto * pctBucket / 100;
-    var elegidos = cartMejoresBonos(filtro, montoBucket, maxN);
-    if (!elegidos.length) { push(tipo, label, pctBucket, null); return; }
+    var elegidos = cartMejoresBonos(filtro, montoBucket, maxN, aplicaHorizonte);
+    if (!elegidos.length) {
+      var fb = FALLBACK_FIJO[perfil];
+      if (fb) filas.push({ tipo: 'fijo', label: fb.label, pct: pctBucket, ticker: fb.ticker, nota: fb.nota });
+      else push(tipo, label, pctBucket, null);
+      return;
+    }
     var partes = cartSplitPct(pctBucket, elegidos.length);
     elegidos.forEach(function (c, i) { push(tipo, label, partes[i], c); });
   }
@@ -778,18 +826,18 @@ function carteraArmarPerfil(perfil, monto) {
     elegidos.forEach(function (c, i) { push('rvlocal', 'Acción argentina', partes[i], c); });
   }
   if (perfil === 'conservador') {
-    pushBonos('on', 'ON calidad (AAA)', 80, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
+    pushBonos('on', 'ON calidad (AAA)', 80, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4, true);
     push('spy', 'S&P 500 (SPY)', 5, { ticker: 'SPY' });
     pushCedears(5, ['SPY'], 3);
     filas.push({ tipo: 'fijo', label: 'Fondo común de inversión', pct: 10, ticker: 'ESTRA1', nota: 'Fondo común de inversión de Balanz — no tiene ranking propio, se sugiere fijo.' });
   } else if (perfil === 'moderado') {
-    pushBonos('on', 'ON calidad (AAA)', 50, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4);
+    pushBonos('on', 'ON calidad (AAA)', 50, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4, true);
     push('spy', 'S&P 500 (SPY)', 10, { ticker: 'SPY' });
     pushCedears(35, ['SPY'], 5);
     pushAccionesLocales(5, 2);
   } else {
-    pushBonos('on', 'ON calidad (AAA)', 20, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 3);
-    pushBonos('on', 'ON de mayor riesgo (HY)', 10, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }, 2);
+    pushBonos('on', 'ON calidad (AAA)', 20, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 3, true);
+    pushBonos('on', 'ON de mayor riesgo (HY)', 10, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }, 2, true);
     pushBonos('sob', 'Soberano corto (duration < 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration < 3; }, 2);
     pushBonos('sob', 'Soberano largo (duration ≥ 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }, 2);
     push('carry', 'Carry en pesos (mejor TNA)', 5, carteraLetraTop || null);
@@ -798,7 +846,15 @@ function carteraArmarPerfil(perfil, monto) {
     pushCedears(20, ['SPY', 'IBIT'], 5);
     pushAccionesLocales(10, 2);
   }
-  return filas;
+  // Si el fallback de alguna ON y el fondo fijo del perfil terminan siendo el mismo ticker
+  // (ej: Conservador cae en ESTRA1 por plazo Y ya lo sugiere fijo aparte), se combinan en 1 línea.
+  var merged = [], vistos = {};
+  filas.forEach(function (f) {
+    if (f.tipo === 'fijo' && vistos[f.ticker] != null) { merged[vistos[f.ticker]].pct += f.pct; return; }
+    if (f.tipo === 'fijo') vistos[f.ticker] = merged.length;
+    merged.push(f);
+  });
+  return merged;
 }
 function cartNotaDe(tipo, pick) {
   if (tipo === 'on' || tipo === 'sob') return 'TIR ' + fmtNum(pick.tir, 1) + '% · ' + esc(pick.emisor || '');
@@ -814,6 +870,14 @@ function carteraSetPerfil(perfil) {
   carteraManual = false; // elegir perfil de nuevo pisa cualquier edición anterior, a propósito
   ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === perfil); });
   carteraFilas = carteraArmarPerfil(perfil, parseFloat(document.getElementById('cartMonto').value));
+  carteraGuardar();
+  carteraRender();
+}
+function carteraSetHorizonte(horizonte) {
+  carteraHorizonteActual = horizonte;
+  carteraManual = false; // cambiar el plazo también rearma la sugerencia de cero, a propósito
+  ['todos', 'corto', 'mediano', 'largo'].forEach(function (h) { var b = document.getElementById('cartHorizonte' + h); if (b) b.classList.toggle('active', h === horizonte); });
+  if (carteraPerfilActual) carteraFilas = carteraArmarPerfil(carteraPerfilActual, parseFloat(document.getElementById('cartMonto').value));
   carteraGuardar();
   carteraRender();
 }
@@ -837,7 +901,78 @@ function carteraOnChange() {
   carteraGuardar(); carteraRender();
 }
 function carteraGuardar() {
-  try { localStorage.setItem(CARTERA_LS, JSON.stringify({ perfil: carteraPerfilActual, monto: document.getElementById('cartMonto').value, filas: carteraFilas, manual: carteraManual })); } catch (e) {}
+  try { localStorage.setItem(CARTERA_LS, JSON.stringify({ perfil: carteraPerfilActual, horizonte: carteraHorizonteActual, monto: document.getElementById('cartMonto').value, filas: carteraFilas, manual: carteraManual })); } catch (e) {}
+}
+// Paleta reutilizada tal cual la de "¿Cuánto cobro?" para que el gráfico de torta y la
+// composición se sientan parte de la misma familia visual en todo el sitio.
+const CART_PALETA = ['#1C8C5F', '#DBA03C', '#3B82C4', '#B85C8E', '#7A6FBE', '#C0453B', '#4FA7A0', '#8C8C3A', '#D9822B', '#5C6F8C'];
+const CART_TIPO_LABEL = { on: 'Obligaciones Negociables', sob: 'Bonos soberanos', carry: 'Carry en pesos', spy: 'S&P 500', cripto: 'Cripto', cedear: 'CEDEARs', rvlocal: 'Acciones argentinas', fijo: 'Fondo común de inversión' };
+// Torta simple con <circle> apilados (sin librerías): cada categoría es un arco de "stroke-dasharray"
+// sobre el mismo círculo, rotado -90° para que arranque arriba, como cualquier gráfico de torta.
+function carteraGraficoHtml() {
+  var porTipo = {}, orden = [];
+  carteraFilas.forEach(function (f) {
+    var pct = parseFloat(f.pct) || 0;
+    if (!pct) return;
+    if (porTipo[f.tipo] == null) { porTipo[f.tipo] = 0; orden.push(f.tipo); }
+    porTipo[f.tipo] += pct;
+  });
+  var total = orden.reduce(function (s, t) { return s + porTipo[t]; }, 0);
+  if (!total) return '';
+  var r = 60, c = 2 * Math.PI * r, acumulado = 0;
+  var arcos = orden.map(function (t, i) {
+    var len = porTipo[t] / total * c;
+    var html = '<circle cx="80" cy="80" r="' + r + '" fill="none" stroke="' + CART_PALETA[i % CART_PALETA.length] + '" stroke-width="26" stroke-dasharray="' + len.toFixed(1) + ' ' + (c - len).toFixed(1) + '" stroke-dashoffset="' + (-acumulado).toFixed(1) + '"></circle>';
+    acumulado += len;
+    return html;
+  }).join('');
+  var leyenda = orden.map(function (t, i) {
+    return '<div class="cart-leyenda-item"><span class="cart-dot" style="background:' + CART_PALETA[i % CART_PALETA.length] + '"></span>' + (CART_TIPO_LABEL[t] || t) + ' — ' + fmtNum(porTipo[t], 0) + '%</div>';
+  }).join('');
+  return '<div class="cart-chart-title">Composición de la cartera</div><div class="cart-chart-wrap"><svg viewBox="0 0 160 160" width="150" height="150" style="transform:rotate(-90deg);flex:none">' + arcos + '</svg><div class="cart-leyenda">' + leyenda + '</div></div>';
+}
+// Suma, mes a mes (próximos 12 meses), lo que pagaría cada línea de ON/Soberano de la cartera —
+// mismo cronograma real (FLUJO_DB) que "próximo cobro", ahora acumulado en vez de solo el primero.
+function cartCalendarioAnual() {
+  var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
+  var hoy = rotHoy(), meses = [];
+  for (var i = 0; i < 12; i++) {
+    var d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    meses.push({ y: d.getFullYear(), m: d.getMonth(), total: 0, tickers: {} });
+  }
+  carteraFilas.forEach(function (f) {
+    if ((f.tipo !== 'on' && f.tipo !== 'sob') || !f.ticker) return;
+    var real = FLUJO_DB[f.ticker];
+    if (!real || !real.schedule100 || !real.schedule100.length) return;
+    var precio = precioEfectivo(f.ticker, 'mep');
+    if (!(precio > 0)) return;
+    var m = monto * (parseFloat(f.pct) || 0) / 100, nominales = m / precio;
+    real.schedule100.forEach(function (cf) {
+      var d = parseISO(cf.date);
+      if (!d || d.getTime() <= hoy.getTime()) return;
+      var slot = null;
+      for (var j = 0; j < meses.length; j++) { if (meses[j].y === d.getFullYear() && meses[j].m === d.getMonth()) { slot = meses[j]; break; } }
+      if (!slot) return;
+      var monto2 = cf.total * (nominales / 100);
+      slot.total += monto2;
+      slot.tickers[f.ticker] = (slot.tickers[f.ticker] || 0) + monto2;
+    });
+  });
+  return meses;
+}
+const CART_MESES_ABR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+function carteraCalendarioHtml() {
+  var meses = cartCalendarioAnual();
+  if (!meses.some(function (m) { return m.total > 0; })) return '';
+  var celdas = meses.map(function (m) {
+    var tks = Object.keys(m.tickers);
+    var title = tks.map(function (tk) { return tk + ': ' + rotUSD(m.tickers[tk]); }).join(' · ');
+    return '<div class="cart-mes' + (m.total > 0 ? ' activo' : '') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' +
+      '<span class="cart-mes-nombre">' + CART_MESES_ABR[m.m] + '</span>' +
+      (m.total > 0 ? '<span class="cart-mes-monto">' + rotUSD(m.total) + '</span>' : '') +
+      '</div>';
+  }).join('');
+  return '<div class="cart-chart-title">📅 En qué meses vas a estar cobrando (próximos 12 meses)</div><div class="cart-calendario">' + celdas + '</div>';
 }
 function carteraRender() {
   var box = document.getElementById('cartResult');
@@ -859,7 +994,9 @@ function carteraRender() {
   box.innerHTML =
     '<div class="cart-head"><span>Categoría</span><span>Ticker</span><span>%</span><span style="text-align:right">Monto</span></div>' +
     filasHtml +
-    '<div class="cart-total' + (Math.abs(totalPct - 100) > 0.5 ? ' warn' : '') + '">Total<span>' + fmtNum(totalPct, 0) + '% ' + (Math.abs(totalPct - 100) > 0.5 ? '⚠ no suma 100%' : '· US$ ' + fmtNum(monto, 0)) + '</span></div>';
+    '<div class="cart-total' + (Math.abs(totalPct - 100) > 0.5 ? ' warn' : '') + '">Total<span>' + fmtNum(totalPct, 0) + '% ' + (Math.abs(totalPct - 100) > 0.5 ? '⚠ no suma 100%' : '· US$ ' + fmtNum(monto, 0)) + '</span></div>' +
+    carteraGraficoHtml() +
+    carteraCalendarioHtml();
 }
 function carteraImprimir() { window.print(); }
 function carteraCompartir() {
@@ -882,9 +1019,10 @@ function carteraInit() {
   var raw; try { raw = localStorage.getItem(CARTERA_LS); } catch (e) { raw = null; }
   var o = null; try { o = raw ? JSON.parse(raw) : null; } catch (e) {}
   if (o && o.perfil && Array.isArray(o.filas) && o.filas.length) {
-    carteraPerfilActual = o.perfil; carteraFilas = o.filas; carteraManual = !!o.manual;
+    carteraPerfilActual = o.perfil; carteraHorizonteActual = o.horizonte || 'todos'; carteraFilas = o.filas; carteraManual = !!o.manual;
     if (o.monto) document.getElementById('cartMonto').value = o.monto;
     ['conservador', 'moderado', 'agresivo'].forEach(function (p) { var b = document.getElementById('cartPerfil' + p); if (b) b.classList.toggle('active', p === o.perfil); });
+    ['todos', 'corto', 'mediano', 'largo'].forEach(function (h) { var b = document.getElementById('cartHorizonte' + h); if (b) b.classList.toggle('active', h === carteraHorizonteActual); });
     carteraRender();
   } else {
     carteraSetPerfil('moderado');
@@ -1747,7 +1885,7 @@ function rotHorizonLive(v) { var el = rotEl('rotHLabel'); if (el) el.textContent
 function rotSetVista(m) { rotState.vista = m; rotRender(); }
 
 window.ROT = { init: rotEnsure, onTicker: rotOnTicker, onTipo: rotOnTipo, onChange: rotOnChange, toggleCom: rotToggleCom, setCom: rotSetCom, resetCom: rotResetCom, setHorizon: rotSetHorizon, horizonLive: rotHorizonLive, setVista: rotSetVista, onBondLeyChange: rotOnBondLeyChange, onBondAmortChange: rotOnBondAmortChange, amortAddRow: rotAmortAddRow, amortRemoveRow: rotAmortRemoveRow, amortEdit: rotAmortEdit, cargarBono: rotCargarBono, limpiarBono: rotLimpiarBono };
-window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir };
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir };
 
 })();
 </script>
