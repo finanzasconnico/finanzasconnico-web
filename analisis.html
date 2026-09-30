@@ -409,7 +409,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <nav class="tool-tabs">
   <div class="container">
-    <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de ONs</button>
+    <button class="tab-btn active" data-tab="ons" onclick="switchTab('ons')">📊 Renta fija: Monitor de bonos</button>
     <button class="tab-btn" data-tab="cobro" onclick="switchTab('cobro')">💰 ¿Cuánto cobro?</button>
     <button class="tab-btn" data-tab="rv" onclick="switchTab('rv')">📈 Renta variable: Valuación</button>
     <button class="tab-btn" data-tab="cmp" onclick="switchTab('cmp')">⚖️ Comparar acciones</button>
@@ -424,19 +424,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <section class="tool-section">
   <div class="container">
 
-    <!-- ══ Renta fija: Monitor de ONs ══ -->
+    <!-- ══ Renta fija: Monitor de bonos ══ -->
     <div class="tab-panel active" id="tab-ons">
     <div class="tool-card">
       <div class="tool-card-header">
-        <div class="tool-title">📊 Monitor de Obligaciones Negociables</div>
+        <div class="tool-title">📊 Renta fija: Monitor de bonos</div>
       </div>
-      <div class="tool-sub">Todo el universo de ONs que sigo, agrupado por calificación crediticia. Tocá cualquier columna para ordenar.</div>
+      <div class="tool-sub">Todo el universo de bonos que sigo — Obligaciones Negociables, Soberanos y bonos en pesos (LECAPs/BONCAPs) — agrupado por categoría. Tocá cualquier columna para ordenar.</div>
       <div class="monitor-controls">
+        <button class="calif-btn active" id="monitorCaton" onclick="setMonitorCategoria('on')">Obligaciones Negociables</button>
+        <button class="calif-btn" id="monitorCatsoberano" onclick="setMonitorCategoria('soberano')">Soberanos</button>
+        <button class="calif-btn" id="monitorCatpesos" onclick="setMonitorCategoria('pesos')">Bonos en pesos</button>
+        <span class="monitor-count" id="monitorCount"></span>
+      </div>
+      <div class="monitor-controls" id="monitorCalifRow">
         <button class="calif-btn active" data-calif="AAA" onclick="setMonitorCalif('AAA', this)">AAA</button>
         <button class="calif-btn" data-calif="AA" onclick="setMonitorCalif('AA', this)">AA</button>
         <button class="calif-btn" data-calif="A" onclick="setMonitorCalif('A', this)">A</button>
         <button class="calif-btn" data-calif="menorA" onclick="setMonitorCalif('menorA', this)">Menor a A</button>
-        <span class="monitor-count" id="monitorCount"></span>
       </div>
       <div id="monitorTableBox" class="data-table-wrap">
         <p class="loading-msg">Cargando el monitor…</p>
@@ -2373,6 +2378,9 @@ const MONITOR_TABLAS = {
 let monitorWb = null;
 let monitorDataCache = {};
 let monitorCalifActual = 'AAA';
+let monitorCategoriaActual = 'on';
+let monitorSoberanosCache = null;
+let monitorPesosCache = null;
 let monitorSortCol = 'tir';
 let monitorSortAsc = false;
 
@@ -2459,25 +2467,143 @@ function renderMonitorTable(data) {
     </table>`;
 }
 
+/* ── Soberanos: hoja propia del Monitor, una sola tabla (no separada por calificación como
+   Corporativos) — mismo índice de columnas que ya usa BOND_DB (FIELDS_SOB) para no inventar otro. ── */
+async function fetchMonitorSoberanos() {
+  if (monitorSoberanosCache) return monitorSoberanosCache;
+  const wb = await getMonitorWorkbook();
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets['Soberanos'], { header: 1, defval: '' });
+  let inicio = -1;
+  for (let i = 0; i < rows.length; i++) { if (rows[i] && rows[i][0] === 'Ticker') { inicio = i + 1; break; } }
+  const out = [];
+  if (inicio >= 0) {
+    for (let i = inicio; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row[0]) break;
+      const precioMep = parseFloat(row[2]), tirMep = parseFloat(row[4]);
+      const precioCable = parseFloat(row[15]), tirCable = parseFloat(row[16]);
+      out.push({
+        ticker: row[0], emisor: row[1],
+        precio: !isNaN(precioMep) ? precioMep : precioCable,
+        tir: !isNaN(tirMep) ? tirMep : tirCable,
+        duration: parseFloat(row[5]), vencimiento: excelSerialToDate(row[3]),
+        mesCupon: row[8], calificacion: row[11]
+      });
+    }
+  }
+  monitorSoberanosCache = out.filter(o => !isNaN(o.tir));
+  return monitorSoberanosCache;
+}
+function renderMonitorTableSoberanos(data) {
+  const box = document.getElementById('monitorTableBox');
+  const countEl = document.getElementById('monitorCount');
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay datos de Soberanos en este momento.</p>'; if (countEl) countEl.textContent = ''; return; }
+  const sorted = data.slice().sort((a, b) => {
+    let va = a[monitorSortCol], vb = b[monitorSortCol];
+    if (va instanceof Date) va = va.getTime();
+    if (vb instanceof Date) vb = vb.getTime();
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return monitorSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return monitorSortAsc ? va - vb : vb - va;
+  });
+  if (countEl) countEl.textContent = sorted.length + ' Soberanos';
+  const col = (key, label) => `<th class="${monitorSortCol === key ? 'sorted' + (monitorSortAsc ? ' asc' : '') : ''}" onclick="setMonitorSort('${key}')">${label}</th>`;
+  box.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        ${col('ticker', 'Ticker')}${col('emisor', 'Emisor')}${col('precio', 'Precio (MEP)')}
+        ${col('tir', 'TIR')}${col('duration', 'Duration')}${col('vencimiento', 'Vencimiento')}
+        ${col('mesCupon', 'Cobra en')}${col('calificacion', 'Calif.')}
+      </tr></thead>
+      <tbody>
+        ${sorted.map(o => `
+          <tr>
+            <td class="mono">${tickerLink(o.ticker)}</td>
+            <td>${o.emisor}</td>
+            <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
+            <td class="tir-val">${!isNaN(o.tir) ? (o.tir * 100).toFixed(2) + '%' : '—'}</td>
+            <td class="mono">${o.duration ? o.duration.toFixed(2) : '—'}</td>
+            <td>${formatVto(o.vencimiento)}</td>
+            <td>${o.mesCupon || '—'}</td>
+            <td class="mono">${o.calificacion || '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ── Bonos en pesos: LECAPs/BONCAPs vigentes, vía fcn-letras.js (mismo motor probado de
+   "¿Cuánto cobro?" y de "Renta mensual") — pago único al vencimiento, sin CER ni duales. ── */
+async function fetchMonitorPesos() {
+  if (monitorPesosCache) return monitorPesosCache;
+  const wb = await getMonitorWorkbook();
+  monitorPesosCache = FCNLetras.letrasDesdeLibro(XLSX, wb, new Date());
+  return monitorPesosCache;
+}
+function renderMonitorTablePesos(data) {
+  const box = document.getElementById('monitorTableBox');
+  const countEl = document.getElementById('monitorCount');
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay LECAPs/BONCAPs vigentes en este momento.</p>'; if (countEl) countEl.textContent = ''; return; }
+  const hoy = new Date();
+  const sorted = data.slice().sort((a, b) => a.vto - b.vto);
+  if (countEl) countEl.textContent = sorted.length + ' en pesos';
+  box.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Ticker</th><th>Tipo</th><th>Vencimiento</th><th>Días</th><th>Precio</th><th>Valor final</th><th>TNA</th></tr></thead>
+      <tbody>
+        ${sorted.map(l => {
+          const dias = Math.round((l.vto - hoy) / 86400000);
+          const tna = (l.precioMonitor > 0 && dias > 0) ? ((l.vf / l.precioMonitor - 1) * 365 / dias * 100) : null;
+          return `<tr>
+            <td class="mono">${tickerLink(l.ticker)}</td>
+            <td>${l.tipo}</td>
+            <td>${formatVto(l.vto)}</td>
+            <td class="mono">${dias}</td>
+            <td class="mono">${l.precioMonitor ? '$' + l.precioMonitor.toFixed(3) : '—'}</td>
+            <td class="mono">${l.vf ? l.vf.toFixed(4) : '—'}</td>
+            <td class="tir-val">${tna != null ? tna.toFixed(2) + '%' : '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
 async function loadMonitor() {
   document.getElementById('monitorTableBox').innerHTML = '<p class="loading-msg">Cargando el monitor…</p>';
   try {
-    const data = await fetchMonitorCalif(monitorCalifActual);
-    renderMonitorTable(data);
+    if (monitorCategoriaActual === 'soberano') {
+      renderMonitorTableSoberanos(await fetchMonitorSoberanos());
+    } else if (monitorCategoriaActual === 'pesos') {
+      renderMonitorTablePesos(await fetchMonitorPesos());
+    } else {
+      renderMonitorTable(await fetchMonitorCalif(monitorCalifActual));
+    }
   } catch (e) {
     document.getElementById('monitorTableBox').innerHTML = '<p class="loading-msg">No pudimos traer datos del mercado en este momento. Probá recargar la página.</p>';
   }
 }
+// Ojo: acotado a su propia fila (no a todos los ".calif-btn" de la página) — esa clase también la usan
+// los botones de perfil de otras pestañas (Arma tu cartera, Cuándo me jubilo), y un selector sin acotar
+// les borraría el estado "activo" sin que se note hasta volver a esa pestaña.
 function setMonitorCalif(calif, btn) {
   monitorCalifActual = calif;
-  document.querySelectorAll('.calif-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#monitorCalifRow .calif-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  loadMonitor();
+}
+function setMonitorCategoria(cat) {
+  monitorCategoriaActual = cat;
+  ['on', 'soberano', 'pesos'].forEach(function (c) { var b = document.getElementById('monitorCat' + c); if (b) b.classList.toggle('active', c === cat); });
+  var califRow = document.getElementById('monitorCalifRow');
+  if (califRow) califRow.style.display = cat === 'on' ? '' : 'none';
   loadMonitor();
 }
 function setMonitorSort(col) {
   if (monitorSortCol === col) { monitorSortAsc = !monitorSortAsc; }
   else { monitorSortCol = col; monitorSortAsc = false; }
-  renderMonitorTable(monitorDataCache[monitorCalifActual] || []);
+  if (monitorCategoriaActual === 'soberano') renderMonitorTableSoberanos(monitorSoberanosCache || []);
+  else if (monitorCategoriaActual === 'pesos') renderMonitorTablePesos(monitorPesosCache || []);
+  else renderMonitorTable(monitorDataCache[monitorCalifActual] || []);
 }
 loadMonitor();
 </script>
