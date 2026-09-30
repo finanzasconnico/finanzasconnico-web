@@ -432,6 +432,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="tool-sub">Todo el universo de bonos que sigo — Obligaciones Negociables, Soberanos y bonos en pesos (LECAPs/BONCAPs) — agrupado por categoría. Tocá cualquier columna para ordenar.</div>
       <div class="monitor-controls">
+        <input type="text" id="monitorBuscar" class="cmp-input" placeholder="🔎 Buscar ticker o emisor…" oninput="monitorSetBuscar(this.value)" style="max-width:220px">
         <button class="calif-btn active" id="monitorCaton" onclick="setMonitorCategoria('on')">Obligaciones Negociables</button>
         <button class="calif-btn" id="monitorCatsoberano" onclick="setMonitorCategoria('soberano')">Soberanos</button>
         <button class="calif-btn" id="monitorCatpesos" onclick="setMonitorCategoria('pesos')">Bonos en pesos</button>
@@ -2383,6 +2384,15 @@ let monitorSoberanosCache = null;
 let monitorPesosCache = null;
 let monitorSortCol = 'tir';
 let monitorSortAsc = false;
+let monitorBuscarTexto = '';
+function monitorSetBuscar(v) {
+  monitorBuscarTexto = String(v || '').trim().toLowerCase();
+  loadMonitor(); // los datos ya están cacheados (fetchMonitor*), esto solo vuelve a filtrar y pintar
+}
+function monitorFiltrar(data, campos) {
+  if (!monitorBuscarTexto) return data;
+  return data.filter(o => campos.some(c => String(o[c] || '').toLowerCase().indexOf(monitorBuscarTexto) >= 0));
+}
 
 async function getMonitorWorkbook() {
   if (monitorWb) return monitorWb;
@@ -2424,11 +2434,12 @@ async function fetchMonitorCalif(calif) {
   return data;
 }
 
-function renderMonitorTable(data) {
+function renderMonitorTable(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
+  const data = monitorFiltrar(dataOriginal, ['ticker', 'emisor']);
   if (!data.length) {
-    box.innerHTML = '<p class="loading-msg">No hay datos para esta calificación en este momento.</p>';
+    box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay datos para esta calificación en este momento.') + '</p>';
     countEl.textContent = '';
     return;
   }
@@ -2494,10 +2505,11 @@ async function fetchMonitorSoberanos() {
   monitorSoberanosCache = out.filter(o => !isNaN(o.tir));
   return monitorSoberanosCache;
 }
-function renderMonitorTableSoberanos(data) {
+function renderMonitorTableSoberanos(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay datos de Soberanos en este momento.</p>'; if (countEl) countEl.textContent = ''; return; }
+  const data = monitorFiltrar(dataOriginal, ['ticker', 'emisor']);
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay datos de Soberanos en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
   const sorted = data.slice().sort((a, b) => {
     let va = a[monitorSortCol], vb = b[monitorSortCol];
     if (va instanceof Date) va = va.getTime();
@@ -2540,10 +2552,11 @@ async function fetchMonitorPesos() {
   monitorPesosCache = FCNLetras.letrasDesdeLibro(XLSX, wb, new Date());
   return monitorPesosCache;
 }
-function renderMonitorTablePesos(data) {
+function renderMonitorTablePesos(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  if (!data.length) { box.innerHTML = '<p class="loading-msg">No hay LECAPs/BONCAPs vigentes en este momento.</p>'; if (countEl) countEl.textContent = ''; return; }
+  const data = monitorFiltrar(dataOriginal, ['ticker']);
+  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto ? 'Ningún bono coincide con "' + esc(monitorBuscarTexto) + '".' : 'No hay LECAPs/BONCAPs vigentes en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
   const hoy = new Date();
   const sorted = data.slice().sort((a, b) => a.vto - b.vto);
   if (countEl) countEl.textContent = sorted.length + ' en pesos';
