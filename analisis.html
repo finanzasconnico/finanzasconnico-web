@@ -1100,15 +1100,17 @@ function carteraRender() {
   if (!carteraPerfilActual) { box.innerHTML = '<p class="loading-msg">Elegí un perfil para armar la sugerencia.</p>'; return; }
   var monto = parseFloat(document.getElementById('cartMonto').value) || 0;
   var totalPct = carteraFilas.reduce(function (s, f) { return s + (parseFloat(f.pct) || 0); }, 0);
+  var TIPOS_CAMBIABLES = { on: 1, sob: 1, cedear: 1, rvlocal: 1 };
   var filasHtml = carteraFilas.map(function (f, i) {
     var m = monto * (parseFloat(f.pct) || 0) / 100;
     var cobro = (f.tipo === 'on' || f.tipo === 'sob') && f.ticker ? cartProximoCobro(f.ticker, m) : null;
     var notaLinea = (f.nota || '') + (cobro ? '<br>Próximo cobro: ' + rotUSD(cobro.total) + ' el ' + fmtDateAR(cobro.date) : '');
+    var btnCambiar = TIPOS_CAMBIABLES[f.tipo] ? '<button type="button" class="cart-quitar" title="Cambiar por otra opción" onclick="CARTERA.abrirCambiar(' + i + ')">🔄</button>' : '';
     return '<div class="cart-row">' +
       '<div class="cart-label">' + esc(f.label) + '<span class="sub">' + notaLinea + '</span></div>' +
       '<input type="text" value="' + esc(f.ticker) + '" oninput="CARTERA.editarTicker(' + i + ',this.value)" placeholder="Ticker"><span class="cart-print-val">' + esc(f.ticker) + '</span>' +
       '<input type="number" step="1" min="0" value="' + (f.pct || 0) + '" oninput="CARTERA.editarPct(' + i + ',this.value)"><span class="cart-print-val">' + fmtNum(f.pct || 0, 0) + '%</span>' +
-      '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
+      '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + btnCambiar + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
       '</div>';
   }).join('');
   var tirPond = carteraTirPonderada();
@@ -2045,70 +2047,116 @@ function cartCorrelacionPromedio(ticker) {
   });
   return n ? suma / n : null;
 }
-function cartBuscarActivos(query) {
+// Motor de ranking compartido por el buscador libre y por "🔄 Cambiar" de cada fila — con
+// soloTipo se acota al mismo tipo de la fila (una ON solo se cambia por otra ON) y con texto
+// vacío devuelve directamente el ranking completo de ese tipo (así "Cambiar" no obliga a escribir).
+function cartRankearCandidatos(query, soloTipo) {
   var texto = String(query || '').trim().toUpperCase();
-  if (texto.length < 2) return [];
   var perfil = carteraPerfilActual || 'moderado';
   var horizonte = carteraHorizonteActual;
   var gradoPeso = CART_GRADO_PESO[perfil] || CART_GRADO_PESO.moderado;
-  var bonos = [];
-  Object.keys(BOND_DB).forEach(function (tk) {
-    var b = BOND_DB[tk];
-    if ((b.categoria !== 'ON' && b.categoria !== 'Soberano') || cartEsDefault(b.calif)) return;
-    if (tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
-    var tir = tirEfectivo(tk, 'mep');
-    if (tir == null || isNaN(tir) || tir > 50) return;
-    var grado = cartGrupoCalif(b.calif);
-    var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
-    var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5;
-    var motivo = 'TIR ' + fmtNum(tir, 1) + '% · calif. ' + (b.calif || '—') + (b.duration != null ? ' · duration ' + fmtNum(b.duration, 1) : '');
-    bonos.push({ ticker: tk, tipo: b.categoria === 'ON' ? 'on' : 'sob', label: b.emisor, motivo: motivo, score: score });
-  });
-  var equities = [];
-  if (RV.scored) {
+  var out = [];
+  if (!soloTipo || soloTipo === 'on' || soloTipo === 'sob') {
+    Object.keys(BOND_DB).forEach(function (tk) {
+      var b = BOND_DB[tk];
+      var tipo = b.categoria === 'ON' ? 'on' : (b.categoria === 'Soberano' ? 'sob' : null);
+      if (!tipo || (soloTipo && tipo !== soloTipo) || cartEsDefault(b.calif)) return;
+      if (texto && tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
+      var tir = tirEfectivo(tk, 'mep');
+      if (tir == null || isNaN(tir) || tir > 50) return;
+      var grado = cartGrupoCalif(b.calif);
+      var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
+      var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5;
+      var motivo = 'TIR ' + fmtNum(tir, 1) + '% · calif. ' + (b.calif || '—') + (b.duration != null ? ' · duration ' + fmtNum(b.duration, 1) : '');
+      out.push({ ticker: tk, tipo: tipo, label: b.emisor, motivo: motivo, score: score });
+    });
+  }
+  if ((!soloTipo || soloTipo === 'cedear' || soloTipo === 'rvlocal') && RV.scored) {
     RV.scored.forEach(function (x) {
       if (!x.p) return;
-      if (x.r.ticker.toUpperCase().indexOf(texto) < 0 && String(x.r.empresa || '').toUpperCase().indexOf(texto) < 0) return;
+      var tipo = x.r.moneda === 'ARS' ? 'rvlocal' : 'cedear';
+      if (soloTipo && tipo !== soloTipo) return;
+      if (texto && x.r.ticker.toUpperCase().indexOf(texto) < 0 && String(x.r.empresa || '').toUpperCase().indexOf(texto) < 0) return;
       var esMega = CART_MEGACAPS_CONSERVADOR.indexOf(x.r.ticker.toUpperCase()) >= 0;
       var perfilScore = perfil === 'conservador' ? (esMega ? 3 : -2) : 0;
       var corr = cartCorrelacionPromedio(x.r.ticker.toUpperCase());
       var corrScore = corr != null ? (1 - corr) * 3 : 0;
       var score = perfilScore + x.p.total * 0.05 + corrScore;
       var motivo = 'Puntaje ' + (x.p.total > 0 ? '+' : '') + x.p.total + (corr != null ? ' · correlación ' + fmtNum(corr * 100, 0) + '% con tu cartera' : '');
-      equities.push({ ticker: x.r.ticker, tipo: x.r.moneda === 'ARS' ? 'rvlocal' : 'cedear', label: x.r.empresa, motivo: motivo, score: score });
+      out.push({ ticker: x.r.ticker, tipo: tipo, label: x.r.empresa, motivo: motivo, score: score });
     });
   }
-  return bonos.concat(equities).sort(function (a, b) { return b.score - a.score; }).slice(0, 8);
+  return out.sort(function (a, b) { return b.score - a.score; });
+}
+let carteraCambiarIndice = null;
+function carteraPintarResultados(res, encabezado) {
+  var box = document.getElementById('cartBuscarResult');
+  if (!box) return;
+  var cancelar = carteraCambiarIndice != null ? ' · <a href="#" onclick="CARTERA.cancelarCambiar();return false">cancelar</a>' : '';
+  if (!res.length) { box.innerHTML = '<p class="loading-msg">No encontramos alternativas con los datos de hoy.' + cancelar + '</p>'; return; }
+  var head = encabezado ? '<div class="tool-sub" style="margin-bottom:8px">' + encabezado + cancelar + '</div>' : '';
+  box.innerHTML = head + res.map(function (r, i) {
+    return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + '</span></div>' +
+      '<button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.agregarBusqueda(' + i + ')">' + (carteraCambiarIndice != null ? '↔ Usar este' : '+ Agregar') + '</button></div>';
+  }).join('');
 }
 function carteraBuscarRender(query) {
   var box = document.getElementById('cartBuscarResult');
   if (!box) return;
   var texto = String(query || '').trim();
-  if (texto.length < 2) { box.innerHTML = ''; return; }
   box.innerHTML = '<p class="loading-msg">Buscando…</p>';
   Promise.all([ensureRV(), ensureCR()]).then(function () {
-    var res = cartBuscarActivos(texto);
-    carteraBuscarUltimos = res;
-    if (!res.length) { box.innerHTML = '<p class="loading-msg">No encontramos nada que coincida con "' + esc(texto) + '".</p>'; return; }
-    box.innerHTML = res.map(function (r, i) {
-      return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + '</span></div>' +
-        '<button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.agregarBusqueda(' + i + ')">+ Agregar</button></div>';
-    }).join('');
+    if (carteraCambiarIndice != null) {
+      var fila = carteraFilas[carteraCambiarIndice];
+      if (!fila) { carteraCambiarIndice = null; }
+      else {
+        carteraBuscarUltimos = cartRankearCandidatos(texto, fila.tipo).filter(function (c) { return c.ticker !== fila.ticker; }).slice(0, 6);
+        carteraPintarResultados(carteraBuscarUltimos, 'Alternativas para reemplazar <strong>' + esc(fila.ticker) + '</strong> (' + esc(fila.label) + '):');
+        return;
+      }
+    }
+    if (texto.length < 2) { box.innerHTML = ''; return; }
+    carteraBuscarUltimos = cartRankearCandidatos(texto, null).slice(0, 8);
+    if (!carteraBuscarUltimos.length) { box.innerHTML = '<p class="loading-msg">No encontramos nada que coincida con "' + esc(texto) + '".</p>'; return; }
+    carteraPintarResultados(carteraBuscarUltimos, null);
   });
+}
+function carteraAbrirCambiar(i) {
+  carteraCambiarIndice = i;
+  var input = document.getElementById('cartBuscarInput');
+  if (input) { input.value = ''; input.focus(); }
+  carteraBuscarRender('');
+  var box = document.getElementById('cartBuscarResult');
+  if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function carteraCancelarCambiar() {
+  carteraCambiarIndice = null;
+  var input = document.getElementById('cartBuscarInput');
+  if (input) input.value = '';
+  var box = document.getElementById('cartBuscarResult');
+  if (box) box.innerHTML = '';
 }
 function carteraAgregarBusqueda(i) {
   var r = carteraBuscarUltimos[i];
   if (!r) return;
   carteraManual = true;
   var labelPorTipo = { on: 'ON calidad', sob: 'Soberano', cedear: 'CEDEAR', rvlocal: 'Acción argentina' };
-  carteraFilas.push({ tipo: r.tipo, label: labelPorTipo[r.tipo] || r.tipo, pct: 5, ticker: r.ticker, nota: r.motivo + ' · agregado a mano.' });
+  if (carteraCambiarIndice != null && carteraFilas[carteraCambiarIndice]) {
+    var fila = carteraFilas[carteraCambiarIndice];
+    fila.ticker = r.ticker;
+    fila.label = labelPorTipo[r.tipo] || fila.label;
+    fila.nota = r.motivo + ' · reemplazado a mano.';
+    carteraCambiarIndice = null;
+  } else {
+    carteraFilas.push({ tipo: r.tipo, label: labelPorTipo[r.tipo] || r.tipo, pct: 5, ticker: r.ticker, nota: r.motivo + ' · agregado a mano.' });
+  }
   var input = document.getElementById('cartBuscarInput');
   if (input) input.value = '';
   document.getElementById('cartBuscarResult').innerHTML = '';
   carteraGuardar();
   carteraRender();
 }
-window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir, buscar: carteraBuscarRender, agregarBusqueda: carteraAgregarBusqueda };
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir, buscar: carteraBuscarRender, agregarBusqueda: carteraAgregarBusqueda, abrirCambiar: carteraAbrirCambiar, cancelarCambiar: carteraCancelarCambiar };
 
 // ═════════════ "Renta mensual": armar un escalonamiento de ONs (USD) o LECAPs/BONCAPs (ARS) para
 // cobrar en los meses elegidos, o consultar cuánto/cuándo cobraría un instrumento puntual ═════════════
