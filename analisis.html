@@ -276,6 +276,8 @@ body { padding-bottom: 64px; }
 .cart-head { display: grid; grid-template-columns: 1fr 110px 90px 100px; gap: 10px; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--line); font-weight: 600; }
 .cart-total.warn { color: var(--danger); }
+.cart-tir-pond { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5; margin-top: 8px; }
+.cart-tir-pond strong { color: var(--jade); }
 .cart-precios-warn { background: #faecd0; border-left: 3px solid var(--ambar); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.82rem; color: #7a5200; line-height: 1.5; margin-top: 14px; }
 .cart-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
 .cart-print-val { display: none; }
@@ -1023,6 +1025,23 @@ function carteraCalendarioHtml() {
   }).join('');
   return '<div class="cart-chart-title">📅 En qué meses vas a estar cobrando (próximos 12 meses)</div><div class="cart-calendario">' + celdas + '</div>';
 }
+// TIR ponderada solo de ONs/Soberanos en USD (on/sob) — nunca mezclada con el carry en pesos (TNA,
+// otra moneda y otra unidad) ni con CEDEARs/acciones/cripto, que no tienen un retorno esperado real:
+// el puntaje es una señal de valuación relativa, no una proyección, y mostrar un número ahí
+// prometería algo que no se puede respaldar.
+function carteraTirPonderada() {
+  var sumaPct = 0, sumaPonderada = 0;
+  carteraFilas.forEach(function (f) {
+    if ((f.tipo !== 'on' && f.tipo !== 'sob') || !f.ticker) return;
+    var tir = tirEfectivo(f.ticker, 'mep');
+    if (tir == null || isNaN(tir)) return;
+    var pct = parseFloat(f.pct) || 0;
+    sumaPct += pct;
+    sumaPonderada += tir * pct;
+  });
+  if (!(sumaPct > 0)) return null;
+  return { tir: sumaPonderada / sumaPct, pct: sumaPct };
+}
 function carteraRender() {
   var box = document.getElementById('cartResult');
   if (!box) return;
@@ -1040,10 +1059,12 @@ function carteraRender() {
       '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
       '</div>';
   }).join('');
+  var tirPond = carteraTirPonderada();
   box.innerHTML =
     '<div class="cart-head"><span>Categoría</span><span>Ticker</span><span>%</span><span style="text-align:right">Monto</span></div>' +
     filasHtml +
     '<div class="cart-total' + (Math.abs(totalPct - 100) > 0.5 ? ' warn' : '') + '">Total<span>' + fmtNum(totalPct, 0) + '% ' + (Math.abs(totalPct - 100) > 0.5 ? '⚠ no suma 100%' : '· US$ ' + fmtNum(monto, 0)) + '</span></div>' +
+    (tirPond ? '<div class="cart-tir-pond">📈 TIR ponderada de la renta fija en USD: <strong>' + fmtNum(tirPond.tir, 1) + '%</strong> (cubre el ' + fmtNum(tirPond.pct, 0) + '% de la cartera — CEDEARs, acciones y cripto no tienen un retorno esperado calculable, por eso no entran en esta cuenta)</div>' : '') +
     carteraGraficoHtml() +
     carteraCalendarioHtml();
 }
