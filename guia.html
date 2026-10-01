@@ -1649,6 +1649,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <div class="accordion fade-up">
 
+      <!-- 0) Fondear la cuenta (requisito antes de poder operar) -->
+      <div class="accordion-item" data-accordion id="tuto-fondear">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div class="accordion-title-wrap">
+            <span class="accordion-icon">🏦</span>
+            <span class="accordion-title">Cómo fondear tu cuenta</span>
+            <span class="accordion-steps-badge">Antes de operar</span>
+          </div>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="accordion-body">
+          <ol class="tutorial-steps">
+            <li><span>Si todavía no lo hiciste, vinculá una <strong>cuenta bancaria a tu nombre</strong>: desde <strong>Perfil</strong> en la app o la web de Balanz, agregá la cuenta (país, CBU/CVU o Alias) y confirmá con la verificación facial que te pide la app.</span></li>
+            <li><span>Conseguí los datos de una cuenta bancaria de Balanz habilitada para recibir transferencias — <a href="https://cms.balanz.com/PFS/055928_cuentas_balanz_2021nuevo.pdf" target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;">mirá la lista actualizada acá ↗</a>. Te conviene agendarla en tu home banking: las próximas transferencias van a salir más rápido.</span></li>
+            <li><span>Hacé la transferencia <strong>desde una cuenta bancaria a tu mismo nombre</strong> (mismo CUIL/CUIT) — Balanz no puede acreditar transferencias que vengan de la cuenta de otra persona.</span></li>
+            <li><span>Esperá la acreditación: puede demorar hasta un par de horas. Te va a llegar una notificación a la cuenta avisándote que ya podés operar.</span></li>
+            <li><span>Si operás con <strong>más de una cuenta en Balanz</strong>, subí el comprobante de la transferencia en la plataforma — así saben en cuál de tus cuentas acreditar el dinero.</span></li>
+          </ol>
+          <div class="tutorial-note">⚠️ <strong>Importante:</strong> no se puede transferir hasta no tener la cuenta de Balanz abierta, y la transferencia siempre tiene que salir de una cuenta a tu propio nombre.</div>
+          <div class="tutorial-note">💬 <strong>¿Se te complica algún paso?</strong> <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+con+c%C3%B3mo+fondear+mi+cuenta+de+Balanz." target="_blank" rel="noopener" style="color:var(--jade);font-weight:600;text-decoration:none;">Escribime y te ayudo →</a></div>
+        </div>
+      </div>
+
       <!-- a) Suscribir FCI -->
       <div class="accordion-item" data-accordion>
         <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -2197,6 +2220,14 @@ function abrirTutorial(id) {
   item.classList.add('open');
   item.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+// Un link desde otra página (ej. guia.html#tuto-fondear, desde el carrito de analisis.html) también
+// tiene que abrir el acordeón solo, no alcanza con el scroll automático del navegador al id.
+(function () {
+  const h = (location.hash || '').replace('#', '');
+  if (h && document.getElementById(h) && document.getElementById(h).classList.contains('accordion-item')) {
+    setTimeout(function () { abrirTutorial(h); }, 50);
+  }
+})();
 
 /* Acordeón propio de "Explicación de activos" — no cierra el de Tutoriales ni viceversa */
 function toggleActivo(header) {
