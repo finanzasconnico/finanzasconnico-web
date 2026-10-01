@@ -280,6 +280,18 @@ body { padding-bottom: 64px; }
 .cart-tir-pond { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5; margin-top: 8px; }
 .cart-tir-pond strong { color: var(--jade); }
 .cart-precios-warn { background: #faecd0; border-left: 3px solid var(--ambar); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.82rem; color: #7a5200; line-height: 1.5; margin-top: 14px; }
+#cartBtnMercado.active { background: var(--petroleo-700); color: #fff; border-color: var(--heading); }
+.cart-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; margin-top: 10px; }
+.cart-layout.mercado-abierto { grid-template-columns: 1fr 300px; }
+.cart-sidebar { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; position: sticky; top: 130px; }
+.cart-sidebar-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--heading); margin-bottom: 8px; }
+@media (max-width: 900px) {
+  .cart-layout.mercado-abierto { grid-template-columns: 1fr; }
+  .cart-sidebar { position: static; }
+}
+@media (max-width: 640px) {
+  #cartBtnMercado { margin-left: 0 !important; width: 100%; }
+}
 .cart-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
 .cart-print-val { display: none; }
 .cart-chart-title { font-weight: 600; font-size: 0.9rem; color: var(--heading); margin: 22px 0 10px; }
@@ -328,7 +340,8 @@ body { padding-bottom: 64px; }
   body * { visibility: hidden; }
   #tab-cartera, #tab-cartera * { visibility: visible; }
   #tab-cartera { position: absolute; left: 0; top: 0; width: 100%; }
-  .rv-controls, .rot-adv-grid, .cart-actions, .cart-row input, .cart-quitar, .wa-float, .fb-trigger, .disclaimer-bar, .tool-card-header, .tool-sub { display: none !important; }
+  .rv-controls, .rot-adv-grid, .cart-actions, .cart-row input, .cart-quitar, .wa-float, .fb-trigger, .disclaimer-bar, .tool-card-header, .tool-sub, .cart-sidebar { display: none !important; }
+  .cart-layout, .cart-layout.mercado-abierto { grid-template-columns: 1fr !important; }
   .cart-print-val { display: inline !important; }
   .cart-precios-warn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .cart-print-header { display: block; border-bottom: 2px solid #0F3A34; padding-bottom: 10px; margin-bottom: 16px; }
@@ -573,6 +586,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="calif-btn" id="cartPerfilconservador" onclick="CARTERA.setPerfil('conservador')">🛡️ Conservador</button>
         <button class="calif-btn" id="cartPerfilmoderado" onclick="CARTERA.setPerfil('moderado')">⚖️ Moderado</button>
         <button class="calif-btn" id="cartPerfilagresivo" onclick="CARTERA.setPerfil('agresivo')">🚀 Agresivo</button>
+        <button type="button" class="cr-btn cr-btn-soft" id="cartBtnMercado" onclick="CARTERA.toggleMercado()" style="margin-left:auto">🛒 Mercado</button>
       </div>
       <div class="tool-sub" style="margin:10px 0 6px">Plazo de las ONs de la cartera (a qué distancia está su vencimiento):</div>
       <div class="rv-controls">
@@ -588,12 +602,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.imprimir()">🖨️ Imprimir</button>
         <button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.compartir()">📤 Compartir por WhatsApp</button>
       </div>
-      <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
-      <div class="tool-sub" style="margin:18px 0 6px">➕ Agregar un activo a mano — se ordenan por lo más conveniente para tu perfil, tu plazo, el rendimiento y (en CEDEARs/acciones) qué tan poco correlacionan con lo que ya tenés:</div>
-      <input type="text" id="cartBuscarInput" class="cmp-input" placeholder="Buscar ticker o nombre…" oninput="CARTERA.buscar(this.value)" style="max-width:280px">
-      <div id="cartBuscarResult" style="margin-top:10px"></div>
-      <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
-      <div class="cart-print-footer">Armá o actualizá esta cartera en vivo en <a href="https://finanzasconnico-web.vercel.app/analisis.html#cartera">finanzasconnico-web.vercel.app/analisis.html#cartera</a></div>
+      <div class="cart-layout" id="cartLayout">
+        <div class="cart-main">
+          <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
+          <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
+          <div class="cart-print-footer">Armá o actualizá esta cartera en vivo en <a href="https://finanzasconnico-web.vercel.app/analisis.html#cartera">finanzasconnico-web.vercel.app/analisis.html#cartera</a></div>
+        </div>
+        <aside class="cart-sidebar" id="cartMercadoPanel" style="display:none">
+          <div class="cart-sidebar-title">🛒 Mercado</div>
+          <div class="tool-sub" id="cartMercadoHead" style="margin:0 0 8px">Elegí una categoría — te mostramos lo más conveniente para sumar:</div>
+          <div class="rv-controls">
+            <button class="calif-btn" id="cartMercadoCatbonos" onclick="CARTERA.setMercadoCategoria('bonos')">Bonos</button>
+            <button class="calif-btn" id="cartMercadoCatcedear" onclick="CARTERA.setMercadoCategoria('cedear')">CEDEARs</button>
+            <button class="calif-btn" id="cartMercadoCataccion" onclick="CARTERA.setMercadoCategoria('accion')">Acciones</button>
+            <button class="calif-btn" id="cartMercadoCatfci" onclick="CARTERA.setMercadoCategoria('fci')">FCI</button>
+          </div>
+          <div class="rv-controls" id="cartMercadoBonoSubRow" style="display:none;margin-top:8px">
+            <button class="calif-btn active" id="cartMercadoCalifBtntodas" onclick="CARTERA.setMercadoCalifBono('todas')">Todas</button>
+            <button class="calif-btn" id="cartMercadoCalifBtnAAA" onclick="CARTERA.setMercadoCalifBono('AAA')">AAA</button>
+            <button class="calif-btn" id="cartMercadoCalifBtnAA" onclick="CARTERA.setMercadoCalifBono('AA')">AA</button>
+            <button class="calif-btn" id="cartMercadoCalifBtnA" onclick="CARTERA.setMercadoCalifBono('A')">A</button>
+            <button class="calif-btn" id="cartMercadoCalifBtnsoberano" onclick="CARTERA.setMercadoCalifBono('soberano')">Soberanos</button>
+          </div>
+          <input type="text" id="cartBuscarInput" class="cmp-input" placeholder="Buscar ticker o nombre (opcional)…" oninput="CARTERA.buscar(this.value)" style="margin-top:10px;width:100%">
+          <div id="cartBuscarResult" style="margin-top:10px"><p class="loading-msg">Elegí una categoría de arriba, o escribí para buscar en todas.</p></div>
+        </aside>
+      </div>
     </div>
     </div>
 
@@ -2042,6 +2076,14 @@ const CART_GRADO_PESO = {
   moderado: { AAA: 2, AA: 1.5, A: 1, menorA: -1 },
   agresivo: { AAA: 1, AA: 1, A: 1.5, menorA: 2 }
 };
+// "La gente compra lo que conoce": un empujón chico en el ranking (no un filtro) para emisores/CEDEARs
+// muy reconocidos — en cualquier perfil, no solo Conservador (ahí además sigue aplicando el filtro
+// duro de CART_MEGACAPS_CONSERVADOR, que es harto más estricto que este empujón).
+const CART_EMISORES_CONOCIDOS = ['YPF', 'VISTA', 'PAMPA', 'TELECOM', 'ARCOR', 'TGS', 'MERCADOLIBRE', 'GALICIA', 'MACRO', 'SUPERVIELLE', 'LOMA NEGRA', 'ALUAR', 'CAPEX', 'GENNEIA', 'IRSA', 'CABLEVISION', 'TELEFONICA'];
+function cartEsEmisorConocido(emisor) {
+  var e = String(emisor || '').toUpperCase();
+  return CART_EMISORES_CONOCIDOS.some(function (nombre) { return e.indexOf(nombre) >= 0; });
+}
 function cartCorrelacionPromedio(ticker) {
   if (typeof CR === 'undefined' || !CR || !CR.serie[ticker]) return null;
   var otros = carteraFilas.filter(function (f) { return (f.tipo === 'cedear' || f.tipo === 'rvlocal' || f.tipo === 'spy') && f.ticker && f.ticker !== ticker && CR.serie[f.ticker]; });
@@ -2053,56 +2095,97 @@ function cartCorrelacionPromedio(ticker) {
   });
   return n ? suma / n : null;
 }
-// Motor de ranking compartido por el buscador libre y por "🔄 Cambiar" de cada fila — con
-// soloTipo se acota al mismo tipo de la fila (una ON solo se cambia por otra ON) y con texto
-// vacío devuelve directamente el ranking completo de ese tipo (así "Cambiar" no obliga a escribir).
-function cartRankearCandidatos(query, soloTipo) {
+// "filtro" acepta tanto una categoría amplia del panel Mercado ('bonos'=ON+Soberano, 'cedear',
+// 'accion'=rvlocal) como un tipo puntual de fila ('on'/'sob'/'cedear'/'rvlocal', lo que usa
+// "🔄 Cambiar" para acotarse al mismo tipo que la línea que se está por reemplazar).
+function cartTipoCoincide(tipo, filtro) {
+  if (!filtro) return true;
+  if (filtro === 'bonos') return tipo === 'on' || tipo === 'sob';
+  if (filtro === 'accion') return tipo === 'rvlocal';
+  return tipo === filtro;
+}
+// Motor de ranking compartido por el panel "🛒 Mercado", el buscador libre y "🔄 Cambiar" de cada
+// fila — con texto vacío devuelve directamente el ranking completo de la categoría (así elegir una
+// categoría o abrir "Cambiar" no obliga a escribir nada).
+function cartRankearCandidatos(query, filtro) {
   var texto = String(query || '').trim().toUpperCase();
   var perfil = carteraPerfilActual || 'moderado';
   var horizonte = carteraHorizonteActual;
   var gradoPeso = CART_GRADO_PESO[perfil] || CART_GRADO_PESO.moderado;
   var out = [];
-  if (!soloTipo || soloTipo === 'on' || soloTipo === 'sob') {
-    Object.keys(BOND_DB).forEach(function (tk) {
-      var b = BOND_DB[tk];
-      var tipo = b.categoria === 'ON' ? 'on' : (b.categoria === 'Soberano' ? 'sob' : null);
-      if (!tipo || (soloTipo && tipo !== soloTipo) || cartEsDefault(b.calif)) return;
-      if (texto && tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
-      var tir = tirEfectivo(tk, 'mep');
-      if (tir == null || isNaN(tir) || tir > 50) return;
-      var grado = cartGrupoCalif(b.calif);
-      var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
-      var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5;
-      var motivo = 'TIR ' + fmtNum(tir, 1) + '% · calif. ' + (b.calif || '—') + (b.duration != null ? ' · duration ' + fmtNum(b.duration, 1) : '');
-      out.push({ ticker: tk, tipo: tipo, label: b.emisor, motivo: motivo, score: score });
-    });
-  }
-  if ((!soloTipo || soloTipo === 'cedear' || soloTipo === 'rvlocal') && RV.scored) {
+  Object.keys(BOND_DB).forEach(function (tk) {
+    var b = BOND_DB[tk];
+    var tipo = b.categoria === 'ON' ? 'on' : (b.categoria === 'Soberano' ? 'sob' : null);
+    if (!tipo || !cartTipoCoincide(tipo, filtro) || cartEsDefault(b.calif)) return;
+    var grado = cartGrupoCalif(b.calif);
+    // Desde el panel Mercado (filtro==='bonos'), nunca se sugiere una ON de alto rendimiento sin que
+    // el cliente lo pida explícitamente en "🔄 Cambiar" de una fila que YA es HY — acá no hay forma de
+    // pedirlo, así que directamente no aparece. Los Soberanos argentinos quedan afuera de este piso:
+    // son todos de calificación baja (B- Fitch) por naturaleza, no por una empresa chica o riesgosa, y
+    // tienen su propio botón "Soberanos" para quien los busca a propósito.
+    if (filtro === 'bonos') {
+      if (cartMercadoCalifBono === 'soberano') { if (tipo !== 'sob') return; }
+      else {
+        if (tipo !== 'on') return;
+        if (grado === 'menorA') return;
+        if (cartMercadoCalifBono !== 'todas' && grado !== cartMercadoCalifBono) return;
+      }
+    }
+    if (texto && tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
+    var tir = tirEfectivo(tk, 'mep');
+    if (tir == null || isNaN(tir) || tir > 50) return;
+    var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
+    var conocido = cartEsEmisorConocido(b.emisor);
+    var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5 + (conocido ? 2 : 0);
+    var motivo = 'TIR ' + fmtNum(tir, 1) + '% · calif. ' + (b.calif || '—') + (b.duration != null ? ' · duration ' + fmtNum(b.duration, 1) : '');
+    out.push({ ticker: tk, tipo: tipo, label: b.emisor, motivo: motivo, score: score });
+  });
+  // CEDEARs: puntaje (negocio+valuación+tendencia). Acciones argentinas NUNCA tienen puntaje —
+  // tendencia da null a propósito en pesos (el precio "sube" solo por inflación, ver tendencia())
+  // — así que usan el mismo criterio que ya arma esta cartera para ellas: retorno 12m + fundamentals.
+  if (cartTipoCoincide('cedear', filtro) && RV.scored) {
     RV.scored.forEach(function (x) {
-      if (!x.p) return;
-      var tipo = x.r.moneda === 'ARS' ? 'rvlocal' : 'cedear';
-      if (soloTipo && tipo !== soloTipo) return;
+      if (!x.p || x.r.moneda === 'ARS') return;
       if (texto && x.r.ticker.toUpperCase().indexOf(texto) < 0 && String(x.r.empresa || '').toUpperCase().indexOf(texto) < 0) return;
       var esMega = CART_MEGACAPS_CONSERVADOR.indexOf(x.r.ticker.toUpperCase()) >= 0;
-      var perfilScore = perfil === 'conservador' ? (esMega ? 3 : -2) : 0;
+      var perfilScore = perfil === 'conservador' ? (esMega ? 3 : -2) : (esMega ? 1.5 : 0);
       var corr = cartCorrelacionPromedio(x.r.ticker.toUpperCase());
       var corrScore = corr != null ? (1 - corr) * 3 : 0;
       var score = perfilScore + x.p.total * 0.05 + corrScore;
       var motivo = 'Puntaje ' + (x.p.total > 0 ? '+' : '') + x.p.total + (corr != null ? ' · correlación ' + fmtNum(corr * 100, 0) + '% con tu cartera' : '');
-      out.push({ ticker: x.r.ticker, tipo: tipo, label: x.r.empresa, motivo: motivo, score: score });
+      out.push({ ticker: x.r.ticker, tipo: 'cedear', label: x.r.empresa, motivo: motivo, score: score });
+    });
+  }
+  if (cartTipoCoincide('rvlocal', filtro) && RV.rows) {
+    RV.rows.forEach(function (r) {
+      if (r.moneda !== 'ARS' || r.ret12 == null || !r.f || !(r.f.niPos >= 0.5) || !(r.f.fcfPos >= 0.5) || !(r.precio > 0)) return;
+      if (texto && r.ticker.toUpperCase().indexOf(texto) < 0 && String(r.empresa || '').toUpperCase().indexOf(texto) < 0) return;
+      var score = r.ret12 * 10;
+      var motivo = 'Retorno 12 meses ' + (r.ret12 * 100).toFixed(1) + '% · ' + (r.empresa || '');
+      out.push({ ticker: r.ticker, tipo: 'rvlocal', label: r.empresa, motivo: motivo, score: score });
     });
   }
   return out.sort(function (a, b) { return b.score - a.score; });
 }
+// Los FCI no tienen ranking propio (no están en RV ni en BOND_DB) — se listan fijos, igual que ya
+// se sugieren hoy en Conservador (ESTRA1) y como fallback de plazo (BAHUSDA).
+const CART_FCI_FIJOS = [
+  { ticker: 'ESTRA1', tipo: 'fijo', label: 'Fondo común de inversión de Balanz', motivo: 'Sin ranking propio — es el que se sugiere fijo para el perfil Conservador.' },
+  { ticker: 'BAHUSDA', tipo: 'fijo', label: 'Fondo de liquidez en USD de Balanz', motivo: 'Sin ranking propio — se sugiere cuando no hay una ON que cumpla el plazo y la calidad elegidos.' }
+];
 let carteraCambiarIndice = null;
+let cartMercadoAbierto = false;
+let cartMercadoCategoria = null;
+let cartMercadoCalifBono = 'todas';
 function carteraPintarResultados(res, encabezado) {
   var box = document.getElementById('cartBuscarResult');
   if (!box) return;
   var cancelar = carteraCambiarIndice != null ? ' · <a href="#" onclick="CARTERA.cancelarCambiar();return false">cancelar</a>' : '';
   if (!res.length) { box.innerHTML = '<p class="loading-msg">No encontramos alternativas con los datos de hoy.' + cancelar + '</p>'; return; }
-  var head = encabezado ? '<div class="tool-sub" style="margin-bottom:8px">' + encabezado + cancelar + '</div>' : '';
+  var head = '<div class="tool-sub" style="margin-bottom:8px">' + (encabezado || 'Otras sugerencias para sumar:') + cancelar + '</div>';
   box.innerHTML = head + res.map(function (r, i) {
-    return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + '</span></div>' +
+    var balanz = r.tipo !== 'fijo' ? ' · <a href="' + linkBalanz(r.ticker) + '" target="_blank" rel="noopener">ver en Balanz ↗</a>' : '';
+    return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + balanz + '</span></div>' +
       '<button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.agregarBusqueda(' + i + ')">' + (carteraCambiarIndice != null ? '↔ Usar este' : '+ Agregar') + '</button></div>';
   }).join('');
 }
@@ -2121,14 +2204,51 @@ function carteraBuscarRender(query) {
         return;
       }
     }
-    if (texto.length < 2) { box.innerHTML = ''; return; }
+    if (cartMercadoCategoria === 'fci') {
+      var textoU = texto.toUpperCase();
+      carteraBuscarUltimos = CART_FCI_FIJOS.filter(function (f) { return !textoU || f.ticker.indexOf(textoU) >= 0 || f.label.toUpperCase().indexOf(textoU) >= 0; });
+      carteraPintarResultados(carteraBuscarUltimos, null);
+      return;
+    }
+    if (cartMercadoCategoria) {
+      carteraBuscarUltimos = cartRankearCandidatos(texto, cartMercadoCategoria).slice(0, 10);
+      if (!carteraBuscarUltimos.length) { box.innerHTML = '<p class="loading-msg">No encontramos nada' + (texto ? ' que coincida con "' + esc(texto) + '"' : '') + ' en esta categoría.</p>'; return; }
+      carteraPintarResultados(carteraBuscarUltimos, null);
+      return;
+    }
+    if (texto.length < 2) { box.innerHTML = '<p class="loading-msg">Elegí una categoría de arriba, o escribí para buscar en todas.</p>'; return; }
     carteraBuscarUltimos = cartRankearCandidatos(texto, null).slice(0, 8);
     if (!carteraBuscarUltimos.length) { box.innerHTML = '<p class="loading-msg">No encontramos nada que coincida con "' + esc(texto) + '".</p>'; return; }
     carteraPintarResultados(carteraBuscarUltimos, null);
   });
 }
+function carteraMercadoAbrirUI(abrir) {
+  cartMercadoAbierto = abrir;
+  var panel = document.getElementById('cartMercadoPanel');
+  if (panel) panel.style.display = abrir ? '' : 'none';
+  var layout = document.getElementById('cartLayout');
+  if (layout) layout.classList.toggle('mercado-abierto', abrir);
+  var btn = document.getElementById('cartBtnMercado');
+  if (btn) btn.classList.toggle('active', abrir);
+}
+function carteraToggleMercado() { carteraMercadoAbrirUI(!cartMercadoAbierto); }
+function carteraSetMercadoCategoria(cat) {
+  cartMercadoCategoria = cartMercadoCategoria === cat ? null : cat;
+  ['bonos', 'cedear', 'accion', 'fci'].forEach(function (c) { var b = document.getElementById('cartMercadoCat' + c); if (b) b.classList.toggle('active', c === cartMercadoCategoria); });
+  var subRow = document.getElementById('cartMercadoBonoSubRow');
+  if (subRow) subRow.style.display = cartMercadoCategoria === 'bonos' ? '' : 'none';
+  var input = document.getElementById('cartBuscarInput');
+  carteraBuscarRender(input ? input.value : '');
+}
+function carteraSetMercadoCalifBono(c) {
+  cartMercadoCalifBono = c;
+  ['todas', 'AAA', 'AA', 'A', 'soberano'].forEach(function (x) { var b = document.getElementById('cartMercadoCalifBtn' + x); if (b) b.classList.toggle('active', x === c); });
+  var input = document.getElementById('cartBuscarInput');
+  carteraBuscarRender(input ? input.value : '');
+}
 function carteraAbrirCambiar(i) {
   carteraCambiarIndice = i;
+  carteraMercadoAbrirUI(true);
   var input = document.getElementById('cartBuscarInput');
   if (input) { input.value = ''; input.focus(); }
   carteraBuscarRender('');
@@ -2139,22 +2259,22 @@ function carteraCancelarCambiar() {
   carteraCambiarIndice = null;
   var input = document.getElementById('cartBuscarInput');
   if (input) input.value = '';
-  var box = document.getElementById('cartBuscarResult');
-  if (box) box.innerHTML = '';
+  carteraBuscarRender('');
 }
 function carteraAgregarBusqueda(i) {
   var r = carteraBuscarUltimos[i];
   if (!r) return;
   carteraManual = true;
   var labelPorTipo = { on: 'ON calidad', sob: 'Soberano', cedear: 'CEDEAR', rvlocal: 'Acción argentina' };
+  var label = labelPorTipo[r.tipo] || r.label || r.tipo;
   if (carteraCambiarIndice != null && carteraFilas[carteraCambiarIndice]) {
     var fila = carteraFilas[carteraCambiarIndice];
     fila.ticker = r.ticker;
-    fila.label = labelPorTipo[r.tipo] || fila.label;
+    fila.label = label;
     fila.nota = r.motivo + ' · reemplazado a mano.';
     carteraCambiarIndice = null;
   } else {
-    carteraFilas.push({ tipo: r.tipo, label: labelPorTipo[r.tipo] || r.tipo, pct: 5, ticker: r.ticker, nota: r.motivo + ' · agregado a mano.' });
+    carteraFilas.push({ tipo: r.tipo, label: label, pct: 5, ticker: r.ticker, nota: r.motivo + ' · agregado a mano.' });
   }
   var input = document.getElementById('cartBuscarInput');
   if (input) input.value = '';
@@ -2162,7 +2282,7 @@ function carteraAgregarBusqueda(i) {
   carteraGuardar();
   carteraRender();
 }
-window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir, buscar: carteraBuscarRender, agregarBusqueda: carteraAgregarBusqueda, abrirCambiar: carteraAbrirCambiar, cancelarCambiar: carteraCancelarCambiar };
+window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizonte: carteraSetHorizonte, editarTicker: carteraEditarTicker, editarPct: carteraEditarPct, quitarFila: carteraQuitarFila, onChange: carteraOnChange, imprimir: carteraImprimir, compartir: carteraCompartir, buscar: carteraBuscarRender, agregarBusqueda: carteraAgregarBusqueda, abrirCambiar: carteraAbrirCambiar, cancelarCambiar: carteraCancelarCambiar, toggleMercado: carteraToggleMercado, setMercadoCategoria: carteraSetMercadoCategoria, setMercadoCalifBono: carteraSetMercadoCalifBono };
 
 // ═════════════ "Renta mensual": armar un escalonamiento de ONs (USD) o LECAPs/BONCAPs (ARS) para
 // cobrar en los meses elegidos, o consultar cuánto/cuándo cobraría un instrumento puntual ═════════════
