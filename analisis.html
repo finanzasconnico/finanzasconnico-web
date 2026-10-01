@@ -979,8 +979,10 @@ function carteraArmarPerfil(perfil, monto) {
     pushCedears(35, ['SPY'], 5);
     pushAccionesLocales(5, 2);
   } else {
-    pushBonos('on', 'ON calidad (AAA)', 20, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 3, true);
-    pushBonos('on', 'ON de mayor riesgo (HY)', 10, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'menorA'; }, 2, true);
+    // Sin ONs de alto rendimiento (menor a A): ese riesgo de crédito no se recomienda en ningún
+    // perfil, ni siquiera Agresivo — "agresivo" acá significa más renta variable/cripto, no menos
+    // calidad crediticia. El 10% que antes iba ahí pasa a sumarse a la ON de calidad (AAA).
+    pushBonos('on', 'ON calidad (AAA)', 30, function (b) { return b.categoria === 'ON' && cartGrupoCalif(b.calif) === 'AAA'; }, 4, true);
     pushBonos('sob', 'Soberano corto (duration < 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration < 3; }, 2);
     pushBonos('sob', 'Soberano largo (duration ≥ 3)', 5, function (b) { return b.categoria === 'Soberano' && b.duration != null && b.duration >= 3; }, 2);
     push('carry', 'Carry en pesos (mejor TNA)', 5, carteraLetraTop || null);
@@ -2118,16 +2120,16 @@ function cartRankearCandidatos(query, filtro) {
     var tipo = b.categoria === 'ON' ? 'on' : (b.categoria === 'Soberano' ? 'sob' : null);
     if (!tipo || !cartTipoCoincide(tipo, filtro) || cartEsDefault(b.calif)) return;
     var grado = cartGrupoCalif(b.calif);
-    // Desde el panel Mercado (filtro==='bonos'), nunca se sugiere una ON de alto rendimiento sin que
-    // el cliente lo pida explícitamente en "🔄 Cambiar" de una fila que YA es HY — acá no hay forma de
-    // pedirlo, así que directamente no aparece. Los Soberanos argentinos quedan afuera de este piso:
-    // son todos de calificación baja (B- Fitch) por naturaleza, no por una empresa chica o riesgosa, y
-    // tienen su propio botón "Soberanos" para quien los busca a propósito.
+    // Piso incondicional: una ON de alto rendimiento (menor a A) no se sugiere nunca, en ningún
+    // perfil ni desde ningún lado — ni "Mercado" ni "🔄 Cambiar" sobre una fila existente. Es un
+    // riesgo de crédito que no se recomienda, ni para Agresivo. Los Soberanos argentinos quedan
+    // afuera de este piso: son todos de calificación baja (B- Fitch) por naturaleza de ser deuda
+    // soberana argentina, no por una empresa chica o riesgosa, y tienen su propio botón "Soberanos".
+    if (tipo === 'on' && grado === 'menorA') return;
     if (filtro === 'bonos') {
       if (cartMercadoCalifBono === 'soberano') { if (tipo !== 'sob') return; }
       else {
         if (tipo !== 'on') return;
-        if (grado === 'menorA') return;
         if (cartMercadoCalifBono !== 'todas' && grado !== cartMercadoCalifBono) return;
       }
     }
