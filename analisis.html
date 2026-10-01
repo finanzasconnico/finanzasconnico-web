@@ -2278,9 +2278,12 @@ function rentaArmarUSD(ingreso, frecuencia) {
   var sinCobertura = buckets.filter(function (mb, bi) { return !cubiertos[bi]; }).map(function (mb) { return mb[0]; });
   return { filas: filas, sinCobertura: sinCobertura };
 }
-// En pesos no hay cupón: se busca, para cada bucket, la LECAP/BONCAP vigente que venza en alguno de
-// esos meses (la de vencimiento más próximo si hay más de una) y se dimensiona el nominal para que
-// SU valor final (fijo desde el día que se compra, no depende de inflación futura) dé el monto pedido.
+// En pesos no hay cupón: una LECAP/BONCAP devuelve TODO junto al vencimiento (capital + interés).
+// Si dimensionáramos el nominal para que ESE pago total fuera el ingreso pedido, "cobrarías" tu
+// propio capital disfrazado de ganancia (ej.: poner 950.000 para "cobrar" 1.000.000 no son 1.000.000
+// de ganancia, son 50.000). Por eso el monto a invertir se calcula para que la GANANCIA (vf - precio)
+// sea el ingreso pedido — el capital se recupera entero en la misma fecha y hay que reinvertirlo en
+// una letra nueva para que la renta siga el período siguiente (se avisa en cada fila y en el total).
 function rentaArmarARS(ingreso, frecuencia) {
   var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
   var buckets = rentaBuckets(frecMeses);
@@ -2294,11 +2297,14 @@ function rentaArmarARS(ingreso, frecuencia) {
       if (dist < mejorDist) { mejorDist = dist; mejor = c; }
     });
     if (!mejor) return;
-    var objetivo = ingreso * frecMeses;
-    var nominal = objetivo / mejor.vf;
+    var objetivo = ingreso * frecMeses; // ganancia deseada para ese cobro, NO el total que se recibe
     var precio = rentaPrecio(mejor.ticker, mejor.precioMonitor);
-    var monto = nominal * precio;
-    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, limitado: false });
+    var gananciaPorVN = mejor.vf - precio; // $ de ganancia por cada 1 nominal/VN, al precio de hoy
+    if (!(gananciaPorVN > 0)) return;
+    var nominal = objetivo / gananciaPorVN;
+    var monto = nominal * precio; // capital a invertir hoy (se recupera entero al vencimiento)
+    var cobroTotal = nominal * mejor.vf; // lo que efectivamente acredita el bróker ese día (capital + ganancia)
+    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, cobroTotal: cobroTotal, limitado: false });
     usados[mejor.ticker] = true;
   });
   filas.sort(function (a, b) { return a.fecha - b.fecha; });
@@ -2308,7 +2314,12 @@ function rentaArmarARS(ingreso, frecuencia) {
 function rentaFilaHtml(f) {
   var precioActual = rentaPrecio(f.ticker, f.precioBase);
   var fmt = f.moneda === 'ars' ? rotARS : rotUSD;
-  var sub = esc(f.emisor || '') + (f.limitado ? ' · ajustado a la lámina/VN mínimo' : '') + '<br>Cobrás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha);
+  var sub = esc(f.emisor || '') + (f.limitado ? ' · ajustado a la lámina/VN mínimo' : '');
+  if (f.moneda === 'ars') {
+    sub += '<br>Ganás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha) + ' · ese día el bróker te acredita ' + fmt(f.cobroTotal) + ' en total (tu capital + la ganancia) — reinvertí el capital en una letra nueva para seguir cobrando este monto el próximo período';
+  } else {
+    sub += '<br>Cobrás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha);
+  }
   return '<div class="renta-row">' +
     '<div class="renta-label">' + esc(f.ticker) + '<span class="sub">' + sub + '</span></div>' +
     '<div class="renta-precio">Precio<br><input type="number" step="0.01" min="0" value="' + precioActual.toFixed(2) + '" oninput="RENTA.editarPrecio(\'' + f.ticker + '\',this.value)"></div>' +
@@ -2328,7 +2339,8 @@ function rentaRender() {
   var total = r.filas.reduce(function (s, f) { return s + f.monto; }, 0);
   var filasHtml = r.filas.map(rentaFilaHtml).join('');
   var sinCobHtml = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos cobros quedarían sin cubrir por ahora.</div>' : '';
-  box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + sinCobHtml;
+  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos no existen cupones periódicos como en dólares: cada LECAP/BONCAP paga todo junto al vencimiento. Este total es el <strong>capital</strong> a invertir hoy — se recupera entero en cada fecha de cobro, y hay que reinvertirlo en una letra nueva para que la ganancia siga llegando el período siguiente.</div>' : '';
+  box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + notaArs + sinCobHtml;
 }
 function rentaSetMoneda(moneda) {
   rentaMonedaActual = moneda;
