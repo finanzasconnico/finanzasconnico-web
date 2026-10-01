@@ -138,6 +138,25 @@ body { padding-bottom: 64px; }
   box-shadow:0 6px 20px rgba(7,33,29,0.35);cursor:pointer;border:none;transition:transform 0.2s;
 }
 .fb-trigger:hover{ transform:scale(1.08); }
+.cart-float {
+  position: fixed; bottom: 148px; right: 24px; z-index: 998; background: var(--petroleo-700); color: #fff;
+  width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; box-shadow: 0 6px 20px rgba(7,33,29,0.35); cursor: pointer; border: none;
+}
+.cart-float-badge {
+  position: absolute; top: -4px; right: -4px; background: var(--danger); color: #fff; font-size: 0.68rem; font-weight: 700;
+  min-width: 18px; height: 18px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+}
+@keyframes cartBump { 0% { transform: scale(1); } 35% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.cart-float-bump { animation: cartBump 0.35s ease; }
+.cart-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(7,33,29,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+.cart-modal-overlay.open { display: flex; }
+.cart-modal-box { background: var(--surface); border-radius: 16px; padding: 28px 24px; max-width: 460px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.cart-add-mini { background: none; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; opacity: 0.6; vertical-align: middle; }
+.cart-add-mini:hover { opacity: 1; }
+@media (max-width: 640px) {
+  .cart-float { bottom: 168px; }
+}
 .fb-modal-overlay{
   display:none;position:fixed;inset:0;background:rgba(7,33,29,0.55);
   z-index:9999;align-items:center;justify-content:center;padding:20px;
@@ -2188,6 +2207,7 @@ function carteraPintarResultados(res, encabezado) {
   box.innerHTML = head + res.map(function (r, i) {
     var balanz = r.tipo !== 'fijo' ? ' · <a href="' + linkBalanz(r.ticker) + '" target="_blank" rel="noopener">ver en Balanz ↗</a>' : '';
     return '<div class="renta-row"><div class="renta-label">' + esc(r.ticker) + ' · ' + esc(r.label || '') + '<span class="sub">' + esc(r.motivo) + balanz + '</span></div>' +
+      '<button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar(\'' + r.ticker + '\',\'' + escJs(r.label || '') + '\')">🛒</button>' +
       '<button type="button" class="cr-btn cr-btn-soft" onclick="CARTERA.agregarBusqueda(' + i + ')">' + (carteraCambiarIndice != null ? '↔ Usar este' : '+ Agregar') + '</button></div>';
   }).join('');
 }
@@ -2501,6 +2521,24 @@ window.RENTA = { ready: rentaReady, setMoneda: rentaSetMoneda, setFrecuencia: re
 
 <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+el+an%C3%A1lisis+avanzado." target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp">💬</a>
 
+<!-- CARRITO: lista de "quiero esto" armada desde cualquier pestaña, separada de "Arma tu cartera"
+     (esa arma una cartera completa a %; esto es una lista suelta en US$ para mandarle a Nico). -->
+<button class="cart-float" id="carritoFloat" onclick="CARRITO.abrir()" aria-label="Carrito">
+  🛒<span class="cart-float-badge" id="carritoBadge" style="display:none">0</span>
+</button>
+<div class="cart-modal-overlay" id="carritoModalOverlay" onclick="if(event.target===this) CARRITO.cerrar()">
+  <div class="cart-modal-box">
+    <button class="fb-modal-close" onclick="CARRITO.cerrar()">✕</button>
+    <div class="fb-title">🛒 Mi carrito</div>
+    <div id="carritoLista"><p class="loading-msg">Todavía no agregaste nada. Sumá activos desde cualquier pestaña con el botón 🛒 de cada fila.</p></div>
+    <div id="carritoAcciones" style="display:none;margin-top:14px">
+      <div class="cart-total" style="margin-bottom:12px"><span>Total</span><span id="carritoTotal">US$ 0</span></div>
+      <div class="cart-precios-warn" style="margin:0 0 14px">⚠️ <strong>Fondeá tu cuenta de Balanz antes de pedirle a Nico que compre esto</strong> — si no transferís la plata antes, no se puede ejecutar nada. ¿No sabés cómo? <a href="guia.html#tuto-fondear" target="_blank" style="color:#7a5200;text-decoration:underline">Mirá el instructivo →</a></div>
+      <button type="button" class="cr-btn" style="width:100%" onclick="CARRITO.enviar()">💬 Enviar a Nico por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- FEEDBACK -->
 <button class="fb-trigger" onclick="abrirFeedback()" aria-label="Dejar feedback">📝</button>
 <div class="fb-modal-overlay" id="fbModalOverlay" onclick="if(event.target===this) cerrarFeedback()">
@@ -2693,7 +2731,7 @@ function renderMonitorTable(dataOriginal) {
       <tbody>
         ${sorted.map(o => `
           <tr>
-            <td class="mono">${tickerLink(o.ticker)}</td>
+            <td class="mono">${tickerLink(o.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${o.ticker}','${escJs(o.emisor || '')}')">🛒</button></td>
             <td>${o.emisor}<div class="row-sector">${o.sector || ''}</div></td>
             <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
             <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
@@ -2759,7 +2797,7 @@ function renderMonitorTableSoberanos(dataOriginal) {
       <tbody>
         ${sorted.map(o => `
           <tr>
-            <td class="mono">${tickerLink(o.ticker)}</td>
+            <td class="mono">${tickerLink(o.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${o.ticker}','${escJs(o.emisor || '')}')">🛒</button></td>
             <td>${o.emisor}</td>
             <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
             <td class="tir-val">${!isNaN(o.tir) ? (o.tir * 100).toFixed(2) + '%' : '—'}</td>
@@ -2796,7 +2834,7 @@ function renderMonitorTablePesos(dataOriginal) {
           const dias = Math.round((l.vto - hoy) / 86400000);
           const tna = (l.precioMonitor > 0 && dias > 0) ? ((l.vf / l.precioMonitor - 1) * 365 / dias * 100) : null;
           return `<tr>
-            <td class="mono">${tickerLink(l.ticker)}</td>
+            <td class="mono">${tickerLink(l.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${l.ticker}','${escJs(l.tipo || '')}')">🛒</button></td>
             <td>${l.tipo}</td>
             <td>${formatVto(l.vto)}</td>
             <td class="mono">${dias}</td>
@@ -3103,6 +3141,93 @@ function fmtN(v, dec) {
   return Number(v).toLocaleString('es-AR', { minimumFractionDigits: dec ?? 2, maximumFractionDigits: dec ?? 2 });
 }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// Para texto libre (ej. nombre de emisor) insertado dentro de un onclick="...('texto')" —
+// esc() sola no alcanza ahí: un apóstrofe en el nombre rompería el atributo.
+function escJs(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+/* ═════════════ Carrito: lista suelta de "quiero esto" armada desde cualquier pestaña ═════════════
+   A propósito NO es "Arma tu cartera": esa arma una cartera completa que suma 100%, acá es solo una
+   lista de tickers + monto en USD para juntar mientras se navega y mandarle todo junto a Nico. */
+const CARRITO_LS = 'fcn_carrito';
+let carritoItems = [];
+// fmtNum "real" vive adentro del cierre de Rotar bonos (privado) — acá, en el script global, se
+// arma el mismo formato con una línea en vez de duplicar toda la función.
+function carritoFmtUSD(n) { return 'US$ ' + (isNaN(n) ? '0' : Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })); }
+function carritoCargar() {
+  try { carritoItems = JSON.parse(localStorage.getItem(CARRITO_LS) || '[]'); } catch (e) { carritoItems = []; }
+  if (!Array.isArray(carritoItems)) carritoItems = [];
+}
+function carritoGuardar() {
+  try { localStorage.setItem(CARRITO_LS, JSON.stringify(carritoItems)); } catch (e) {}
+  carritoActualizarBadge();
+}
+function carritoActualizarBadge() {
+  var b = document.getElementById('carritoBadge');
+  if (!b) return;
+  if (carritoItems.length) { b.textContent = carritoItems.length; b.style.display = ''; }
+  else b.style.display = 'none';
+}
+function carritoBump() {
+  var btn = document.getElementById('carritoFloat');
+  if (!btn) return;
+  btn.classList.remove('cart-float-bump');
+  void btn.offsetWidth;
+  btn.classList.add('cart-float-bump');
+}
+// Si ya estaba, no pisa el monto que el cliente ya haya cargado a mano en el carrito.
+function carritoAgregar(ticker, nota) {
+  ticker = String(ticker || '').trim().toUpperCase();
+  if (!ticker) return;
+  if (!carritoItems.some(function (it) { return it.ticker === ticker; })) {
+    carritoItems.push({ ticker: ticker, monto: 0, nota: nota || '' });
+    carritoGuardar();
+  }
+  carritoBump();
+}
+function carritoQuitar(i) { carritoItems.splice(i, 1); carritoGuardar(); carritoRenderLista(); }
+function carritoEditarMonto(i, val) {
+  var n = parseFloat(val);
+  if (!carritoItems[i]) return;
+  carritoItems[i].monto = isNaN(n) ? 0 : n;
+  carritoGuardar();
+  carritoActualizarTotal();
+}
+function carritoActualizarTotal() {
+  var el = document.getElementById('carritoTotal');
+  if (!el) return;
+  var total = carritoItems.reduce(function (s, it) { return s + (parseFloat(it.monto) || 0); }, 0);
+  el.textContent = carritoFmtUSD(total);
+}
+function carritoRenderLista() {
+  var box = document.getElementById('carritoLista');
+  var acciones = document.getElementById('carritoAcciones');
+  if (!box) return;
+  if (!carritoItems.length) {
+    box.innerHTML = '<p class="loading-msg">Todavía no agregaste nada. Sumá activos desde cualquier pestaña con el botón 🛒 de cada fila.</p>';
+    if (acciones) acciones.style.display = 'none';
+    return;
+  }
+  box.innerHTML = carritoItems.map(function (it, i) {
+    return '<div class="renta-row"><div class="renta-label">' + esc(it.ticker) + (it.nota ? '<span class="sub">' + esc(it.nota) + '</span>' : '') + '</div>' +
+      '<div class="renta-precio">Monto (USD)<br><input type="number" min="0" step="50" value="' + (it.monto || '') + '" placeholder="0" oninput="CARRITO.editarMonto(' + i + ',this.value)" style="width:90px"></div>' +
+      '<button type="button" class="cart-quitar" title="Quitar" onclick="CARRITO.quitar(' + i + ')">✕</button></div>';
+  }).join('');
+  if (acciones) acciones.style.display = '';
+  carritoActualizarTotal();
+}
+function carritoAbrir() { carritoRenderLista(); var ov = document.getElementById('carritoModalOverlay'); if (ov) ov.classList.add('open'); }
+function carritoCerrar() { var ov = document.getElementById('carritoModalOverlay'); if (ov) ov.classList.remove('open'); }
+function carritoEnviar() {
+  if (!carritoItems.length) return;
+  var lineas = carritoItems.map(function (it) {
+    return '• ' + it.ticker + (it.monto > 0 ? ' — ' + carritoFmtUSD(it.monto) : ' — monto a definir') + (it.nota ? ' (' + it.nota + ')' : '');
+  });
+  var texto = '🛒 Hola Nico! Arme esta lista y quisiera comprarla:\n\n' + lineas.join('\n') + '\n\n¿Lo revisamos?';
+  window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+}
+window.CARRITO = { abrir: carritoAbrir, cerrar: carritoCerrar, agregar: carritoAgregar, quitar: carritoQuitar, editarMonto: carritoEditarMonto, enviar: carritoEnviar };
+carritoCargar();
+carritoActualizarBadge();
 
 const RV = { rows: [], analistas: {}, scored: [] };
 
