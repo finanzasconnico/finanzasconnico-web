@@ -2866,9 +2866,17 @@ async function fetchMonitorPesos() {
   const tamar = leerTablaDesde(indiceTitulo('Bonos TAMAR'));
   const cerReal = leerTablaDesde(indiceTitulo('Bonos CER'));
   const porTicker = {};
-  nominal.forEach(b => { if (b.tipo === 'Tasa Fija' || b.tipo === 'Dual') porTicker[b.ticker] = b; });
+  const nominalCER = {};
+  nominal.forEach(b => { if (b.tipo === 'Tasa Fija' || b.tipo === 'Dual') porTicker[b.ticker] = b; else if (b.tipo === 'CER') nominalCER[b.ticker] = b; });
   tamar.forEach(b => { if (b.tipo === 'TAMAR') porTicker[b.ticker] = b; });
-  cerReal.forEach(b => { porTicker[b.ticker] = Object.assign({ real: true }, b); });
+  // La inflación que el Monitor usó para valuar cada CER en la tabla 1 no está publicada como celda:
+  // se despeja de (1+TIR nominal proyectada)/(1+TIR real)-1. Solo existe para los CER de corto plazo
+  // que aparecen en esa tabla; para los largos el Monitor no proyecta, así que queda sin dato (no se extrapola).
+  cerReal.forEach(b => {
+    const n = nominalCER[b.ticker];
+    const extra = n ? { cerEst: (1 + n.tir) / (1 + b.tir) - 1, tirNominalProy: n.tir } : {};
+    porTicker[b.ticker] = Object.assign({ real: true }, b, extra);
+  });
   const bonos = Object.keys(porTicker).map(k => porTicker[k]);
   const idxVcto = (() => { for (let i = 0; i < rows.length; i++) { if (rows[i] && rows[i][1] === 'Vcto.') return i; } return -1; })();
   const breakeven = [];
@@ -2905,7 +2913,7 @@ function renderMonitorTablePesos(dataOriginal) {
   if (countEl) countEl.textContent = sorted.length + ' en pesos';
   const col = (key, label) => `<th class="${monitorSortCol === key ? 'sorted' + (monitorSortAsc ? ' asc' : '') : ''}" onclick="setMonitorSort('${key}')">${label}</th>`;
   const hayCER = sorted.some(b => b.real);
-  const notaTir = hayCER ? '<div class="tool-sub" style="margin-top:8px">💡 La TIR de los bonos CER es <strong>real</strong> (ya descontada la inflación) — no se puede comparar número contra número con la TIR nominal de una LECAP/BONCAP o TAMAR. Un CER al 5% real no "rinde menos" que una LECAP al 28% nominal: son dos unidades distintas.</div>' : '';
+  const notaTir = hayCER ? '<div class="tool-sub" style="margin-top:8px">💡 <strong>CER + X%</strong> significa que el bono ajusta por inflación (CER) y encima paga ese X% real — no se puede comparar número contra número con la TIR nominal de una LECAP/BONCAP o TAMAR: "CER + 5%" no rinde menos que "28%", son dos unidades distintas. Donde se ve <em>CER est.</em>, es la inflación anual con la que el Monitor valúa ese bono (despejada de su propia valuación nominal, solo disponible para los CER de corto plazo — para los largos el Monitor no proyecta y no se inventa un número). El resultado "≈ nominal" es una estimación: si la inflación real termina siendo otra, el rendimiento nominal cambia.</div>' : '';
   const breakevenHtml = breakeven.length ? `
     <div class="tool-sub" style="margin:18px 0 8px">📊 Inflación mensual breakeven — lo que el mercado está pricing hoy, comparando una Tasa Fija con una CER del mismo vencimiento (no es una encuesta, es lo que paga el mercado):</div>
     <table class="data-table">
@@ -2926,8 +2934,8 @@ function renderMonitorTablePesos(dataOriginal) {
             <td class="mono">${tickerLink(b.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${b.ticker}','${escJs(MONITOR_PESOS_TIPO_LABEL[b.tipo] || b.tipo)}')">🛒</button></td>
             <td>${MONITOR_PESOS_TIPO_LABEL[b.tipo] || b.tipo}</td>
             <td class="mono">${b.precio ? '$' + b.precio.toFixed(3) : '—'}</td>
-            <td class="tir-val">${(b.tir * 100).toFixed(2)}%${b.real ? ' <span style="font-size:0.68em;color:var(--ink-muted)">(real)</span>' : ''}</td>
-            <td class="mono">${!isNaN(b.tna) ? (b.tna * 100).toFixed(2) + '%' : '—'}</td>
+            <td class="tir-val">${b.real ? 'CER + ' : ''}${(b.tir * 100).toFixed(2)}%${b.cerEst != null ? `<div style="font-size:0.7em;font-weight:400;color:var(--ink-muted)">CER est. ${(b.cerEst * 100).toFixed(1)}% → ≈ ${(b.tirNominalProy * 100).toFixed(1)}% nominal</div>` : ''}</td>
+            <td class="mono">${!isNaN(b.tna) ? (b.real ? 'CER + ' : '') + (b.tna * 100).toFixed(2) + '%' : '—'}</td>
             <td class="mono">${b.duration ? b.duration.toFixed(2) : '—'}</td>
             <td>${formatVto(b.vencimiento)}</td>
           </tr>`).join('')}
