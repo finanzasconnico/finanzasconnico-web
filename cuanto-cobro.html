@@ -258,6 +258,88 @@ tr.bn-row { cursor: pointer; }
 .bn-cartabla th, .bn-cartabla td { padding: 7px 14px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; font-family: var(--font-mono); font-size: 0.8rem; }
 .bn-cartabla th { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); font-weight: 600; }
 .bn-cartabla th:first-child, .bn-cartabla td:first-child { text-align: left; font-family: var(--font-sans); }
+/* ── Tu compra + Tus cobros (letras en pesos y bonos en USD juntos; los totales por moneda nunca se suman) ── */
+.cp-box { background: var(--surface); border: 1.5px solid var(--jade); border-radius: 14px; padding: 18px 18px 16px; margin: 0 0 18px; min-width: 0; }
+.cp-vacia { border: 1.5px dashed var(--line); border-radius: 14px; padding: 14px 18px; margin: 0 0 16px; font-size: 0.86rem; color: var(--ink-muted); line-height: 1.55; }
+.cp-vacia b { color: var(--ink-soft); }
+.cp-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.cp-tit { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--heading); }
+.cp-n { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-muted); }
+.cp-acc { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.cp-btn-main { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; border: 0; background: var(--whatsapp); color: #fff; cursor: pointer; transition: transform .12s ease-out; }
+.cp-btn-main.cart { background: var(--petroleo-700); }
+:root[data-theme="dark"] .cp-btn-main.cart { background: var(--jade); }
+.cp-btn-main:active { transform: scale(0.97); }
+.cp-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.cp-mon { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.cp-mon-t { font-family: var(--font-mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; margin-bottom: 8px; }
+.cp-kpis { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.cp-kpis > div { display: flex; flex-direction: column; gap: 1px; }
+.cp-kpis span { font-size: 0.7rem; color: var(--ink-muted); }
+.cp-kpis b { font-family: var(--font-mono); font-size: 1.02rem; color: var(--heading); }
+.cp-kpis em { font-style: normal; font-size: 0.68rem; color: var(--ink-muted); }
+.cp-kpis em.pos { color: var(--jade); }
+.cp-tabla { border-collapse: collapse; width: 100%; min-width: 560px; }
+.cp-tabla th, .cp-tabla td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; font-family: var(--font-mono); font-size: 0.8rem; }
+.cp-tabla th { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); font-weight: 600; }
+.cp-tabla th:first-child, .cp-tabla td:first-child { text-align: left; font-family: var(--font-sans); }
+.cp-tabla tr.cp-grp td { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; padding-top: 12px; border-bottom: 0; }
+.cp-tabla tfoot td { font-weight: 700; color: var(--heading); border-bottom: 0; }
+.cp-tabla tfoot td:first-child { font-weight: 600; color: var(--ink-soft); font-size: 0.78rem; }
+.cp-tabla .mut { color: var(--ink-muted); }
+.cp-sec { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.cp-sec .cp-tit { font-size: 1.05rem; }
+.cp-sec .seg button { padding: 7px 12px; font-size: 0.7rem; }
+.cp-sec .cp-hz { margin-left: auto; }
+.cp-leyenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.72rem; color: var(--ink-muted); margin: 10px 0 0; }
+.cp-leyenda span { display: inline-flex; align-items: center; gap: 5px; }
+.cp-leyenda i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; }
+.cp-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: middle; flex-shrink: 0; }
+/* calendario */
+.cp-cal { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 10px; }
+.cp-anio { grid-column: 1 / -1; font-family: var(--font-display); font-weight: 700; color: var(--heading); font-size: 1rem; margin-top: 6px; }
+.cp-mes { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); min-width: 0; }
+.cp-mes.vacio { background: transparent; opacity: 0.55; }
+.cp-mes-t { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; }
+.cp-ev { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; column-gap: 0; font-size: 0.8rem; }
+.cp-ev .cp-dot { align-self: center; }
+.cp-ev b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-ev b small { font-family: var(--font-mono); font-weight: 400; color: var(--ink-muted); font-size: 0.68rem; margin-left: 4px; }
+.cp-ev .v { font-family: var(--font-mono); font-size: 0.78rem; color: var(--heading); font-weight: 600; text-align: right; padding-left: 8px; }
+.cp-ev .s { grid-column: 2 / -1; font-size: 0.66rem; color: var(--ink-muted); line-height: 1.35; }
+.cp-ev .s .g { color: var(--jade); font-weight: 600; }
+.cp-ev .s span { white-space: nowrap; }
+.cp-mes-tot { margin-top: auto; padding-top: 6px; border-top: 1px dashed var(--line); font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-soft); display: flex; flex-direction: column; gap: 1px; }
+.cp-mes-tot b { color: var(--heading); }
+.cp-mes .nada { font-size: 0.72rem; color: var(--ink-muted); }
+/* barras: un gráfico por moneda */
+.cp-graf + .cp-graf { margin-top: 18px; }
+.cp-graf-t { font-family: var(--font-mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; margin-bottom: 6px; }
+.cp-graf .bn-meses { height: 170px; gap: 4px; }
+.cp-graf .bn-bar { width: 78%; max-width: 46px; }
+.cp-graf .bn-ml { white-space: nowrap; overflow: hidden; }
+.cp-nota { font-size: 0.74rem; color: var(--ink-muted); margin-top: 12px; line-height: 1.55; }
+.cp-nota a { color: var(--jade); }
+.cp-ok { font-size: 0.75rem; color: var(--jade); font-weight: 600; }
+.data-table td.tk .bn-ck { margin-right: 8px; }
+@media (max-width: 640px) {
+  .cp-acc { margin-left: 0; width: 100%; }
+  .cp-sec .cp-hz { margin-left: 0; }
+  .cp-sec .seg { width: 100%; }
+  .cp-sec .seg button { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  .cp-compra { min-width: 0; }
+  .cp-compra .cp-hm { display: none; }
+  .cp-compra th, .cp-compra td { padding: 7px 5px; }
+  .cp-compra td:first-child, .cp-compra th { white-space: normal; }
+  .cp-compra .bn-in { width: 84px; font-size: 0.8rem; padding: 6px 7px; }
+  .cp-compra .bn-sub { display: none; }
+  .cp-compra td:first-child .cp-dot { margin-right: 5px; }
+  .cp-box { padding: 14px 10px; }
+  .cp-tit { font-size: 1.1rem; }
+  .cp-cal { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .cp-graf .bn-meses { height: 140px; gap: 2px; }
+  .cp-graf .bn-ml { font-size: 0.56rem; }
+}
 @media (max-width: 640px) {
   .bn-lab { min-width: 0; width: 100%; }
   .hero { padding: 24px 0 12px; }
@@ -333,6 +415,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <p class="help" id="hint">Una LECAP o BONCAP <b>paga una sola vez, al vencimiento</b>. La comprás por menos de lo que te devuelven y esa diferencia es tu ganancia. Tocá el nombre de una columna para ordenar; tocá un ticker para verlo en Balanz.</p>
 
+      <div id="compra"></div>
       <div class="bn-cartera" id="bn-cartera" hidden></div>
       <div class="bn-filtros" id="bn-filtros" hidden></div>
       <div class="strip" id="strip"></div>
@@ -433,7 +516,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   var st = { letras: [], precios: {}, pxInfo: null, plazo: '24', vista: 'simple', sortCol: 'vto', sortAsc: true, monitorOk: false, cargado: false,
     modo: 'letras', montoL: '', montoB: '', comL: '', comB: '', cartera: {}, carteraManual: false, bonosJSON: null, monBuf: null, sheetNames: [],
     bonos: [], bonosDesc: [], bonosCargados: false, bonosCargando: false, bPrecios: {}, bPxInfo: null,
-    bCat: 'Soberano', bCalif: 'todas', bQuery: '', bSortCol: 'vto', bSortAsc: true, bAbiertos: {}, manualPrecios: {} };
+    bCat: 'Soberano', bCalif: 'todas', bQuery: '', bSortCol: 'vto', bSortAsc: true, bAbiertos: {}, manualPrecios: {},
+    carteraL: {}, carteraManualL: false, vCobro: 'cal', horizonte: '12' };       // "Tu compra": letras en pesos (carteraL) + bonos en USD (cartera)
 
   function $(id) { return document.getElementById(id); }
   function num(txt) {                                   // "1.000.000" / "0,50" -> número
@@ -466,7 +550,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   var LS = 'fcn_web_cuanto_cobro_v2';        // v2: la comisión ahora es por modo (letras 0,10% / bonos 0,50%) y se guarda la cartera
   function guardar() {
     if (st.modo === 'bonos') { st.montoB = $('in-monto').value; st.comB = $('in-com').value; } else { st.montoL = $('in-monto').value; st.comL = $('in-com').value; }
-    try { localStorage.setItem(LS, JSON.stringify({ modo: st.modo, montoL: st.montoL, montoB: st.montoB, comL: st.comL, comB: st.comB, pf: $('in-pf').value, plazo: st.plazo, vista: st.vista, cartera: st.cartera, carteraManual: st.carteraManual })); } catch (e) {}
+    try { localStorage.setItem(LS, JSON.stringify({ modo: st.modo, montoL: st.montoL, montoB: st.montoB, comL: st.comL, comB: st.comB, pf: $('in-pf').value, plazo: st.plazo, vista: st.vista, cartera: st.cartera, carteraManual: st.carteraManual,
+      carteraL: st.carteraL, carteraManualL: st.carteraManualL, vCobro: st.vCobro, horizonte: st.horizonte })); } catch (e) {}
   }
   function marcarSeg(id, attr, val) { var bs = $(id).querySelectorAll('button'); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-' + attr) === val); }
   function restaurar() {
@@ -475,6 +560,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
       st.montoL = o.montoL || ''; st.montoB = o.montoB || ''; st.comL = o.comL || ''; st.comB = o.comB || '';
       if (o.cartera && typeof o.cartera === 'object') st.cartera = o.cartera;
       st.carteraManual = !!o.carteraManual;
+      if (o.carteraL && typeof o.carteraL === 'object') st.carteraL = o.carteraL;
+      st.carteraManualL = !!o.carteraManualL;
+      if (o.vCobro === 'cal' || o.vCobro === 'barras' || o.vCobro === 'lista' || o.vCobro === 'tabla') st.vCobro = o.vCobro;
+      if (o.horizonte === '12' || o.horizonte === 'todo') st.horizonte = o.horizonte;
       if (o.modo === 'bonos' || o.modo === 'letras') st.modo = o.modo;
       if (o.pf) $('in-pf').value = o.pf;
       if (o.plazo === 'CI' || o.plazo === '24') st.plazo = o.plazo;
@@ -530,6 +619,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   }
 
   function render() {
+    renderCompra();
     if (st.modo === 'bonos') { renderBonos(); return; }
     var monto = num($('in-monto').value), com = num($('in-com').value), pf = num($('in-pf').value), hoy = new Date();
     var pi = st.pxInfo, chips = [];
@@ -573,7 +663,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     var tb = filas.map(function (r) {
       var tds = cols.map(function (c) {
         switch (c[0]) {
-          case 'ticker': var u = linkBalanz(r.ticker); return '<td class="tk">' + (u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + r.ticker + '</a>' : r.ticker) + '<span class="tag' + (r.tipo === 'BONCAP' ? ' b' : '') + '">' + r.tipo + '</span></td>';
+          case 'ticker': var u = linkBalanz(r.ticker); return '<td class="tk"><input type="checkbox" class="bn-ck ck-l" data-t="' + esc(r.ticker) + '"' + (st.carteraL[r.ticker] !== undefined ? ' checked' : '') + ' title="Sumar a tu compra" aria-label="Sumar ' + esc(r.ticker) + ' a tu compra">' + (u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + r.ticker + '</a>' : r.ticker) + '<span class="tag' + (r.tipo === 'BONCAP' ? ' b' : '') + '">' + r.tipo + '</span></td>';
           case 'vto': return '<td>' + fdate(r.vto) + '</td>';
           case 'dias': return '<td>' + r.dias + '</td>';
           case 'precio': return '<td>' + nf2.format(r.precio * 100) + '</td>';
@@ -831,6 +921,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   }
   function renderCartera() {
     var box = $('bn-cartera'); if (!box) return;
+    if (typeof renderCompra === 'function') { box.hidden = true; box.innerHTML = ''; return; }   // la web dibuja su propio panel "Tu compra" (letras + bonos juntos)
     var ts = Object.keys(st.cartera);
     if (st.modo !== 'bonos' || !ts.length || !st.bonosCargados) { box.hidden = true; box.innerHTML = ''; return; }
     if (!st.carteraManual) repartirIguales();                 // el monto de arriba cambia mientras se escribe: el reparto lo sigue
@@ -921,9 +1012,310 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   }
 /* BONOS-UI:END */
 
+  /* ══ TU COMPRA + TUS COBROS ══════════════════════════════════════════════════════════════════
+     Junta lo que el cliente tildó en las dos tablas: letras en pesos (st.carteraL, ticker → $) y bonos
+     en USD (st.cartera, ticker → USD — el mismo mapa que usa el bloque compartido). Pesos y dólares
+     se muestran SIEMPRE por separado: nunca se suman entre sí. En cada cobro se distingue la
+     devolución de capital (color lleno) de la ganancia o los intereses (rayado). */
+  var MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var VISTAS_COBRO = [['cal', 'Calendario'], ['barras', 'Barras'], ['lista', 'Lista'], ['tabla', 'Por ticker']];
+  var EMBEBIDA = (function () { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch (e) { return false; } })();
+
+  function fmtMon(v, mon) { return mon === 'ARS' ? ars(v) : usd0(v); }
+  function corto(v) {                                    // para las etiquetas de las barras
+    var a = Math.abs(v);
+    if (a >= 1e6) return nf2.format(v / 1e6).replace(/,?0+$/, '') + ' M';
+    if (a >= 1e4) return nf0.format(Math.round(v / 1e3)) + ' k';
+    return nf0.format(Math.round(v));
+  }
+  function rayado(c) { return 'repeating-linear-gradient(135deg,' + c + ' 0 3px,' + c + '55 3px 6px)'; }
+  function comDe(mon) {                                  // la comisión de cada moneda, aunque el campo muestre la del otro modo
+    var activo = st.modo === (mon === 'ARS' ? 'letras' : 'bonos');
+    var s = activo ? $('in-com').value : (mon === 'ARS' ? st.comSesL : st.comSesB);
+    return num(s || (COM_CUSTOM !== null ? fmtCom(COM_CUSTOM) : (mon === 'ARS' ? '0,10' : '0,50')));
+  }
+  function montoTotalDe(mon) {                           // el monto de arriba es el de la moneda del modo activo
+    var activo = st.modo === (mon === 'ARS' ? 'letras' : 'bonos');
+    return num(activo ? $('in-monto').value : (mon === 'ARS' ? (st.montoL || '1.000.000') : (st.montoB || '10.000')));
+  }
+  function repartir(mapa, mon) { var ts = Object.keys(mapa), m = montoTotalDe(mon); ts.forEach(function (k) { mapa[k] = Math.floor(m / ts.length); }); }
+  function toggleLetra(t, on) {
+    if (on) st.carteraL[t] = 0; else delete st.carteraL[t];
+    guardar(); render();
+  }
+
+  function calcularCompra() {
+    var hoy = new Date(), items = [], i = 0;
+    if (!st.carteraManualL) repartir(st.carteraL, 'ARS');
+    if (!st.carteraManual) repartir(st.cartera, 'USD');
+    Object.keys(st.carteraL).forEach(function (t) {
+      var it = { t: t, mon: 'ARS', color: PALETA[i++ % PALETA.length], monto: num(st.carteraL[t]), flujos: [], tipo: 'Letra' };
+      items.push(it);
+      var l = null; st.letras.forEach(function (x) { if (x.ticker === t) l = x; });
+      if (!l) { it.aviso = st.cargado ? 'ya no está disponible' : 'cargando…'; return; }
+      it.tipo = l.tipo; it.sub = l.tipo + ' · vence ' + fdate(l.vto);
+      var pr = FCNLetras.elegirPrecio(l, st.precios, st.plazo);
+      if (!pr) { it.aviso = st.pxInfo ? 'sin precio hoy' : 'trayendo precio…'; return; }
+      var r = FCNLetras.calcular(l, { monto: it.monto, comisionPct: comDe('ARS'), plazo: st.plazo, hoy: hoy, precio: pr });
+      if (!r) { it.aviso = 'vence antes de liquidar'; return; }
+      it.r = r;
+      if (!(r.vn > 0)) { it.aviso = it.monto > 0 ? 'no alcanza para 1 VN' : 'cargá un monto'; return; }
+      it.ok = true; it.costo = r.costo; it.vn = r.vn; it.cobroTotal = r.cobro; it.ganancia = r.ganancia; it.liq = r.liquidacion;
+      it.rend = 'TNA ' + pct(r.tna);
+      it.flujos = [{ fecha: r.vto, capital: r.costo, gan: r.ganancia, total: r.cobro }];      // pago único: vuelve lo invertido + la ganancia
+    });
+    Object.keys(st.cartera).forEach(function (t) {
+      var it = { t: t, mon: 'USD', color: PALETA[i++ % PALETA.length], monto: num(st.cartera[t]), flujos: [], tipo: 'Bono' };
+      items.push(it);
+      var b = null; st.bonos.forEach(function (x) { if (x.ticker === t) b = x; });
+      if (!b) { it.aviso = st.bonosCargados ? 'ya no está disponible' : 'cargando…'; return; }
+      it.tipo = b.cat === 'ON' ? 'ON' + (b.calif ? ' ' + b.calif : '') : b.cat; it.sub = b.emisor;
+      if (!b.validado) { it.aviso = 'no disponible'; return; }
+      var pr = precioConManual(b, hoy);
+      if (!pr) { it.aviso = st.bPxInfo ? 'sin precio hoy' : 'trayendo precio…'; return; }
+      var r = FCNBonos.calcularBono(b, { monto: it.monto, comisionPct: comDe('USD'), plazo: st.plazo, hoy: hoy, precio: pr });
+      if (!r) { it.aviso = 'sin cobros futuros'; return; }
+      it.r = r;
+      if (r.bajoMinimo) { it.aviso = 'no alcanza (mín. ' + usd0(r.minimoUSD) + ')'; return; }
+      if (!r.calendario) { it.aviso = 'cargá un monto'; return; }
+      it.ok = true; it.costo = r.costo; it.vn = r.vn; it.cobroTotal = r.cobroTotal; it.cobro12 = r.cobro12; it.ganancia = r.ganancia; it.liq = r.liquidacion;
+      it.rend = r.tir == null ? '' : 'TIR ' + fmtTir(r);
+      it.flujos = r.calendario.map(function (x) { return { fecha: x.fecha, capital: x.amort, gan: x.cupon, total: x.total }; });
+    });
+    return items;
+  }
+
+  function resumenMoneda(items, mon) {
+    var its = items.filter(function (it) { return it.mon === mon && it.ok; });
+    if (!its.length) return '';
+    var costo = 0, cobro = 0, gan = 0, c12 = 0, fechas = {}, ultimo = null, cfs = [], liq = its[0].liq;
+    its.forEach(function (it) {
+      costo += it.costo; cobro += it.cobroTotal; gan += it.ganancia; c12 += it.cobro12 || 0;
+      it.flujos.forEach(function (f) {
+        fechas[f.fecha.getTime()] = 1; if (!ultimo || f.fecha > ultimo) ultimo = f.fecha;
+        cfs.push({ t: FCNLetras.diasEntre(liq, f.fecha) / 365, v: f.total });
+      });
+    });
+    var nFechas = Object.keys(fechas).length, k = [];
+    k.push('<div><span>Invertís</span><b>' + fmtMon(costo, mon) + '</b><em>con comisión</em></div>');
+    if (mon === 'ARS') {
+      k.push('<div><span>Cobrás</span><b>' + ars(cobro) + '</b><em>' + (nFechas === 1 ? 'el ' + fdate(ultimo) : 'en ' + nFechas + ' fechas, hasta ' + fdate(ultimo)) + '</em></div>');
+      k.push('<div><span>Ganancia</span><b class="pos">+' + ars(gan) + '</b><em class="pos">+' + pct(costo > 0 ? gan / costo : 0) + ' sobre lo invertido</em></div>');
+    } else {
+      var tir = costo > 0 ? FCNBonos.xirr([{ t: 0, v: -costo }].concat(cfs)) : null;
+      k.push('<div><span>Cobrás en 12 meses</span><b>' + usd0(c12) + '</b><em>≈ ' + usd0(c12 / 12) + ' por mes</em></div>');
+      k.push('<div><span>Cobrás hasta el final</span><b>' + usd0(cobro) + '</b><em>último cobro ' + fdate(ultimo) + '</em></div>');
+      k.push('<div><span>Ganancia hasta el final</span><b class="' + (gan >= 0 ? 'pos' : 'neg') + '">' + (gan >= 0 ? '+' : '−') + usd0(Math.abs(gan)) + '</b><em>' + (tir == null ? '' : 'TIR de la compra ' + (tir > 0.5 ? '&gt;50%' : pct(tir))) + '</em></div>');
+    }
+    return '<div class="cp-mon"><div class="cp-mon-t">' + (mon === 'ARS' ? '$ En pesos' : 'USD En dólares') + '</div><div class="cp-kpis">' + k.join('') + '</div></div>';
+  }
+
+  function tablaCompra(items) {
+    var grupos = [['ARS', 'Letras en pesos'], ['USD', 'Bonos y ONs en dólares']], hayDos = items.some(function (x) { return x.mon === 'ARS'; }) && items.some(function (x) { return x.mon === 'USD'; });
+    var body = grupos.map(function (g) {
+      var its = items.filter(function (it) { return it.mon === g[0]; });
+      if (!its.length) return '';
+      return (hayDos ? '<tr class="cp-grp"><td colspan="6">' + g[1] + '</td></tr>' : '') + its.map(function (it) {
+        return '<tr><td><span class="cp-dot" style="background:' + it.color + '"></span><b>' + linkTicker(it.t) + '</b><span class="bn-sub">' + esc(it.sub || it.tipo) + '</span></td>' +
+          '<td><input type="text" class="bn-in" inputmode="numeric" data-t="' + esc(it.t) + '" data-mon="' + it.mon + '" value="' + nf0.format(it.monto) + '" aria-label="' + (it.mon === 'ARS' ? 'Pesos' : 'Dólares') + ' a invertir en ' + esc(it.t) + '"></td>' +
+          (it.ok ? '<td class="cp-hm">' + nf0.format(it.vn) + '</td><td class="cp-hm">' + fmtMon(it.costo, it.mon) + '</td><td>' + fmtMon(it.cobroTotal, it.mon) + '</td>'
+                 : '<td colspan="3" class="mut">' + esc(it.aviso || '') + '</td>') +
+          '<td><button class="bn-x" data-x="' + esc(it.t) + '" data-mon="' + it.mon + '" title="Sacar de tu compra" aria-label="Sacar ' + esc(it.t) + ' de tu compra">✕</button></td></tr>';
+      }).join('');
+    }).join('');
+    return '<div class="bn-scroll"><table class="cp-tabla cp-compra"><thead><tr><th>Qué comprás</th><th>Monto</th><th class="cp-hm">Nominales</th><th class="cp-hm">Pagás</th><th>Cobrás en total</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  // Todos los cobros de la compra, en orden de fecha, cortados según el horizonte elegido
+  function eventosCobro(items) {
+    var ev = [];
+    items.forEach(function (it) { if (it.ok) it.flujos.forEach(function (f) { ev.push({ fecha: f.fecha, t: it.t, mon: it.mon, color: it.color, capital: f.capital, gan: f.gan, total: f.total, letra: it.mon === 'ARS' }); }); });
+    ev.sort(function (a, b) { return a.fecha - b.fecha || (a.t < b.t ? -1 : 1); });
+    return ev;
+  }
+  function inicioMes() { var l = FCNLetras.fechaLiquidacion(new Date(), st.plazo); return new Date(l.getFullYear(), l.getMonth(), 1); }
+  function enHorizonte(ev) {
+    if (st.horizonte !== '12') return ev;
+    var d = inicioMes(), fin = new Date(d.getFullYear(), d.getMonth() + 12, 1);
+    return ev.filter(function (e) { return e.fecha < fin; });
+  }
+  function subCobro(e) {                         // "capital + ganancia" en letras; en bonos solo si devuelve capital
+    if (e.letra) return '<span>capital ' + ars(e.capital) + '</span> + <span class="g">ganancia ' + ars(e.gan) + '</span>';
+    if (e.capital > 0.5) return '<span>interés ' + usd0(e.gan) + '</span> + <span>capital ' + usd0(e.capital) + '</span>';
+    return 'interés';
+  }
+  function totalesPorMoneda(evs) {
+    var t = { ARS: 0, USD: 0 }; evs.forEach(function (e) { t[e.mon] += e.total; });
+    return ['ARS', 'USD'].filter(function (m) { return t[m] > 0; }).map(function (m) { return '<b>' + fmtMon(t[m], m) + '</b>'; }).join('');
+  }
+
+  function vistaCalendario(ev) {
+    var d0 = inicioMes(), meses = [], porMes = {};
+    ev.forEach(function (e) { var k = e.fecha.getFullYear() * 12 + e.fecha.getMonth(); (porMes[k] = porMes[k] || []).push(e); });
+    if (st.horizonte === '12') { for (var i = 0; i < 12; i++) { var d = new Date(d0.getFullYear(), d0.getMonth() + i, 1); meses.push(d.getFullYear() * 12 + d.getMonth()); } }
+    else meses = Object.keys(porMes).map(Number).sort(function (a, b) { return a - b; });
+    var anioPrev = null, porAnio = st.horizonte !== '12';
+    return '<div class="cp-cal">' + meses.map(function (k) {
+      var anio = Math.floor(k / 12), mes = k % 12, evs = porMes[k] || [], h = '';
+      if (porAnio && anio !== anioPrev) { h = '<div class="cp-anio">' + anio + '</div>'; anioPrev = anio; }
+      return h + '<div class="cp-mes' + (evs.length ? '' : ' vacio') + '"><div class="cp-mes-t">' + MESES_LARGO[mes] + (porAnio ? '' : ' ' + anio) + '</div>' +
+        (evs.length ? evs.map(function (e) {
+          return '<div class="cp-ev"><span class="cp-dot" style="background:' + e.color + '"></span><b>' + esc(e.t) + '<small>' + pad(e.fecha.getDate()) + '/' + pad(mes + 1) + '</small></b><span class="v">' + fmtMon(e.total, e.mon) + '</span><span class="s">' + subCobro(e) + '</span></div>';
+        }).join('') + '<div class="cp-mes-tot">' + totalesPorMoneda(evs) + '</div>' : '<span class="nada">sin cobros</span>') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function vistaBarras(ev) {
+    var d0 = inicioMes(), cubetas = [];
+    var ultimo = ev.length ? ev[ev.length - 1].fecha : d0;
+    var nMeses = (ultimo.getFullYear() - d0.getFullYear()) * 12 + ultimo.getMonth() - d0.getMonth() + 1;
+    var porAnio = st.horizonte !== '12' && nMeses > 24;
+    if (porAnio) for (var y = d0.getFullYear(); y <= ultimo.getFullYear(); y++) cubetas.push({ k: y, lab: String(y) });
+    else for (var i = 0; i < (st.horizonte === '12' ? 12 : Math.max(nMeses, 1)); i++) {
+      var d = new Date(d0.getFullYear(), d0.getMonth() + i, 1);
+      cubetas.push({ k: d.getFullYear() * 12 + d.getMonth(), lab: MESES[d.getMonth()] + (d.getMonth() === 0 || i === 0 ? " '" + String(d.getFullYear()).slice(2) : ''), tit: MESES_LARGO[d.getMonth()] + ' ' + d.getFullYear() });
+    }
+    function clave(f) { return porAnio ? f.getFullYear() : f.getFullYear() * 12 + f.getMonth(); }
+    return ['ARS', 'USD'].map(function (mon) {
+      var evs = ev.filter(function (e) { return e.mon === mon; });
+      if (!evs.length) return '';
+      var cs = cubetas.map(function (c) { return { k: c.k, lab: c.lab, tit: c.tit || c.lab, total: 0, partes: {} }; }), idx = {};
+      cs.forEach(function (c, j) { idx[c.k] = j; });
+      evs.forEach(function (e) {
+        var c = cs[idx[clave(e.fecha)]]; if (!c) return;
+        var p = c.partes[e.t] = c.partes[e.t] || { t: e.t, color: e.color, capital: 0, gan: 0 };
+        p.capital += e.capital; p.gan += e.gan; c.total += e.total;
+      });
+      var max = 0; cs.forEach(function (c) { if (c.total > max) max = c.total; });
+      var etGan = mon === 'ARS' ? 'ganancia' : 'interés';
+      return '<div class="cp-graf"><div class="cp-graf-t">' + (mon === 'ARS' ? 'Cobros en pesos' : 'Cobros en dólares') + (porAnio ? ' · por año' : ' · por mes') + '</div><div class="bn-meses">' + cs.map(function (c) {
+        var h = max > 0 ? Math.max(c.total > 0 ? 4 : 0, c.total / max * 100) : 0, ps = Object.keys(c.partes).map(function (k) { return c.partes[k]; }).reverse();
+        var tip = c.tit + ': ' + (c.total > 0 ? fmtMon(c.total, mon) + ' — ' + ps.slice().reverse().map(function (p) { return p.t + ' ' + fmtMon(p.capital + p.gan, mon) + ' (capital ' + fmtMon(p.capital, mon) + ', ' + etGan + ' ' + fmtMon(p.gan, mon) + ')'; }).join('; ') : 'sin cobros');
+        var segs = ps.map(function (p) {
+          return (p.gan > 0 ? '<i style="height:' + (p.gan / c.total * 100) + '%;background:' + rayado(p.color) + '"></i>' : '') +
+                 (p.capital > 0 ? '<i style="height:' + (p.capital / c.total * 100) + '%;background:' + p.color + '"></i>' : '');
+        }).join('');
+        return '<div class="bn-mes" title="' + esc(tip) + '"><div class="bn-mv">' + (c.total > 0 ? corto(c.total) : '') + '</div><div class="bn-bw"><div class="bn-bar" style="height:' + h + '%">' + segs + '</div></div><div class="bn-ml">' + c.lab + '</div></div>';
+      }).join('') + '</div></div>';
+    }).join('');
+  }
+
+  function vistaLista(ev) {
+    var tot = { ARS: { c: 0, g: 0, t: 0 }, USD: { c: 0, g: 0, t: 0 } };
+    var filas = ev.map(function (e) {
+      var x = tot[e.mon]; x.c += e.capital; x.g += e.gan; x.t += e.total;
+      return '<tr><td>' + fdate(e.fecha) + '</td><td style="text-align:left;font-family:var(--font-sans)"><span class="cp-dot" style="background:' + e.color + '"></span><b>' + esc(e.t) + '</b></td><td>' + (e.capital > 0.5 ? fmtMon(e.capital, e.mon) : '—') + '</td><td class="pos">' + (e.gan > 0.5 ? fmtMon(e.gan, e.mon) : '—') + '</td><td><b>' + fmtMon(e.total, e.mon) + '</b></td></tr>';
+    }).join('');
+    var pie = ['ARS', 'USD'].filter(function (m) { return tot[m].t > 0; }).map(function (m) {
+      return '<tr><td colspan="2">Total en ' + (m === 'ARS' ? 'pesos' : 'dólares') + '</td><td>' + fmtMon(tot[m].c, m) + '</td><td class="pos">' + fmtMon(tot[m].g, m) + '</td><td>' + fmtMon(tot[m].t, m) + '</td></tr>';
+    }).join('');
+    return '<div class="bn-scroll"><table class="cp-tabla"><thead><tr><th>Fecha</th><th style="text-align:left">Ticker</th><th>Devolución de capital</th><th>Interés / ganancia</th><th>Total</th></tr></thead><tbody>' + filas + '</tbody><tfoot>' + pie + '</tfoot></table></div>';
+  }
+
+  function vistaTabla(items) {
+    var its = items.filter(function (it) { return it.ok; }), tot = {};
+    var filas = its.map(function (it) {
+      var x = tot[it.mon] = tot[it.mon] || { costo: 0, c12: 0, total: 0, gan: 0 };
+      var hasta = new Date(it.liq.getTime()); hasta.setFullYear(hasta.getFullYear() + 1);
+      var c12 = it.mon === 'USD' ? it.cobro12 : it.flujos.reduce(function (s, f) { return s + (f.fecha <= hasta ? f.total : 0); }, 0);
+      x.costo += it.costo; x.c12 += c12; x.total += it.cobroTotal; x.gan += it.ganancia;
+      var px = it.flujos[0];
+      return '<tr><td><span class="cp-dot" style="background:' + it.color + '"></span><b>' + esc(it.t) + '</b><span class="bn-sub">' + esc(it.tipo) + '</span></td><td>' + fmtMon(it.costo, it.mon) + '</td>' +
+        '<td>' + fmtMon(px.total, it.mon) + '<span class="sub">' + fdateCorta(px.fecha) + ' ' + px.fecha.getFullYear() + '</span></td><td>' + fmtMon(c12, it.mon) + '</td><td>' + fmtMon(it.cobroTotal, it.mon) + '</td>' +
+        '<td class="' + (it.ganancia >= 0 ? 'pos' : 'neg') + '">' + (it.ganancia >= 0 ? '+' : '−') + fmtMon(Math.abs(it.ganancia), it.mon) + '</td><td>' + it.rend + '</td></tr>';
+    }).join('');
+    var pie = ['ARS', 'USD'].filter(function (m) { return tot[m]; }).map(function (m) {
+      var x = tot[m];
+      return '<tr><td>Total en ' + (m === 'ARS' ? 'pesos' : 'dólares') + '</td><td>' + fmtMon(x.costo, m) + '</td><td></td><td>' + fmtMon(x.c12, m) + '</td><td>' + fmtMon(x.total, m) + '</td><td class="pos">' + (x.gan >= 0 ? '+' : '−') + fmtMon(Math.abs(x.gan), m) + '</td><td></td></tr>';
+    }).join('');
+    return '<div class="bn-scroll"><table class="cp-tabla"><thead><tr><th>Ticker</th><th>Invertís</th><th>Próximo cobro</th><th>Cobrás en 12 meses</th><th>Cobrás hasta el final</th><th>Ganancia</th><th>Rendimiento</th></tr></thead><tbody>' + filas + '</tbody><tfoot>' + pie + '</tfoot></table></div>';
+  }
+
+  function renderCompra() {
+    var box = $('compra'); if (!box) return;
+    var nL = Object.keys(st.carteraL).length, nB = Object.keys(st.cartera).length;
+    if (!nL && !nB) {
+      st.ultimaCompra = [];
+      box.innerHTML = '<div class="cp-vacia">🧾 <b>Armá tu compra:</b> tildá ☐ las letras o bonos de la tabla de abajo y acá vas a ver cuánto pagás y un <b>calendario con todo lo que cobrás</b>. Podés mezclar letras en pesos y bonos en dólares.</div>';
+      return;
+    }
+    if (nB && st.cargado && !st.bonosCargados && !st.bonosCargando) { cargarBonos(); }     // hay bonos guardados de otra visita y estamos en "letras": se cargan igual
+    var items = calcularCompra(); st.ultimaCompra = items;
+    var hayOk = items.some(function (it) { return it.ok; });
+    var ev = eventosCobro(items), evH = enHorizonte(ev);
+    var vista = st.vCobro, cuerpo;
+    if (!hayOk) cuerpo = '<p class="loading-msg">' + (items.some(function (it) { return /cargando|trayendo/.test(it.aviso || ''); }) ? 'Calculando tus cobros…' : 'Cuando cargues un monto que alcance para comprar, acá aparece el calendario de cobros.') + '</p>';
+    else if (vista === 'tabla') cuerpo = vistaTabla(items);
+    else if (!evH.length) cuerpo = '<p class="loading-msg">No hay cobros en los próximos 12 meses. <a href="#" data-hz="todo">Ver hasta el final</a>.</p>';
+    else cuerpo = vista === 'barras' ? vistaBarras(evH) : vista === 'lista' ? vistaLista(evH) : vistaCalendario(evH);
+
+    var leyenda = hayOk && vista !== 'tabla' && vista !== 'lista' ? '<div class="cp-leyenda">' + items.filter(function (it) { return it.ok; }).map(function (it) { return '<span><i style="background:' + it.color + '"></i>' + esc(it.t) + '</span>'; }).join('') +
+      (vista === 'barras' ? '<span><i style="background:' + rayado('#6C817C') + '"></i>rayado = ganancia o interés</span><span><i style="background:#6C817C"></i>lleno = devolución de capital</span>' : '') + '</div>' : '';
+    var n = nL + nB;
+    box.innerHTML = '<div class="cp-box">' +
+      '<div class="cp-head"><span class="cp-tit">Tu compra</span><span class="cp-n">' + n + (n === 1 ? ' instrumento' : ' instrumentos') + '</span>' +
+        '<span class="cp-acc"><button class="bn-btn" data-a="iguales" title="Reparte el monto de arriba en partes iguales (pesos entre las letras, dólares entre los bonos)">Partes iguales</button><button class="bn-btn" data-a="vaciar">Vaciar</button>' +
+        '<button class="cp-btn-main' + (EMBEBIDA ? ' cart' : '') + '" data-a="pedir">' + (EMBEBIDA ? '🛒 Sumar al carrito' : '💬 Pedírsela a Nico') + '</button></span></div>' +
+      (hayOk ? '<div class="cp-res">' + resumenMoneda(items, 'ARS') + resumenMoneda(items, 'USD') + '</div>' : '') +
+      tablaCompra(items) +
+      '<div class="cp-sec"><span class="cp-tit">Tus cobros</span>' +
+        '<div class="seg" role="group" aria-label="Cómo ver los cobros">' + VISTAS_COBRO.map(function (v) { return '<button data-vc="' + v[0] + '"' + (vista === v[0] ? ' class="on"' : '') + '>' + v[1] + '</button>'; }).join('') + '</div>' +
+        (vista !== 'tabla' ? '<div class="seg cp-hz" role="group" aria-label="Hasta cuándo"><button data-hz="12"' + (st.horizonte === '12' ? ' class="on"' : '') + '>Próximos 12 meses</button><button data-hz="todo"' + (st.horizonte !== '12' ? ' class="on"' : '') + '>Hasta el final</button></div>' : '') +
+      '</div>' + cuerpo + leyenda +
+      '<div class="cp-nota">' + (st.carteraManualL || st.carteraManual ? 'Los montos de cada instrumento los elegís vos. ' : 'Si no tocás los montos, el monto de arriba se reparte en partes iguales: los pesos entre las letras y los dólares entre los bonos. ') +
+        'Pesos y dólares se muestran por separado. Calculado con el precio de hoy y la comisión considerada; es una simulación, no incluye impuestos. ' +
+        'Para comprar, primero <a href="guia.html#tuto-fondear" target="_blank" rel="noopener">fondeá tu cuenta de Balanz</a>.' +
+        (st.cpMsg ? ' <span class="cp-ok">' + esc(st.cpMsg) + '</span>' : '') + '</div>' +
+      '</div>';
+  }
+
+  function pedirCompra() {
+    var its = (st.ultimaCompra || []).filter(function (it) { return it.monto > 0; });
+    if (!its.length) return;
+    if (EMBEBIDA) {
+      window.parent.postMessage({ type: 'fcn-carrito-agregar', items: its.map(function (it) {
+        return { ticker: it.t, moneda: it.mon, monto: Math.round(it.monto), nota: it.tipo + (it.mon === 'ARS' ? ' (en pesos)' : '') };
+      }) }, location.origin);
+      st.cpMsg = '✓ Sumado al carrito 🛒 — abrilo para mandárselo a Nico.';
+      render();
+      setTimeout(function () { st.cpMsg = ''; render(); }, 4000);
+      return;
+    }
+    var tot = { ARS: 0, USD: 0 };
+    var lineas = its.map(function (it) { tot[it.mon] += it.monto; return '• ' + it.t + ' (' + it.tipo + ') — ' + fmtMon(it.monto, it.mon); });
+    var totales = ['ARS', 'USD'].filter(function (m) { return tot[m] > 0; }).map(function (m) { return (m === 'ARS' ? 'en pesos ' : 'en dólares ') + fmtMon(tot[m], m); }).join(' · ');
+    var texto = 'Hola Nico! Armé esta compra en ¿Cuánto cobro?:\n\n' + lineas.join('\n') + '\n\nTotal ' + totales + '\n¿Lo revisamos?';
+    window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+  }
+
+  // eventos del panel (una sola vez: el contenido se redibuja, el contenedor no)
+  $('compra').addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('button, a[data-hz]'); if (!el) return;
+    var a = el.getAttribute('data-a'), vc = el.getAttribute('data-vc'), hz = el.getAttribute('data-hz'), x = el.getAttribute('data-x');
+    if (el.tagName === 'A') e.preventDefault();
+    if (vc) st.vCobro = vc;
+    else if (hz) st.horizonte = hz;
+    else if (a === 'iguales') { st.carteraManual = false; st.carteraManualL = false; }
+    else if (a === 'vaciar') { st.cartera = {}; st.carteraL = {}; st.carteraManual = false; st.carteraManualL = false; }
+    else if (a === 'pedir') { pedirCompra(); return; }
+    else if (x) { if (el.getAttribute('data-mon') === 'ARS') delete st.carteraL[x]; else delete st.cartera[x]; }
+    else return;
+    guardar(); render();
+  });
+  $('compra').addEventListener('change', function (e) {              // "change" (no "input"): así no se pierde el foco a cada tecla
+    var el = e.target; if (!el.classList || !el.classList.contains('bn-in')) return;
+    var t = el.getAttribute('data-t');
+    if (el.getAttribute('data-mon') === 'ARS') { st.carteraL[t] = num(el.value); st.carteraManualL = true; }
+    else { st.cartera[t] = num(el.value); st.carteraManual = true; }
+    guardar(); render();
+  });
+  $('tabla').addEventListener('change', function (e) {               // checkbox de las letras (el de los bonos lo maneja el bloque compartido)
+    var el = e.target; if (el.classList && el.classList.contains('ck-l')) toggleLetra(el.getAttribute('data-t'), el.checked);
+  });
+
   // ── modo: letras en pesos | bonos y ONs en dólares ──
-  var HINT_L = 'Una LECAP o BONCAP <b>paga una sola vez, al vencimiento</b>. La comprás por menos de lo que te devuelven y esa diferencia es tu ganancia. Tocá el nombre de una columna para ordenar; tocá un ticker para verlo en Balanz.';
-  var HINT_B = 'Un bono en dólares <b>paga intereses (cupones) y devuelve el capital</b> en fechas fijas. Elegí cuánto querés invertir y mirá cuánto cobrás en los próximos 12 meses y hasta el vencimiento. <b>Tocá una fila</b> para ver el calendario completo mes a mes, o <b>tildá varios bonos</b> para armar una cartera y ver cuánto cobrás en conjunto.';
+  var HINT_L = 'Una LECAP o BONCAP <b>paga una sola vez, al vencimiento</b>. La comprás por menos de lo que te devuelven y esa diferencia es tu ganancia. <b>Tildá ☐ las que te interesan</b> para sumarlas a tu compra y ver el calendario de cobros. Tocá el nombre de una columna para ordenar; tocá un ticker para verlo en Balanz.';
+  var HINT_B = 'Un bono en dólares <b>paga intereses (cupones) y devuelve el capital</b> en fechas fijas. Elegí cuánto querés invertir y mirá cuánto cobrás en los próximos 12 meses y hasta el vencimiento. <b>Tocá una fila</b> para ver el calendario completo mes a mes, o <b>tildá ☐ varios bonos</b> para sumarlos a tu compra (junto con letras en pesos, si querés) y ver cuánto cobrás en conjunto.';
   function aplicarModo(sinCarga) {
     var b = st.modo === 'bonos';
     marcarSeg('seg-modo', 'm', st.modo);

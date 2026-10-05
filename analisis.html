@@ -3273,15 +3273,22 @@ function carritoBump() {
   btn.classList.add('cart-float-bump');
 }
 // Si ya estaba, no pisa el monto que el cliente ya haya cargado a mano en el carrito.
-function carritoAgregar(ticker, nota) {
+// moneda: 'USD' (default) o 'ARS' (letras en pesos que llegan desde ¿Cuánto cobro?).
+function carritoAgregar(ticker, nota, monto, moneda) {
   ticker = String(ticker || '').trim().toUpperCase();
   if (!ticker) return;
-  if (!carritoItems.some(function (it) { return it.ticker === ticker; })) {
-    carritoItems.push({ ticker: ticker, monto: 0, nota: nota || '' });
-    carritoGuardar();
-  }
+  var ex = carritoItems.filter(function (it) { return it.ticker === ticker; })[0];
+  if (!ex) carritoItems.push({ ticker: ticker, monto: monto > 0 ? monto : 0, nota: nota || '', moneda: moneda === 'ARS' ? 'ARS' : 'USD' });
+  else if (!(ex.monto > 0) && monto > 0) ex.monto = monto;
+  carritoGuardar();
   carritoBump();
 }
+function carritoFmt(n, moneda) { return moneda === 'ARS' ? '$ ' + (isNaN(n) ? '0' : Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })) : carritoFmtUSD(n); }
+// ¿Cuánto cobro? vive en un iframe (cuanto-cobro.html): manda su compra con postMessage.
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'fcn-carrito-agregar' || !Array.isArray(e.data.items)) return;
+  e.data.items.forEach(function (it) { carritoAgregar(it.ticker, it.nota, Number(it.monto) || 0, it.moneda); });
+});
 function carritoQuitar(i) { carritoItems.splice(i, 1); carritoGuardar(); carritoRenderLista(); }
 function carritoEditarMonto(i, val) {
   var n = parseFloat(val);
@@ -3293,8 +3300,10 @@ function carritoEditarMonto(i, val) {
 function carritoActualizarTotal() {
   var el = document.getElementById('carritoTotal');
   if (!el) return;
-  var total = carritoItems.reduce(function (s, it) { return s + (parseFloat(it.monto) || 0); }, 0);
-  el.textContent = carritoFmtUSD(total);
+  // pesos y dólares por separado: nunca se suman entre sí
+  var tot = { USD: 0, ARS: 0 };
+  carritoItems.forEach(function (it) { tot[it.moneda === 'ARS' ? 'ARS' : 'USD'] += parseFloat(it.monto) || 0; });
+  el.textContent = carritoFmtUSD(tot.USD) + (tot.ARS > 0 ? ' + ' + carritoFmt(tot.ARS, 'ARS') : '');
 }
 function carritoRenderLista() {
   var box = document.getElementById('carritoLista');
@@ -3307,7 +3316,7 @@ function carritoRenderLista() {
   }
   box.innerHTML = carritoItems.map(function (it, i) {
     return '<div class="renta-row"><div class="renta-label">' + esc(it.ticker) + (it.nota ? '<span class="sub">' + esc(it.nota) + '</span>' : '') + '</div>' +
-      '<div class="renta-precio">Monto (USD)<br><input type="number" min="0" step="50" value="' + (it.monto || '') + '" placeholder="0" oninput="CARRITO.editarMonto(' + i + ',this.value)" style="width:90px"></div>' +
+      '<div class="renta-precio">Monto (' + (it.moneda === 'ARS' ? '$' : 'USD') + ')<br><input type="number" min="0" step="' + (it.moneda === 'ARS' ? '10000' : '50') + '" value="' + (it.monto || '') + '" placeholder="0" oninput="CARRITO.editarMonto(' + i + ',this.value)" style="width:' + (it.moneda === 'ARS' ? '110' : '90') + 'px"></div>' +
       '<button type="button" class="cart-quitar" title="Quitar" onclick="CARRITO.quitar(' + i + ')">✕</button></div>';
   }).join('');
   if (acciones) acciones.style.display = '';
@@ -3318,7 +3327,7 @@ function carritoCerrar() { var ov = document.getElementById('carritoModalOverlay
 function carritoEnviar() {
   if (!carritoItems.length) return;
   var lineas = carritoItems.map(function (it) {
-    return '• ' + it.ticker + (it.monto > 0 ? ' — ' + carritoFmtUSD(it.monto) : ' — monto a definir') + (it.nota ? ' (' + it.nota + ')' : '');
+    return '• ' + it.ticker + (it.monto > 0 ? ' — ' + carritoFmt(it.monto, it.moneda) : ' — monto a definir') + (it.nota ? ' (' + it.nota + ')' : '');
   });
   var texto = '🛒 Hola Nico! Arme esta lista y quisiera comprarla:\n\n' + lineas.join('\n') + '\n\n¿Lo revisamos?';
   window.open('https://wa.me/5491123284509?text=' + encodeURIComponent(texto), '_blank', 'noopener');
