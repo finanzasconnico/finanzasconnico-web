@@ -322,6 +322,8 @@ tr.bn-row { cursor: pointer; }
 .cp-nota a { color: var(--jade); }
 .cp-ok { font-size: 0.75rem; color: var(--jade); font-weight: 600; }
 .data-table td.tk .bn-ck { margin-right: 8px; }
+.cart-mini { background: none; border: 0; cursor: pointer; font-size: 0.8rem; padding: 2px 4px; margin-left: 2px; opacity: 0.6; vertical-align: middle; }
+.cart-mini:hover { opacity: 1; }
 @media (max-width: 640px) {
   .cp-acc { margin-left: 0; width: 100%; }
   .cp-sec .cp-hz { margin-left: 0; }
@@ -663,7 +665,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     var tb = filas.map(function (r) {
       var tds = cols.map(function (c) {
         switch (c[0]) {
-          case 'ticker': var u = linkBalanz(r.ticker); return '<td class="tk"><input type="checkbox" class="bn-ck ck-l" data-t="' + esc(r.ticker) + '"' + (st.carteraL[r.ticker] !== undefined ? ' checked' : '') + ' title="Sumar a tu compra" aria-label="Sumar ' + esc(r.ticker) + ' a tu compra">' + (u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + r.ticker + '</a>' : r.ticker) + '<span class="tag' + (r.tipo === 'BONCAP' ? ' b' : '') + '">' + r.tipo + '</span></td>';
+          case 'ticker': var u = linkBalanz(r.ticker); return '<td class="tk"><input type="checkbox" class="bn-ck ck-l" data-t="' + esc(r.ticker) + '"' + (st.carteraL[r.ticker] !== undefined ? ' checked' : '') + ' title="Sumar a tu compra" aria-label="Sumar ' + esc(r.ticker) + ' a tu compra">' + (u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + r.ticker + '</a>' : r.ticker) + cartMini(r.ticker, 'ARS') + '<span class="tag' + (r.tipo === 'BONCAP' ? ' b' : '') + '">' + r.tipo + '</span></td>';
           case 'vto': return '<td>' + fdate(r.vto) + '</td>';
           case 'dias': return '<td>' + r.dias + '</td>';
           case 'precio': return '<td>' + nf2.format(r.precio * 100) + '</td>';
@@ -694,7 +696,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
   /* host (web): mensajes y links que el bloque compartido espera */
   function MSG(t) { return '<p class="loading-msg">' + t + '</p>'; }
   var MSG_ERR_BONOS = '<p class="loading-msg">No pudimos cargar los bonos en este momento.<br>Probá de nuevo en unos minutos o <a href="https://wa.me/5491123284509?text=Hola+Nico!+No+me+carga+la+p%C3%A1gina+%C2%BFCu%C3%A1nto+cobro%3F" target="_blank" rel="noopener">escribime por WhatsApp</a>.</p>';
-  function linkTicker(t) { var u = linkBalanz(t); return u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + esc(t) + '</a>' : esc(t); }
+  function linkSolo(t) { var u = linkBalanz(t); return u ? '<a class="ticker-link" href="' + u + '" target="_blank" rel="noopener">' + esc(t) + '</a>' : esc(t); }
+  function linkTicker(t) { return linkSolo(t) + cartMini(t, 'USD'); }
+  // 🛒 por fila: solo dentro de "Análisis avanzado" (ahí vive el carrito); suelta, la página usa "Tu compra"
+  function cartMini(t, mon) {
+    if (!EMBEBIDA) return '';
+    return '<button type="button" class="cart-mini" title="Agregar ' + esc(t) + ' al carrito" aria-label="Agregar ' + esc(t) + ' al carrito" onclick="event.stopPropagation();fcnCarritoUno(this,\'' + esc(t) + '\',\'' + mon + '\')">🛒</button>';
+  }
+  window.fcnCarritoUno = function (btn, t, mon) {
+    var l = null, b = null;
+    st.letras.forEach(function (x) { if (x.ticker === t) l = x; }); st.bonos.forEach(function (x) { if (x.ticker === t) b = x; });
+    var nota = mon === 'ARS' ? (l ? l.tipo : 'Letra') + ' (en pesos)' : (b ? (b.cat === 'ON' ? 'ON ' + (b.emisor || '') : b.cat) : '');
+    var monto = st.modo === (mon === 'ARS' ? 'letras' : 'bonos') ? Math.round(num($('in-monto').value)) : 0;
+    window.parent.postMessage({ type: 'fcn-carrito-agregar', items: [{ ticker: t, moneda: mon, monto: monto, nota: nota }] }, location.origin);
+    btn.textContent = '✓'; setTimeout(function () { btn.textContent = '🛒'; }, 1500);
+  };
 /* BONOS-UI:BEGIN — bloque COMPARTIDO Suite/web (fuente: bonos_ui.js; se inserta con integrar_bonos.py). Va DENTRO del IIFE de la página:
    usa $, num, nf0, nf2, pct, esc, fdate, fdateCorta, st, render, guardar de la página anfitriona. */
   var CATS = [['Soberano', 'Soberanos'], ['Provincial', 'Provinciales'], ['BOPREAL', 'BOPREAL'], ['ON', 'ONs'], ['todos', 'Todos']];
@@ -1116,7 +1132,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
       var its = items.filter(function (it) { return it.mon === g[0]; });
       if (!its.length) return '';
       return (hayDos ? '<tr class="cp-grp"><td colspan="6">' + g[1] + '</td></tr>' : '') + its.map(function (it) {
-        return '<tr><td><span class="cp-dot" style="background:' + it.color + '"></span><b>' + linkTicker(it.t) + '</b><span class="bn-sub">' + esc(it.sub || it.tipo) + '</span></td>' +
+        return '<tr><td><span class="cp-dot" style="background:' + it.color + '"></span><b>' + linkSolo(it.t) + '</b><span class="bn-sub">' + esc(it.sub || it.tipo) + '</span></td>' +
           '<td><input type="text" class="bn-in" inputmode="numeric" data-t="' + esc(it.t) + '" data-mon="' + it.mon + '" value="' + nf0.format(it.monto) + '" aria-label="' + (it.mon === 'ARS' ? 'Pesos' : 'Dólares') + ' a invertir en ' + esc(it.t) + '"></td>' +
           (it.ok ? '<td class="cp-hm">' + nf0.format(it.vn) + '</td><td class="cp-hm">' + fmtMon(it.costo, it.mon) + '</td><td>' + fmtMon(it.cobroTotal, it.mon) + '</td>'
                  : '<td colspan="3" class="mut">' + esc(it.aviso || '') + '</td>') +

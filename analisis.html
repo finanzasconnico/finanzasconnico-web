@@ -154,6 +154,8 @@ body { padding-bottom: 64px; }
 .cart-modal-box { background: var(--surface); border-radius: 16px; padding: 28px 24px; max-width: 460px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
 .cart-add-mini { background: none; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; opacity: 0.6; vertical-align: middle; }
 .cart-add-mini:hover { opacity: 1; }
+.cart-add-txt { background: var(--surface, #fff); border: 1px solid var(--line); color: var(--heading); font-family: inherit; font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; margin-top: 10px; }
+.cart-add-txt:hover { border-color: var(--jade); }
 @media (max-width: 640px) {
   .cart-float { bottom: 168px; }
 }
@@ -1178,7 +1180,7 @@ function carteraRender() {
       '<div class="cart-label">' + esc(f.label) + '<span class="sub">' + notaLinea + '</span></div>' +
       '<input type="text" value="' + esc(f.ticker) + '" oninput="CARTERA.editarTicker(' + i + ',this.value)" placeholder="Ticker"><span class="cart-print-val">' + esc(f.ticker) + '</span>' +
       '<input type="number" step="1" min="0" value="' + (f.pct || 0) + '" oninput="CARTERA.editarPct(' + i + ',this.value)"><span class="cart-print-val">' + fmtNum(f.pct || 0, 0) + '%</span>' +
-      '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + btnCambiar + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
+      '<div class="cart-monto">' + (m ? 'US$ ' + fmtNum(m, 0) : '—') + cartBtn(f.ticker, f.label, m) + btnCambiar + '<button type="button" class="cart-quitar" title="Quitar" onclick="CARTERA.quitarFila(' + i + ')">✕</button></div>' +
       '</div>';
   }).join('');
   var tirPond = carteraTirPonderada();
@@ -1996,7 +1998,7 @@ function rotVeredicto(r) {
   else { cls = 'stay'; icon = '🛑'; head = 'Según el cálculo, quedarte con ' + rotEsc(r.venta.ticker) + ' te deja más'; sub = 'A ' + dur + ', cambiar a <b>' + rotEsc(r.compra.ticker) + '</b> te dejaría <b>' + rotUSD(abs) + ' menos</b> que quedarte como estás.'; }
   var cash = Math.abs(r.difCash) >= 1
     ? (r.difCash > 0 ? ' Además, al cambiar te sobran ' + rotUSD(r.difCash) + ' de efectivo (queda parado, no se cuenta como ganancia del bono nuevo).' : ' Además, para cambiar tendrías que poner ' + rotUSD(Math.abs(r.difCash)) + ' extra de efectivo.') : '';
-  return '<div class="rot-verdict ' + cls + '"><div class="rot-verdict-icon">' + icon + '</div><div><div class="rot-verdict-head">' + head + '</div><div class="rot-verdict-sub">' + sub + cash + '</div></div></div>';
+  return '<div class="rot-verdict ' + cls + '"><div class="rot-verdict-icon">' + icon + '</div><div><div class="rot-verdict-head">' + head + '</div><div class="rot-verdict-sub">' + sub + cash + '</div>' + cartBtn(r.compra.ticker, 'rotación desde ' + r.venta.ticker, 0, 'USD', 'Agregar ' + r.compra.ticker + ' al carrito') + '</div></div>';
 }
 function rotSameMoney(r) {
   var dc = Math.max(0, r.difCash), montoC = r.compra.nominales * r.compra.precio, target = r.montoVTotal + r.atH.v, found = null;
@@ -2472,7 +2474,7 @@ function rentaFilaHtml(f) {
   return '<div class="renta-row">' +
     '<div class="renta-label">' + esc(f.ticker) + '<span class="sub">' + sub + '</span></div>' +
     '<div class="renta-precio">Precio<br><input type="number" step="0.01" min="0" value="' + precioActual.toFixed(2) + '" oninput="RENTA.editarPrecio(\'' + f.ticker + '\',this.value)"></div>' +
-    '<div class="renta-monto">' + fmt(f.monto) + '</div>' +
+    '<div class="renta-monto">' + fmt(f.monto) + cartBtn(f.ticker, f.emisor, f.monto, f.moneda === 'ars' ? 'ARS' : 'USD') + '</div>' +
     '</div>';
 }
 function rentaRender() {
@@ -3283,6 +3285,13 @@ function carritoAgregar(ticker, nota, monto, moneda) {
   carritoGuardar();
   carritoBump();
 }
+// Botón 🛒 para cualquier fila con un activo (todas las pestañas lo usan). Con `texto`, sale como botón con leyenda.
+function cartBtn(ticker, nota, monto, moneda, texto) {
+  if (!ticker) return '';
+  var on = "event.stopPropagation();CARRITO.agregar('" + escJs(String(ticker).toUpperCase()) + "','" + escJs(nota || '') + "'," + (Number(monto) > 0 ? Math.round(monto) : 0) + ",'" + (moneda === 'ARS' ? 'ARS' : 'USD') + "')";
+  return texto ? '<button type="button" class="cart-add-txt" onclick="' + on + '">🛒 ' + esc(texto) + '</button>'
+               : '<button type="button" class="cart-add-mini" title="Agregar ' + esc(ticker) + ' al carrito" aria-label="Agregar ' + esc(ticker) + ' al carrito" onclick="' + on + '">🛒</button>';
+}
 function carritoFmt(n, moneda) { return moneda === 'ARS' ? '$ ' + (isNaN(n) ? '0' : Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })) : carritoFmtUSD(n); }
 // ¿Cuánto cobro? vive en un iframe (cuanto-cobro.html): manda su compra con postMessage.
 window.addEventListener('message', function (e) {
@@ -3668,7 +3677,7 @@ function renderRV() {
         ${data.map((x, i) => `
           <tr>
             <td class="rank-n">${i + 1}</td>
-            <td class="mono">${tickerLink(x.r.ticker)}</td>
+            <td class="mono">${tickerLink(x.r.ticker)} ${cartBtn(x.r.ticker, nombreCorto(x.r))}</td>
             <td>${esc(nombreCorto(x.r))}</td>
             <td><span class="row-sector" style="font-size:0.75rem">${esc(SECTOR_ES[x.r.sector] || x.r.sector || '—')}</span></td>
             <td class="mono">${x.r.precio != null ? 'US$ ' + fmtN(x.r.precio) : '—'}</td>
@@ -3808,7 +3817,7 @@ async function crRender() {
   const head = `<tr><th></th>${items.map(i => `<th>${esc(i.tk)}</th>`).join('')}<th title="Correlación promedio de este activo con el resto">vs. resto</th></tr>`;
   const body = items.map((a, i) => {
     const m = mediaDe(i);
-    return `<tr><th class="rh">${esc(a.tk)}${conMonto ? ` <span style="font-weight:400">${fmtN(w[i] * 100, 0)}%</span>` : ''}</th>${items.map((b, j) => {
+    return `<tr><th class="rh">${esc(a.tk)} ${cartBtn(a.tk)}${conMonto ? ` <span style="font-weight:400">${fmtN(w[i] * 100, 0)}%</span>` : ''}</th>${items.map((b, j) => {
       if (i === j) return '<td class="dg">—</td>';
       const c = M[i][j];
       if (!c) return '<td title="Sin semanas en común suficientes">·</td>';
@@ -3921,7 +3930,7 @@ function renderCmp() {
   res.innerHTML = `
     <div class="cmp-verdict ${cls}">${titulo}</div>
     <div class="data-table-wrap"><table class="data-table cmp-table">
-      <thead><tr><th></th><th>${esc(a.ticker)}</th><th>${esc(b.ticker)}</th></tr></thead>
+      <thead><tr><th></th><th>${esc(a.ticker)} ${cartBtn(a.ticker, nombreCorto(a))}</th><th>${esc(b.ticker)} ${cartBtn(b.ticker, nombreCorto(b))}</th></tr></thead>
       <tbody>
         ${row('Empresa', esc(nombreCorto(a)), esc(nombreCorto(b)))}
         ${row('Sector', esc(SECTOR_ES[a.sector] || a.sector || '—'), esc(SECTOR_ES[b.sector] || b.sector || '—'))}
