@@ -2622,14 +2622,15 @@ function formatVto(d) {
   return d ? d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '—';
 }
 
-/* ── Monitor de ONs: las 4 tablas de "Corporativos" (AAA/AA/A/<A), ya
-   filtradas y con su propio precio (Cable para AAA, MEP para el resto —
-   así viene armado en el Excel del Monitor). ── */
+/* ── Monitor de ONs: las tablas de "Corporativos" (AAA/AA/A/<A), ya filtradas por el Monitor.
+   AAA viene partida en DOS tablas que no se pisan: "Bonos AAA Cable" (~43) y "Bonos AAA MEP" (~86,
+   p. ej. CICAO, CICBO, HJCIO); antes solo se leía la de Cable y las MEP no aparecían en la web.
+   El dólar de cada fila sale de su columna "Dólar". ── */
 const MONITOR_TABLAS = {
-  AAA:    { titulo: 'Bonos AAA Cable', simboloDolar: 'Cable' },
-  AA:     { titulo: 'Bonos AA', simboloDolar: 'MEP' },
-  A:      { titulo: 'Bonos A', simboloDolar: 'MEP' },
-  menorA: { titulo: 'Bonos <A', simboloDolar: 'MEP' }
+  AAA:    { titulos: ['Bonos AAA Cable', 'Bonos AAA MEP'] },
+  AA:     { titulos: ['Bonos AA'] },
+  A:      { titulos: ['Bonos A'] },
+  menorA: { titulos: ['Bonos <A'] }
 };
 let monitorWb = null;
 let monitorDataCache = {};
@@ -2703,7 +2704,7 @@ function parseTabla(rows, tituloBuscado) {
     out.push({
       ticker: row[1], emisor: row[2], precio: parseFloat(row[3]),
       vencimiento: excelSerialToDate(row[4]), tir, duration: parseFloat(row[6]),
-      cupon: parseFloat(row[8]), mesCupon: row[9], calificacion: row[12], sector: row[14]
+      cupon: parseFloat(row[8]), mesCupon: row[9], dolar: row[10], calificacion: row[12], sector: row[14]
     });
   }
   return out;
@@ -2713,7 +2714,8 @@ async function fetchMonitorCalif(calif) {
   if (monitorDataCache[calif]) return monitorDataCache[calif];
   const wb = await getMonitorWorkbook();
   const rows = XLSX.utils.sheet_to_json(wb.Sheets['Corporativos'], { header: 1, defval: '' });
-  const data = parseTabla(rows, MONITOR_TABLAS[calif].titulo);
+  const vistos = {}, data = [];
+  MONITOR_TABLAS[calif].titulos.forEach(t => parseTabla(rows, t).forEach(o => { if (!vistos[o.ticker]) { vistos[o.ticker] = 1; data.push(o); } }));
   monitorDataCache[calif] = data;
   return data;
 }
@@ -2736,13 +2738,12 @@ function renderMonitorTable(dataOriginal) {
     if (typeof va === 'string') return monitorSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
     return monitorSortAsc ? va - vb : vb - va;
   });
-  countEl.textContent = sorted.length + ' ONs';
-  const simbolo = MONITOR_TABLAS[monitorCalifActual].simboloDolar;
+  countEl.textContent = sorted.length + ' ONs' + (monitorBuscarTexto ? ' · buscando en todas las calificaciones' : '');
   const col = (key, label) => `<th class="${monitorSortCol === key ? 'sorted' + (monitorSortAsc ? ' asc' : '') : ''}" onclick="setMonitorSort('${key}')">${label}</th>`;
   box.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        ${col('ticker', 'Ticker')}${col('emisor', 'Emisor')}${col('precio', 'Precio (' + simbolo + ')')}
+        ${col('ticker', 'Ticker')}${col('emisor', 'Emisor')}${col('precio', 'Precio (USD)')}
         ${col('tir', 'TIR')}${col('duration', 'Duration')}${col('vencimiento', 'Vencimiento')}
         ${col('mesCupon', 'Cobra en')}${col('calificacion', 'Calif.')}
       </tr></thead>
@@ -2751,7 +2752,7 @@ function renderMonitorTable(dataOriginal) {
           <tr>
             <td class="mono">${tickerLink(o.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${o.ticker}','${escJs(o.emisor || '')}')">🛒</button></td>
             <td>${o.emisor}<div class="row-sector">${o.sector || ''}</div></td>
-            <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
+            <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}${o.dolar ? `<div class="row-sector">${esc(o.dolar)}</div>` : ''}</td>
             <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
             <td class="mono">${o.duration ? o.duration.toFixed(2) : '—'}</td>
             <td>${formatVto(o.vencimiento)}</td>
@@ -2953,7 +2954,11 @@ async function loadMonitor() {
     } else if (monitorCategoriaActual === 'pesos') {
       renderMonitorTablePesos(await fetchMonitorPesos());
     } else {
-      renderMonitorTable(await fetchMonitorCalif(monitorCalifActual));
+      // con texto en el buscador se busca en TODAS las calificaciones (si no, un AAA buscado desde "AA" no aparecía)
+      const califs = monitorBuscarTexto ? Object.keys(MONITOR_TABLAS) : [monitorCalifActual];
+      const vistos = {}, data = [];
+      for (const c of califs) (await fetchMonitorCalif(c)).forEach(o => { if (!vistos[o.ticker]) { vistos[o.ticker] = 1; data.push(o); } });
+      renderMonitorTable(data);
     }
   } catch (e) {
     document.getElementById('monitorTableBox').innerHTML = '<p class="loading-msg">No pudimos traer datos del mercado en este momento. Probá recargar la página.</p>';
