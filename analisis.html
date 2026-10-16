@@ -246,6 +246,12 @@ body { padding-bottom: 64px; }
 .rot-horizon label { font-size: 0.85rem; color: var(--ink-soft); }
 .rot-horizon input[type=range] { width: 100%; margin-top: 8px; accent-color: var(--jade); }
 .rot-chart { margin-top: 18px; }
+.rot-total-row td { font-weight: 700; border-top: 2px solid var(--line); background: rgba(28, 140, 95, 0.07); }
+.rot-desglose td:first-child, .rot-desglose th:first-child { white-space: normal; }
+.rot-desglose td:not(:first-child), .rot-desglose th:not(:first-child) { white-space: nowrap; text-align: right; }
+@media (max-width: 640px) {
+  .rot-desglose th, .rot-desglose td { padding: 8px 5px; font-size: 0.74rem; }
+}
 .rot-chart h5 { font-family: var(--font-display); font-size: 0.98rem; color: var(--heading); margin-bottom: 8px; }
 .rot-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.74rem; color: var(--ink-soft); margin-top: 8px; }
 .rot-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
@@ -1924,6 +1930,25 @@ function rotMakeBond(ticker, nominales, precio) {
   };
 }
 
+// Desglose del valor a un horizonte, con la MISMA fórmula que retornoAHorizonteAnios (bloque ROT-CORE,
+// copia del Suite que no se toca): lo cobrado hasta esa fecha + el interés de reinvertir esos cobros a la
+// TIR del bono + lo que vale el bono que sigue vivo (suma de sus pagos futuros descontados a esa fecha, o
+// sea con los intereses corridos adentro). La suma de las tres da exactamente valorHorizonte.
+function rotDesglose(sched, tirDecimal, hoy, anios) {
+  var horizonDate = new Date(hoy.getTime());
+  horizonDate.setDate(horizonDate.getDate() + Math.round(anios * 365));
+  var cobrado = 0, interes = 0, vivo = 0;
+  sched.forEach(function (cf) {
+    if (cf.date.getTime() <= horizonDate.getTime()) {
+      cobrado += cf.total;
+      interes += yearFrac(cf.date, horizonDate) * cf.total * tirDecimal;
+    } else {
+      vivo += cf.total / Math.pow(1 + tirDecimal, yearFrac(horizonDate, cf.date));
+    }
+  });
+  return { fecha: horizonDate, cobrado: cobrado, interes: interes, vivo: vivo, total: cobrado + interes + vivo };
+}
+
 /* ── Cálculo: mismos pasos que renderAll() de la Calculadora de Rotaciones ── */
 function rotCompute() {
   var I = rotInputs(), hoy = rotHoy();
@@ -1971,7 +1996,8 @@ function rotCompute() {
   var atH = { t: H, v: retV(H), c: retC(H) };
   var totalMantener = montoVTotal + atH.v;
   var totalRotar = compra.nominales * compra.precio + atH.c + cashSobrante;
-  return { I: I, hoy: hoy, venta: venta, compra: compra, comisionPct: I.comisionPct, montoVTotal: montoVTotal, difCash: difCash, cashSobrante: cashSobrante,
+  var desV = rotDesglose(schedV, venta.tir / 100, hoy, H), desC = rotDesglose(schedC, compra.tir / 100, hoy, H);
+  return { desV: desV, desC: desC, totalRotar: totalRotar, I: I, hoy: hoy, venta: venta, compra: compra, comisionPct: I.comisionPct, montoVTotal: montoVTotal, difCash: difCash, cashSobrante: cashSobrante,
     vencAniosV: vencAniosV, vencAniosC: vencAniosC, tMax: tMax, H: H, points: points, atH: atH, ventajaHoy: totalRotar - totalMantener, totalMantener: totalMantener, loteMin: loteMin };
 }
 
@@ -1983,7 +2009,7 @@ function rotRender() {
   if (r.msg) { err.style.display = 'none'; res.innerHTML = '<p class="loading-msg">' + rotEsc(r.msg) + '</p>'; return; }
   if (r.err) { err.textContent = r.err; err.style.display = ''; res.innerHTML = ''; return; }
   err.style.display = 'none';
-  res.innerHTML = rotVeredicto(r) + rotSameMoney(r) + rotControlesHorizonte(r) + rotGrafico(r) + rotTabla(r) +
+  res.innerHTML = rotVeredicto(r) + rotSameMoney(r) + rotControlesHorizonte(r) + rotTotales(r) + rotGrafico(r) + rotTabla(r) +
     '<p class="rot-note">Cómo se calcula: se vende el 100% de ' + rotEsc(r.venta.ticker) + ' y con esa plata se compran los nominales que alcanzan de ' + rotEsc(r.compra.ticker) +
     '. Se supone que los cobros se reinvierten a la misma TIR del bono y que el bono que sigue vivo al horizonte se valúa a esa TIR. Es una estimación con datos de hoy, no una promesa de resultado.</p>';
   rotBindChart(r);
@@ -2024,6 +2050,44 @@ function rotControlesHorizonte(r) {
   return '<div class="rot-horizon"><label>¿Hasta cuándo mirás? <b id="rotHLabel">' + fmtNum(r.H, 2).replace(',00', '') + ' años</b></label>' +
     '<input type="range" min="0.25" max="' + r.tMax + '" step="0.25" value="' + r.H + '" oninput="ROT.horizonLive(this.value)" onchange="ROT.setHorizon(this.value)">' +
     '<div class="monitor-controls" style="margin:8px 0 0">' + chips + '</div></div>';
+}
+// Lo primero que mira el cliente: cuánta plata tiene con cada bono a la fecha elegida (capital +
+// cupones cobrados + intereses), para comparar según el plazo. Se arma con los mismos números que
+// el gráfico: el total de "Quedarte" es r.totalMantener y el de "Cambiar" es r.totalRotar.
+function rotTotales(r) {
+  var dc = Math.max(0, r.difCash), dV = r.desV, dC = r.desC;
+  var costV = r.montoVTotal, costC = r.compra.nominales * r.compra.precio;
+  var totV = dV.total, totC = dC.total + dc;
+  // Las dos ganancias se miden contra la MISMA plata de partida (lo que vale hoy lo que tenés), así la
+  // diferencia entre ambas es exactamente la ventaja del veredicto de arriba (comisión incluida).
+  var ganV = totV - costV, ganC = totC - costV;
+  var pctV = costV > 0 ? ganV / costV * 100 : null, pctC = costV > 0 ? ganC / costV * 100 : null;
+  var mejor = Math.abs(totC - totV) < 1 ? null : (totC > totV ? 'c' : 'v');
+  var fecha = fmtDateAR(dV.fecha), anios = fmtNum(r.H, 2).replace(',00', '');
+  var card = function (titulo, total, gan, pct, esMejor, color) {
+    return '<div style="flex:1;min-width:200px;border:1px solid ' + (esMejor ? 'var(--jade)' : 'var(--line)') + ';border-left:4px solid ' + color + ';border-radius:10px;padding:12px 14px;background:var(--surface)">' +
+      '<div style="font-size:0.78rem;color:var(--ink-muted)">' + titulo + '</div>' +
+      '<div style="font-family:var(--font-mono);font-size:1.45rem;font-weight:700;color:var(--heading);margin:2px 0">' + rotUSD(total) + (esMejor ? ' <span style="font-size:0.7rem;color:var(--jade)">✓ rinde más</span>' : '') + '</div>' +
+      '<div style="font-size:0.78rem;color:var(--ink-soft)">Ganancia: <b>' + (gan >= 0 ? '+' : '') + rotUSD(gan) + '</b>' + (pct != null ? ' (' + (pct >= 0 ? '+' : '') + fmtNum(pct, 1) + '%)' : '') + '</div></div>';
+  };
+  var fila = function (l, a, b, fuerte) {
+    return '<tr' + (fuerte ? ' class="rot-total-row"' : '') + '><td>' + l + '</td><td>' + a + '</td><td>' + b + '</td></tr>';
+  };
+  var hayVivoV = dV.vivo > 0.5, hayVivoC = dC.vivo > 0.5;
+  return '<div class="rot-chart"><h5>Cuánta plata tenés con cada bono al ' + fecha + ' (a ' + anios + ' años)</h5>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">' +
+      card('Quedarte con ' + rotEsc(r.venta.ticker), totV, ganV, pctV, mejor === 'v', '#3B6EA5') +
+      card('Cambiar a ' + rotEsc(r.compra.ticker), totC, ganC, pctC, mejor === 'c', '#DBA03C') +
+    '</div>' +
+    '<div class="data-table-wrap"><table class="data-table cmp-table rot-desglose"><thead><tr><th>De dónde sale ese total</th><th>' + rotEsc(r.venta.ticker) + '</th><th>' + rotEsc(r.compra.ticker) + '</th></tr></thead><tbody>' +
+      fila('Capital invertido hoy', rotUSD(costV), rotUSD(costC), false) +
+      fila('+ Cupones y amortizaciones cobrados hasta esa fecha', rotUSD(dV.cobrado), rotUSD(dC.cobrado), false) +
+      fila('+ Interés por reinvertir esos cobros a la TIR del bono', rotUSD(dV.interes), rotUSD(dC.interes), false) +
+      fila('+ Lo que vale el bono si sigue vivo a esa fecha <span style="color:var(--ink-muted)">(incluye los intereses corridos)</span>', hayVivoV ? rotUSD(dV.vivo) : 'ya venció', hayVivoC ? rotUSD(dC.vivo) : 'ya venció', false) +
+      (dc >= 1 ? fila('+ Efectivo que sobró al cambiar (queda parado)', '—', rotUSD(dc), false) : '') +
+      fila('= Total a esa fecha', rotUSD(totV), rotUSD(totC), true) +
+    '</tbody></table></div>' +
+    '<div class="rot-note" style="margin-top:6px">Ojo: el "capital invertido" no se suma de nuevo — ya viene adentro de lo cobrado y de lo que vale el bono vivo. Mové el selector de arriba para ver cómo cambia según hasta cuándo mirás.</div></div>';
 }
 function rotGrafico(r) {
   var total = rotState.vista === 'total', dc = Math.max(0, r.difCash);
