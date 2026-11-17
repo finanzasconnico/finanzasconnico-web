@@ -699,6 +699,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <div id="rentaArmarPanel">
         <div class="rv-controls" style="margin-top:14px">
+          <button class="calif-btn active" id="rentaModocobrar" onclick="RENTA.setModo('cobrar')">🎯 Quiero cobrar X</button>
+          <button class="calif-btn" id="rentaModotengo" onclick="RENTA.setModo('tengo')">💰 Tengo X para invertir</button>
+        </div>
+        <div class="rv-controls" style="margin-top:10px">
           <button class="calif-btn active" id="rentaMonedausd" onclick="RENTA.setMoneda('usd')">💵 Dólares (ONs)</button>
           <button class="calif-btn" id="rentaMonedaars" onclick="RENTA.setMoneda('ars')">💲 Pesos (LECAPs/BONCAPs)</button>
         </div>
@@ -2386,7 +2390,7 @@ window.CARTERA = { ready: carteraReady, setPerfil: carteraSetPerfil, setHorizont
 // — así que se laddea por VENCIMIENTO, usando fcn-letras.js (el mismo motor ya probado de "¿Cuánto
 // cobro?"): esas hojas del Monitor son justo el universo "tasa fija, pago único" — nunca un CER ni un
 // dual, que dependen de la inflación futura y no son un cobro "garantizado".
-let rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral';
+let rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral', rentaModoActual = 'cobrar', rentaMaxMinCosto = Infinity, rentaHorizonteMs = Infinity;
 let rentaLetrasCache = null, rentaLetrasCargando = null, rentaListo = false;
 let rentaPreciosManual = {}; // ticker -> precio editado a mano, pisa el precio del Monitor solo en pantalla
 const RENTA_FREQ_MESES = { mensual: 1, trimestral: 3, semestral: 6 };
@@ -2409,18 +2413,18 @@ function ensureRentaLetras() {
 function rentaMesesCupon(ticker) {
   var real = FLUJO_DB[ticker];
   if (!real || !real.schedule100) return [];
-  var meses = {};
-  real.schedule100.forEach(function (cf) { if (cf.cupon > 0) { var d = parseISO(cf.date); if (d) meses[d.getMonth() + 1] = true; } });
+  var meses = {}, tope = rotHoy().getTime() + rentaHorizonteMs;
+  real.schedule100.forEach(function (cf) { if (cf.cupon > 0) { var d = parseISO(cf.date); if (d && d.getTime() <= tope) meses[d.getMonth() + 1] = true; } });
   return Object.keys(meses).map(Number);
 }
 function rentaProximoCuponEnMeses(ticker, desde, meses) {
   var real = FLUJO_DB[ticker];
   if (!real || !real.schedule100) return null;
-  var out = null;
+  var out = null, tope = rotHoy().getTime() + rentaHorizonteMs;
   real.schedule100.forEach(function (cf) {
     if (!(cf.cupon > 0)) return;
     var d = parseISO(cf.date);
-    if (!d || d.getTime() < desde.getTime() || meses.indexOf(d.getMonth() + 1) < 0) return;
+    if (!d || d.getTime() < desde.getTime() || d.getTime() > tope || meses.indexOf(d.getMonth() + 1) < 0) return;
     if (!out || d.getTime() < out.date.getTime()) out = { date: d, cuponPor100: cf.cupon };
   });
   return out;
@@ -2447,6 +2451,9 @@ function rentaCandidatosUSD() {
     if (!(precio > 0)) return;
     var meses = rentaMesesCupon(tk);
     if (!meses.length) return;
+    // En el modo "tengo X" se descartan las ONs cuya lámina mínima cuesta más que lo que le toca a cada
+    // posición: una de 10.000 nominales se comería casi todo el monto y rompería el reparto parejo.
+    if ((b.laminaMin || 1) * precio > rentaMaxMinCosto) return;
     out.push({ ticker: tk, emisor: b.emisor, grado: cartGrupoCalif(b.calif), tir: tir, precio: precio, laminaMin: b.laminaMin || 1, meses: meses });
   });
   return out;
@@ -2541,12 +2548,90 @@ function rentaFilaHtml(f) {
     '<div class="renta-monto">' + fmt(f.monto) + cartBtn(f.ticker, f.emisor, f.monto, f.moneda === 'ars' ? 'ARS' : 'USD') + '</div>' +
     '</div>';
 }
+// Modo inverso ("Tengo X para invertir"): el costo de armar la escalera es lineal en el ingreso (cada
+// nominal se dimensiona dividiendo el ingreso por el cupón), así que con un ingreso grande de prueba
+// se saca cuánto capital hace falta por unidad de ingreso y se despeja el ingreso que consume
+// exactamente el capital. Reparte parejo porque cada bono se dimensiona para aportar el MISMO
+// importe en su mes. Si la lámina mínima de alguna ON obliga a comprar más de lo que alcanza, no se
+// sigue achicando (el total ya no baja): se avisa en vez de mostrar un ingreso inventado.
+function rentaSumaMonto(r) { return r.filas.reduce(function (s, f) { return s + f.monto; }, 0); }
+function rentaResolverPorCapital(capital, armar, frec) {
+  // Solo cuentan los cupones de los próximos 12 meses (los que realmente se van a cobrar en el calendario).
+  rentaMaxMinCosto = Infinity; rentaHorizonteMs = 366 * 86400000;
+  try {
+    var n0 = armar(1e6, frec).filas.length;
+    rentaMaxMinCosto = n0 > 0 ? capital / n0 : Infinity;
+    return rentaResolverConFiltro(capital, armar, frec);
+  } finally { rentaMaxMinCosto = Infinity; rentaHorizonteMs = Infinity; }
+}
+function rentaResolverConFiltro(capital, armar, frec) {
+  var base = armar(1e6, frec), tBase = rentaSumaMonto(base);
+  if (!base.filas.length || !(tBase > 0)) return null;
+  var ingreso = capital / (tBase / 1e6), r = armar(ingreso, frec), total = rentaSumaMonto(r), limitado = false;
+  for (var i = 0; i < 8; i++) {
+    if (r.filas.some(function (f) { return f.limitado; })) { limitado = true; break; }
+    if (Math.abs(total - capital) / capital < 0.003) break;
+    ingreso *= capital / total; r = armar(ingreso, frec); total = rentaSumaMonto(r);
+  }
+  return { r: r, ingreso: ingreso, total: total, limitado: limitado };
+}
+// Cobros de los próximos 12 meses con los nominales que quedaron: en dólares los cupones reales del
+// cronograma (no la amortización: es plata tuya que vuelve), en pesos la ganancia en cada vencimiento.
+function rentaCalendario12(filas, moneda) {
+  var hoy = rotHoy(), meses = [];
+  for (var i = 0; i < 12; i++) { var d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1); meses.push({ y: d.getFullYear(), m: d.getMonth(), total: 0, tickers: {} }); }
+  function slot(date) { for (var j = 0; j < 12; j++) { if (meses[j].y === date.getFullYear() && meses[j].m === date.getMonth()) return meses[j]; } return null; }
+  filas.forEach(function (f) {
+    if (moneda === 'ars') { var s = slot(f.fecha); if (s) { s.total += f.cobroReal; s.tickers[f.ticker] = (s.tickers[f.ticker] || 0) + f.cobroReal; } return; }
+    var real = FLUJO_DB[f.ticker];
+    if (!real || !real.schedule100) return;
+    real.schedule100.forEach(function (cf) {
+      if (!(cf.cupon > 0)) return;
+      var d = parseISO(cf.date);
+      if (!d || d.getTime() <= hoy.getTime()) return;
+      var s2 = slot(d), monto = cf.cupon * (f.nominal / 100);
+      if (s2) { s2.total += monto; s2.tickers[f.ticker] = (s2.tickers[f.ticker] || 0) + monto; }
+    });
+  });
+  return meses;
+}
+function rentaRenderTengo(box, capital, fmt) {
+  var armar = rentaMonedaActual === 'ars' ? rentaArmarARS : rentaArmarUSD;
+  var res = rentaResolverPorCapital(capital, armar, rentaFrecuenciaActual);
+  if (!res) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos para armar esto con los datos de hoy.</p>'; return; }
+  var r = res.r, cal = rentaCalendario12(r.filas, rentaMonedaActual);
+  var totalAnual = cal.reduce(function (s, m) { return s + m.total; }, 0);
+  var activos = cal.filter(function (m) { return m.total > 0.5; });
+  var min = activos.length ? Math.min.apply(null, activos.map(function (m) { return m.total; })) : 0, max = activos.length ? Math.max.apply(null, activos.map(function (m) { return m.total; })) : 0;
+  var promedio = activos.length ? totalAnual / activos.length : 0;
+  var pct = totalAnual / capital * 100;
+  var etiqueta = rentaMonedaActual === 'ars' ? 'de ganancia' : 'de renta';
+  var head = '<div class="jubil-resultado"><div class="jubil-resultado-label">Con ' + fmt(capital) + ' cobrarías en promedio <strong>' + fmt(promedio) + '</strong> ' + (activos.length >= 12 ? 'por mes' : 'en cada mes que cobra') + '</div>' +
+    '<div class="jubil-resultado-sub">' + fmt(totalAnual) + ' ' + etiqueta + (rentaMonedaActual === 'ars' ? ' en los vencimientos de los próximos 12 meses, sin contar lo que sumes al reinvertir el capital' : ' en los próximos 12 meses (≈ ' + fmtNum(pct, 1) + '% anual sobre lo invertido)') +
+    (activos.length > 1 && max - min > 0.5 ? ' · el mes más bajo ' + fmt(min) + ', el más alto ' + fmt(max) : '') + '</div></div>';
+  var celdas = cal.map(function (m) {
+    var tks = Object.keys(m.tickers), title = tks.map(function (tk) { return tk + ': ' + fmt(m.tickers[tk]); }).join(' · ');
+    return '<div class="cart-mes' + (m.total > 0.5 ? ' activo' : '') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><span class="cart-mes-nombre">' + CART_MESES_ABR[m.m] + '</span>' + (m.total > 0.5 ? '<span class="cart-mes-monto">' + fmt(m.total) + '</span>' : '') + '</div>';
+  }).join('');
+  var calHtml = '<div class="cart-chart-title">📅 Lo que cobrás mes a mes (próximos 12 meses)</div><div class="cart-calendario">' + celdas + '</div>';
+  var filasHtml = r.filas.map(rentaFilaHtml).join('');
+  var aviso = res.limitado ? '<div class="renta-sin-cobertura">⚠️ Con ese monto, alguna ON pide una lámina mínima más grande de lo que alcanza para repartir parejo: el armado usa ' + fmt(res.total) + ' en total. Probá con un monto mayor o elegí otra frecuencia.</div>' : '';
+  var sinCob = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos meses quedarían sin cobro.</div>' : '';
+  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos cada LECAP/BONCAP paga todo junto al vencimiento: lo que ves es la <strong>ganancia</strong>; el capital vuelve entero en cada fecha y hay que reinvertirlo para seguir cobrando. Con pocas letras vigentes es normal que haya meses sin cobro.</div>' : '';
+  var notaUsd = rentaMonedaActual === 'usd' ? '<div class="rot-note" style="margin-top:10px">Elegimos las ONs de mejor calidad y rendimiento que pagan en cada mes y repartimos tu plata para que cada cobro sea parecido. Es renta de cupones: tu capital sigue invertido hasta que cada bono amortice o venza. Los importes salen del cronograma real de cada ON, así que pueden variar un poco entre meses.</div>' : '';
+  box.innerHTML = head + calHtml + '<div class="cart-chart-title">Dónde invertir ese dinero</div>' + filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(res.total) + '</span></div>' + aviso + sinCob + notaArs + notaUsd;
+}
 function rentaRender() {
   var box = document.getElementById('rentaResult');
   if (!box) return;
   var ingresoInput = document.getElementById('rentaIngreso');
   if (!ingresoInput) return;
   var ingreso = parseFloat(ingresoInput.value) || 0;
+  if (rentaModoActual === 'tengo') {
+    if (!(ingreso > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto tenés para invertir.</p>'; return; }
+    rentaRenderTengo(box, ingreso, rentaMonedaActual === 'ars' ? rotARS : rotUSD);
+    return;
+  }
   if (!(ingreso > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto querés cobrar.</p>'; return; }
   var r = rentaMonedaActual === 'ars' ? rentaArmarARS(ingreso, rentaFrecuenciaActual) : rentaArmarUSD(ingreso, rentaFrecuenciaActual);
   if (!r.filas.length) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos que cubran ese plan con los datos de hoy. Probá con otra frecuencia' + (rentaMonedaActual === 'ars' ? ' — en pesos solo hay ' + ((rentaLetrasCache || []).length) + ' LECAPs/BONCAPs vigentes en este momento' : '') + '.</p>'; return; }
@@ -2557,17 +2642,39 @@ function rentaRender() {
   var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos no existen cupones periódicos como en dólares: cada LECAP/BONCAP paga todo junto al vencimiento. Este total es el <strong>capital</strong> a invertir hoy — se recupera entero en cada fecha de cobro, y hay que reinvertirlo en una letra nueva para que la ganancia siga llegando el período siguiente.</div>' : '';
   box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + notaArs + sinCobHtml;
 }
-function rentaSetMoneda(moneda) {
-  rentaMonedaActual = moneda;
-  ['usd', 'ars'].forEach(function (m) { var b = document.getElementById('rentaMoneda' + m); if (b) b.classList.toggle('active', m === moneda); });
+const RENTA_DEFAULTS = { cobrar: { usd: 500, ars: 1000000 }, tengo: { usd: 15000, ars: 15000000 } };
+function rentaActualizarEtiqueta() {
   var lbl = document.getElementById('rentaIngresoLabel');
-  if (lbl) lbl.textContent = 'Ingreso deseado (' + (moneda === 'ars' ? 'pesos' : 'USD') + ')';
+  var que = rentaModoActual === 'tengo' ? 'Monto a invertir' : 'Ingreso deseado';
+  if (lbl) lbl.textContent = que + ' (' + (rentaMonedaActual === 'ars' ? 'pesos' : 'USD') + ')';
+}
+// Al cambiar de modo o moneda, si el número cargado es el de ejemplo del estado anterior se pasa al de ejemplo
+// del nuevo (500 USD de ingreso no tiene sentido como capital); si el cliente puso uno propio, se respeta.
+function rentaAjustarDefault(modoViejo, monedaVieja) {
+  var inp = document.getElementById('rentaIngreso');
+  if (inp && parseFloat(inp.value) === RENTA_DEFAULTS[modoViejo][monedaVieja]) inp.value = RENTA_DEFAULTS[rentaModoActual][rentaMonedaActual];
+}
+function rentaSetModo(modo) {
+  var viejo = rentaModoActual;
+  rentaModoActual = modo;
+  ['cobrar', 'tengo'].forEach(function (m) { var b = document.getElementById('rentaModo' + m); if (b) b.classList.toggle('active', m === modo); });
+  rentaAjustarDefault(viejo, rentaMonedaActual);
+  if (modo === 'tengo' && rentaFrecuenciaActual !== 'mensual') rentaSetFrecuencia('mensual', true);
+  rentaActualizarEtiqueta();
   rentaRender();
 }
-function rentaSetFrecuencia(frec) {
+function rentaSetMoneda(moneda) {
+  var vieja = rentaMonedaActual;
+  rentaMonedaActual = moneda;
+  ['usd', 'ars'].forEach(function (m) { var b = document.getElementById('rentaMoneda' + m); if (b) b.classList.toggle('active', m === moneda); });
+  rentaAjustarDefault(rentaModoActual, vieja);
+  rentaActualizarEtiqueta();
+  rentaRender();
+}
+function rentaSetFrecuencia(frec, sinRender) {
   rentaFrecuenciaActual = frec;
   ['mensual', 'trimestral', 'semestral'].forEach(function (f) { var b = document.getElementById('rentaFrec' + f); if (b) b.classList.toggle('active', f === frec); });
-  rentaRender();
+  if (!sinRender) rentaRender();
 }
 function rentaOnChange() { rentaRender(); }
 function rentaEditarPrecio(ticker, val) {
@@ -2582,7 +2689,7 @@ function rentaReady() {
     rentaRender();
   });
 }
-window.RENTA = { ready: rentaReady, setMoneda: rentaSetMoneda, setFrecuencia: rentaSetFrecuencia, onChange: rentaOnChange, editarPrecio: rentaEditarPrecio };
+window.RENTA = { ready: rentaReady, setModo: rentaSetModo, setMoneda: rentaSetMoneda, setFrecuencia: rentaSetFrecuencia, onChange: rentaOnChange, editarPrecio: rentaEditarPrecio };
 
 })();
 </script>
