@@ -102,14 +102,30 @@
     }).catch(function () { return { px: {}, extra: [] }; });
   }
 
+  // Letras nuevas que ya cotizan pero todavía no tienen hoja en el Monitor: el Suite (bot letras_extra.yml) despeja su valor final de
+  // api.argentinadatos.com y lo publica en data/letras_extra.json. Con ese dato son letras normales (cobro exacto, no estimado).
+  var URL_EXTRAS = 'https://suit-fcn.vercel.app/data/letras_extra.json';
+  function fetchExtras(hoy) {
+    return fetch(URL_EXTRAS, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      return ((j && j.letras) || []).filter(function (x) { return x && x.vf > 1 && L.RE_LETRA.test(x.t) && U.fechaCelda(x.v) && diasEntre(hoy, U.fechaCelda(x.v)) > 0; }).map(function (x) {
+        return { ticker: x.t, tipo: x.tp, emision: null, vto: U.fechaCelda(x.v), tnaEmision: null, vf: x.vf, precioMonitor: null, fechaPrecio: null, sinHoja: true };
+      });
+    }).catch(function () { return []; });
+  }
+
   function armar(XLSX, wb, opts) {
     var hoy = hoyFecha();
     var bonos = B.bonosDesdeLibro(XLSX, wb, hoy).bonos;
     var letras = L.letrasDesdeLibro(XLSX, wb, hoy);
     var cerBase = cerDesdeLibro(XLSX, wb, hoy);
     var conocidas = {}; letras.forEach(function (l) { conocidas[l.ticker] = 1; });
-    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts), cerPrecios(cerBase, conocidas, hoy)]).then(function (res) {
+    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts), cerPrecios(cerBase, conocidas, hoy), fetchExtras(hoy)]).then(function (res) {
       var rb = res[0], rl = res[1], i;
+      // letras con valor final conocido por el Suite pero sin hoja: se suman (si el Monitor ya trae su hoja, manda la hoja)
+      var extras = res[3].filter(function (x) { return !conocidas[x.ticker]; }), enExtras = {};
+      extras.forEach(function (x) { enExtras[x.ticker] = 1; });
+      letras = letras.concat(extras);
+      res[2].extra = res[2].extra.filter(function (b) { return !enExtras[b.ticker]; });   // ya no hace falta estimarlas
 
       // ── antigüedad real del Monitor: la fecha de liquidación guardada en cada hoja (las celdas solo dicen "Updated at 17:11")
       var asOf = null;
@@ -163,7 +179,7 @@
       var ts = Math.max(bonosOk && rb.ts ? rb.ts : 0, letrasOk && rl.ts ? rl.ts : 0) || null;
       var via = (rb.ok && rb.fuente) || (rl.ok && rl.fuente) || null;
       est = {
-        bonos: out.bonos, letras: out.letras, cer: out.cer,
+        bonos: out.bonos, letras: out.letras, cer: out.cer, letrasExtra: extras,
         bonosVivo: out.nBonosVivo > 0, letrasVivo: out.nLetrasVivo > 0,
         nBonosTotal: out.nBonosTotal, nBonosVivo: out.nBonosVivo, nLetrasTotal: out.nLetrasTotal, nLetrasVivo: out.nLetrasVivo,
         fuente: via, ts: ts, enRueda: L.enRueda(new Date()),
@@ -239,6 +255,7 @@
   // ESTIMADO: precio de hoy × (1 + TEA)^(años), donde TEA es el rendimiento que hoy dan las LECAPs/BONCAP de plazo parecido
   // (interpolado entre las más cercanas; más allá de la última se usa la última). Es decir: "si la inflación termina siendo la
   // que hoy descuenta el mercado". Si es mayor, el CER paga más; si es menor, menos.
+  function letrasExtra() { return est && est.letrasExtra ? est.letrasExtra.slice() : []; }
   function cerComoLetras() {
     if (!est || !est.letrasVivo || !est.cer) return [];
     var curva = Object.keys(est.letras).map(function (t) { return { d: est.letras[t].dias, tea: est.letras[t].tea }; })
@@ -294,7 +311,7 @@
 
   global.PreciosVivo = {
     cargar: cargar, estado: estado, cartel: cartel,
-    aplicarDB: aplicarDB, aplicarFilaBono: aplicarFilaBono, aplicarLetras: aplicarLetras, cerComoLetras: cerComoLetras, aplicarFilaPesos: aplicarFilaPesos,
+    aplicarDB: aplicarDB, aplicarFilaBono: aplicarFilaBono, aplicarLetras: aplicarLetras, cerComoLetras: cerComoLetras, letrasExtra: letrasExtra, aplicarFilaPesos: aplicarFilaPesos,
     COM_BONO: COM_BONO, COM_LETRA: COM_LETRA, PLAZO: PLAZO
   };
 })(typeof window !== 'undefined' ? window : globalThis);

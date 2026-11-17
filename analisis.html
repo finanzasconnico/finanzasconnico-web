@@ -2415,7 +2415,7 @@ function ensureRentaLetras() {
     var base = FCNLetras.letrasDesdeLibro(XLSX, wb, rotHoy());
     // precio vivo de cada letra (una letra sin precio de hoy no se ofrece); con Monitor viejo y sin vivo, queda vacía
     // + los bonos CER de pago único (TZXD6, TZXM7…) con su cobro ESTIMADO: llenan los meses en que no vence ninguna letra
-    return getVivo().then(function () { rentaLetrasCache = PreciosVivo.aplicarLetras(base).concat(PreciosVivo.cerComoLetras()); return rentaLetrasCache; });
+    return getVivo().then(function () { rentaLetrasCache = PreciosVivo.aplicarLetras(base.concat(PreciosVivo.letrasExtra())).concat(PreciosVivo.cerComoLetras()); return rentaLetrasCache; });
   }).catch(function () { rentaLetrasCache = []; return []; });
   return rentaLetrasCargando;
 }
