@@ -635,7 +635,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
     }
     if (pi && pi.ok) {
       var hh = new Date(pi.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-      chips.push('<span class="pill ' + (pi.stale ? 'warn' : 'ok') + '">Precios BYMA ' + hh + (pi.stale ? ' (desactualizados)' : ' en vivo') + '</span>');
+      chips.push('<span class="pill ' + (pi.stale ? 'warn' : 'ok') + '"' + (pi.fuente === 'data912' ? ' title="BYMA no respondió: los precios vienen de data912.com, que repite las cotizaciones del mercado"' : '') + '>Precios ' + (pi.fuente === 'data912' ? 'de mercado (data912)' : 'BYMA') + ' ' + hh + (pi.stale ? ' (desactualizados)' : ' en vivo') + '</span>');
     } else if (pi) chips.push('<span class="pill err">' + ((pi.error && /sin datos/.test(pi.error)) ? 'BYMA sin cotizaciones todavía' : 'Sin conexión con BYMA') + '</span>');
     else chips.push('<span class="pill">Trayendo precios…</span>');
     chips.push('<span class="pill">Liquida ' + fdateCorta(FCNLetras.fechaLiquidacion(hoy, st.plazo)) + ' · ' + (st.plazo === 'CI' ? 'CI' : '24 hs') + '</span>');
@@ -839,7 +839,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFeedba
 
     if (pi && pi.ok) {
       var hh = new Date(pi.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
-      chips.push(['BYMA ' + hh + (pi.stale ? ' (desactualizado)' : ' en vivo'), pi.stale ? 'warn' : 'ok']);
+      chips.push([(pi.fuente === 'data912' ? 'Mercado (data912) ' : 'BYMA ') + hh + (pi.stale ? ' (desactualizado)' : ' en vivo'), pi.stale ? 'warn' : 'ok']);
     } else if (pi) chips.push([(pi.error && /sin datos/.test(pi.error)) ? 'BYMA sin cotizaciones todavía' : 'BYMA sin conexión', 'err']); else chips.push(['Trayendo precios…', '']);
     chips.push(['Liquida ' + fdateCorta(FCNLetras.fechaLiquidacion(hoy, st.plazo)) + ' · ' + (st.plazo === 'CI' ? 'CI' : '24 hs'), '']);
 

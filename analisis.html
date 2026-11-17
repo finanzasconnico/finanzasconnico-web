@@ -33,7 +33,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="fcn-letras.js"></script>
+<script src="fcn-bonos.js"></script>
+<script src="fcn-vivo.js"></script>
 <style>
+/* Cartel de precios en vivo (verde = en vivo, gris = mercado cerrado, ámbar = ojo, rojo = sin datos confiables) */
+.vivo-cartel { font-size: 0.84rem; line-height: 1.5; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); margin: 0 0 14px; }
+.vivo-cartel.ok { border-color: rgba(46,160,110,0.55); background: rgba(46,160,110,0.09); }
+.vivo-cartel.cerrado { border-color: var(--line); background: rgba(108,129,124,0.10); }
+.vivo-cartel.warn { border-color: rgba(214,150,40,0.65); background: rgba(214,150,40,0.12); }
+.vivo-cartel.bad { border-color: var(--danger); background: rgba(192,69,59,0.10); }
+.vivo-cartel a { color: inherit; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.vivo-nota { font-size: 0.74rem; color: var(--ink-muted); margin-top: 10px; line-height: 1.5; }
 :root {
   --petroleo-700: #0F3A34;
   --petroleo-900: #07211D;
@@ -464,6 +474,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <section class="tool-section">
   <div class="container">
 
+    <div id="vivoCartel" class="vivo-cartel" role="status" aria-live="polite">Trayendo precios del mercado…</div>
+
     <!-- ══ Renta fija: Monitor de bonos ══ -->
     <div class="tab-panel active" id="tab-ons">
     <div class="tool-card">
@@ -639,7 +651,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="cart-layout" id="cartLayout">
         <div class="cart-main">
           <div id="cartResult"><p class="loading-msg">Cargando datos…</p></div>
-          <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios se actualizan semanalmente y pueden no ser los de este momento. Editá cualquier línea antes de decidir.</div>
+          <div class="cart-precios-warn">⚠️ <strong>Verificá los precios antes de operar.</strong> Es un punto de partida armado con datos de hoy y el mismo puntaje que ves en el resto de la página — no es una recomendación de inversión ni tiene en cuenta tu situación particular. Los precios de bonos y letras son los del mercado al momento de cargar la página (mirá el cartel de arriba) y cambian durante la rueda. Editá cualquier línea antes de decidir.</div>
           <div class="cart-print-footer">Armá o actualizá esta cartera en vivo en <a href="https://finanzasconnico-web.vercel.app/analisis.html#cartera">finanzasconnico-web.vercel.app/analisis.html#cartera</a></div>
         </div>
         <aside class="cart-sidebar" id="cartMercadoPanel" style="display:none">
@@ -861,7 +873,8 @@ function cartMejoresBonos(filtro, montoBucket, maxN, aplicaHorizonte) {
     var tir = tirEfectivo(tk, 'mep');
     // TIR > 50% suele ser un bono en default de hecho aunque la calificación no lo diga todavía
     // (el mercado le pone un precio de remate, no una tasa real) — mismo corte que usa el Suite.
-    if (tir == null || isNaN(tir) || tir > 50) return;
+    // TIR <= 0: al precio de hoy (con comisión) esa ON no deja ganancia hasta el vencimiento — nunca se sugiere.
+    if (tir == null || isNaN(tir) || tir > 50 || tir <= 0) return;
     var precio = precioEfectivo(tk, 'mep');
     if (!(precio > 0)) return;
     candidatos.push({ ticker: tk, tir: tir, emisor: b.emisor, minimoUSD: (b.laminaMin || 1) * precio });
@@ -943,22 +956,13 @@ function cartTopAccionesLocal(n) {
 // ¿Cuánto cobro?, sin repetir todo su motor de precios en vivo — alcanza con la TNA de cada hoja).
 function ensureCarteraLetras() {
   if (carteraLetraTop !== null || carteraLetraCargando) return carteraLetraCargando || Promise.resolve(carteraLetraTop);
-  carteraLetraCargando = getMonitorWorkbook().then(function (wb) {
+  // La TNA sale del precio de HOY de cada letra (las mismas que usa Renta mensual en pesos), no de la TNA que quedó
+  // guardada en la hoja del Monitor, que puede ser de hace semanas.
+  carteraLetraCargando = ensureRentaLetras().then(function (letras) {
     var mejor = null, mejorTna = -Infinity;
-    wb.SheetNames.forEach(function (nombre) {
-      if (!/^[ST]\d{2}[A-Z]\d$/.test(nombre)) return;
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header: 1 });
-      var tna = null, dias = null, venc = null;
-      rows.forEach(function (r) {
-        if (!r) return;
-        for (var i = 0; i < r.length; i++) {
-          if (r[i] === 'TNA' && typeof r[i + 1] === 'number') tna = r[i + 1];
-          if (r[i] === 'Días al vencimiento' && typeof r[i + 1] === 'number') dias = r[i + 1];
-          if (r[i] === 'Fecha de vencimiento' && typeof r[i + 1] === 'number') venc = r[i + 1];
-        }
-      });
-      if (tna == null || dias == null || dias <= 0) return;
-      if (tna > mejorTna) { mejorTna = tna; mejor = { ticker: nombre, tna: tna, dias: dias, vencimiento: venc ? parseISO(excelDateToISO(venc)) : null }; }
+    letras.forEach(function (l) {
+      if (!(l.tnaVivo > 0) || !(l.diasVivo > 0)) return;
+      if (l.tnaVivo > mejorTna) { mejorTna = l.tnaVivo; mejor = { ticker: l.ticker, tna: l.tnaVivo, dias: l.diasVivo, vencimiento: l.vto }; }
     });
     carteraLetraTop = mejor || false;
     return mejor;
@@ -1709,6 +1713,11 @@ function rotEnsure() {
       if (shC) ingestRows(parseBlock(wb.Sheets[shC], FIELDS_CORP), 'ON');
       if (shS) ingestRows(parseBlock(wb.Sheets[shS], FIELDS_SOB), 'Soberano');
       parseTickerSheets(wb);
+      // Precios, TIR y duration al día de hoy (el Monitor puede estar viejo: de él solo se toma el calendario de cobros).
+      // Si no hay precios en vivo ni un Monitor reciente, las bases quedan vacías y no se arma nada con datos viejos.
+      await getVivo();
+      var vivoAp = PreciosVivo.aplicarDB(BOND_DB, FLUJO_DB);
+      if (vivoAp.bloqueado) throw new Error('sin precios vigentes');
       rotInitBonoManual();
       rotPoblarLista();
       var a = rotEl('rotV'), b = rotEl('rotC');
@@ -1719,7 +1728,7 @@ function rotEnsure() {
       rotState.listo = true;
       rotRender();
     } catch (e) {
-      rotEl('rotResult').innerHTML = '<p class="loading-msg">No pudimos traer los datos del mercado en este momento. Probá recargar la página.</p>';
+      rotEl('rotResult').innerHTML = '<p class="loading-msg">No pudimos traer los precios del mercado en este momento, y no mostramos datos viejos para que no decidas con números que ya cambiaron. Probá recargar la página en unos minutos.</p>';
       rotState.loading = null;
     }
   })();
@@ -2231,7 +2240,7 @@ function cartRankearCandidatos(query, filtro) {
     }
     if (texto && tk.toUpperCase().indexOf(texto) < 0 && String(b.emisor || '').toUpperCase().indexOf(texto) < 0) return;
     var tir = tirEfectivo(tk, 'mep');
-    if (tir == null || isNaN(tir) || tir > 50) return;
+    if (tir == null || isNaN(tir) || tir > 50 || tir <= 0) return;
     var plazoOk = (horizonte && horizonte !== 'todos' && b.duration != null) ? cartEnHorizonte(b, horizonte) : null;
     var conocido = cartEsEmisorConocido(b.emisor);
     var score = (gradoPeso[grado] || 0) * 3 + (plazoOk === true ? 2 : plazoOk === false ? -1 : 0) + tir * 0.5 + (conocido ? 2 : 0);
@@ -2403,8 +2412,9 @@ function ensureRentaLetras() {
   if (rentaLetrasCache) return Promise.resolve(rentaLetrasCache);
   if (rentaLetrasCargando) return rentaLetrasCargando;
   rentaLetrasCargando = getMonitorWorkbook().then(function (wb) {
-    rentaLetrasCache = FCNLetras.letrasDesdeLibro(XLSX, wb, rotHoy());
-    return rentaLetrasCache;
+    var base = FCNLetras.letrasDesdeLibro(XLSX, wb, rotHoy());
+    // precio vivo de cada letra (una letra sin precio de hoy no se ofrece); con Monitor viejo y sin vivo, queda vacía
+    return getVivo().then(function () { rentaLetrasCache = PreciosVivo.aplicarLetras(base); return rentaLetrasCache; });
   }).catch(function () { rentaLetrasCache = []; return []; });
   return rentaLetrasCargando;
 }
@@ -2446,7 +2456,7 @@ function rentaCandidatosUSD() {
     var b = BOND_DB[tk];
     if (b.categoria !== 'ON' || cartEsDefault(b.calif)) return;
     var tir = tirEfectivo(tk, 'mep');
-    if (tir == null || isNaN(tir) || tir > 50) return;
+    if (tir == null || isNaN(tir) || tir > 50 || tir <= 0) return;
     var precio = precioEfectivo(tk, 'mep');
     if (!(precio > 0)) return;
     var meses = rentaMesesCupon(tk);
@@ -2509,7 +2519,9 @@ function rentaArmarUSD(ingreso, frecuencia) {
 function rentaArmarARS(ingreso, frecuencia) {
   var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
   var buckets = rentaBuckets(frecMeses);
-  var candidatos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0; });
+  // Con menos de 30 días al vencimiento la ganancia es tan chica (ej.: 0,6% en 13 días) que para "cobrar" un monto razonable habría
+  // que poner cientos de millones: no sirve como escalón de una renta.
+  var candidatos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0 && (l.diasVivo === undefined || l.diasVivo >= 30); });
   var hoy = rotHoy(), usados = {}, filas = [];
   buckets.forEach(function (mesesBucket) {
     var mejor = null, mejorDist = Infinity;
@@ -2696,7 +2708,7 @@ window.RENTA = { ready: rentaReady, setModo: rentaSetModo, setMoneda: rentaSetMo
 <!--ROT-SCRIPT-END-->
 
 <div class="disclaimer-bar">
-  📌 Contenido informativo para apoyar tu propio análisis — <strong>no es una recomendación de inversión</strong>. Los datos se actualizan semanalmente y pueden no reflejar el precio exacto al momento de operar. Antes de operar, hacé tu propia verificación.
+  📌 Contenido informativo para apoyar tu propio análisis — <strong>no es una recomendación de inversión</strong>. Los precios de bonos y letras se toman del mercado al cargar la página y pueden variar al momento de operar. Antes de operar, hacé tu propia verificación.
 </div>
 
 <a href="https://wa.me/5491123284509?text=Hola+Nico!+Tengo+una+duda+sobre+el+an%C3%A1lisis+avanzado." target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp">💬</a>
@@ -2860,6 +2872,36 @@ async function getMonitorWorkbook() {
   return monitorWb;
 }
 
+/* ── Precios en vivo (fcn-vivo.js): una sola vez para toda la página. Del Monitor solo se usa el calendario de cobros;
+   precio, TIR y duration se recalculan con el mercado de hoy. Ver el cartel de arriba de todo. ── */
+let vivoProm = null;
+function getVivo() {
+  if (!vivoProm) {
+    vivoProm = getMonitorWorkbook().then(function (wb) { return PreciosVivo.cargar(XLSX, wb); });
+    vivoProm.catch(function () { vivoProm = null; });
+  }
+  return vivoProm;
+}
+function vivoPintarCartel() {
+  var el = document.getElementById('vivoCartel');
+  if (!el) return;
+  var c = PreciosVivo.cartel();
+  el.className = 'vivo-cartel ' + c.nivel;
+  el.innerHTML = c.html + ' <a onclick="location.reload()" title="Volver a pedir los precios">Actualizar</a>';
+}
+// Nota al pie de las tablas del Monitor: de dónde salen los números y qué se dejó afuera
+function monitorNotaVivo(tipo) {
+  var e = PreciosVivo.estado();
+  if (!e) return '';
+  if (tipo === 'pesos') {
+    if (!e.letrasVivo && !e.monitorViejo) return '';
+    var viejo = e.monitorViejo ? ' Los bonos <strong>CER, TAMAR y Duales</strong> (y los de tasa fija con cupón) no se pueden recalcular con el precio de hoy: su rendimiento depende de proyecciones de inflación y de tasas que se cargan en el Monitor, y la última carga es del ' + (e.asOf ? e.asOf.getDate() + '/' + (e.asOf.getMonth() + 1) : '—') + (e.edadMonitor != null ? ' (hace ' + e.edadMonitor + ' días)' : '') + ' — por eso no los listamos ni mostramos el cuadro de inflación implícita hasta que se actualice, para que no decidas con rendimientos de hace meses.' : '';
+    return '<div class="vivo-nota">Precio, TIR y TNA de las <strong>LECAPs/BONCAPs</strong> calculados con el precio de hoy (comisión 0,1%, liquidación 24 hs).' + viejo + '</div>';
+  }
+  if (!e.bonosVivo) return '';
+  return '<div class="vivo-nota">Precio, TIR y duration calculados con la cotización de hoy (comisión 0,5%, liquidación 24 hs, a la punta vendedora si el mercado está abierto). Solo se muestran los bonos con cotización vigente (' + e.nBonosVivo + ' de ' + e.nBonosTotal + ' que sigo). Si un bono vence en menos de 30 días no mostramos TIR: anualizada no significa nada.</div>';
+}
+
 function parseTabla(rows, tituloBuscado) {
   let inicio = -1;
   for (let i = 0; i < rows.length; i++) {
@@ -2885,8 +2927,14 @@ async function fetchMonitorCalif(calif) {
   if (monitorDataCache[calif]) return monitorDataCache[calif];
   const wb = await getMonitorWorkbook();
   const rows = XLSX.utils.sheet_to_json(wb.Sheets['Corporativos'], { header: 1, defval: '' });
+  await getVivo();
   const vistos = {}, data = [];
-  MONITOR_TABLAS[calif].titulos.forEach(t => parseTabla(rows, t).forEach(o => { if (!vistos[o.ticker]) { vistos[o.ticker] = 1; data.push(o); } }));
+  MONITOR_TABLAS[calif].titulos.forEach(t => parseTabla(rows, t).forEach(o => {
+    if (vistos[o.ticker]) return;
+    vistos[o.ticker] = 1;
+    const v = PreciosVivo.aplicarFilaBono(o);   // null = sin cotización vigente
+    if (v) data.push(v);
+  }));
   monitorDataCache[calif] = data;
   return data;
 }
@@ -2924,14 +2972,14 @@ function renderMonitorTable(dataOriginal) {
             <td class="mono">${tickerLink(o.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${o.ticker}','${escJs(o.emisor || '')}')">🛒</button></td>
             <td>${o.emisor}<div class="row-sector">${o.sector || ''}</div></td>
             <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}${o.dolar ? `<div class="row-sector">${esc(o.dolar)}</div>` : ''}</td>
-            <td class="tir-val">${(o.tir * 100).toFixed(2)}%</td>
+            <td class="tir-val">${o.tir != null && isFinite(o.tir) ? (o.tir * 100).toFixed(2) + '%' : '<span title="Vence en menos de 30 días: la TIR anualizada no significa nada">—</span>'}</td>
             <td class="mono">${o.duration ? o.duration.toFixed(2) : '—'}</td>
             <td>${formatVto(o.vencimiento)}</td>
             <td>${o.mesCupon || '—'}</td>
             <td class="mono">${o.calificacion || '—'}</td>
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>${monitorNotaVivo('bonos')}`;
 }
 
 /* ── Soberanos: hoja propia del Monitor, una sola tabla (no separada por calificación como
@@ -2958,7 +3006,8 @@ async function fetchMonitorSoberanos() {
       });
     }
   }
-  monitorSoberanosCache = out.filter(o => !isNaN(o.tir));
+  await getVivo();
+  monitorSoberanosCache = out.filter(o => !isNaN(o.tir)).map(o => PreciosVivo.aplicarFilaBono(o)).filter(Boolean);
   return monitorSoberanosCache;
 }
 function renderMonitorTableSoberanos(dataOriginal) {
@@ -2990,14 +3039,14 @@ function renderMonitorTableSoberanos(dataOriginal) {
             <td class="mono">${tickerLink(o.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${o.ticker}','${escJs(o.emisor || '')}')">🛒</button></td>
             <td>${o.emisor}</td>
             <td class="mono">${o.precio ? '$' + o.precio.toFixed(3) : '—'}</td>
-            <td class="tir-val">${!isNaN(o.tir) ? (o.tir * 100).toFixed(2) + '%' : '—'}</td>
+            <td class="tir-val">${o.tir != null && !isNaN(o.tir) ? (o.tir * 100).toFixed(2) + '%' : '—'}</td>
             <td class="mono">${o.duration ? o.duration.toFixed(2) : '—'}</td>
             <td>${formatVto(o.vencimiento)}</td>
             <td>${o.mesCupon || '—'}</td>
             <td class="mono">${o.calificacion || '—'}</td>
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>${monitorNotaVivo('bonos')}`;
 }
 
 /* ── Bonos en pesos: toda la hoja "Letras-Bonos $" del Monitor (Tasa Fija, CER, TAMAR y Duales,
@@ -3051,7 +3100,10 @@ async function fetchMonitorPesos() {
     const extra = n ? { cerEst: (1 + n.tir) / (1 + b.tir) - 1, tirNominalProy: n.tir } : {};
     porTicker[b.ticker] = Object.assign({ real: true }, b, extra);
   });
-  const bonos = Object.keys(porTicker).map(k => porTicker[k]);
+  await getVivo();
+  const hoyP = new Date(); hoyP.setHours(0, 0, 0, 0);
+  // un instrumento ya vencido no es una opción (el Monitor viejo todavía los traía)
+  const bonos = Object.keys(porTicker).map(k => PreciosVivo.aplicarFilaPesos(porTicker[k])).filter(b => !b.vencimiento || b.vencimiento > hoyP);
   const idxVcto = (() => { for (let i = 0; i < rows.length; i++) { if (rows[i] && rows[i][1] === 'Vcto.') return i; } return -1; })();
   const breakeven = [];
   if (idxVcto >= 0) {
@@ -3063,18 +3115,26 @@ async function fetchMonitorPesos() {
       breakeven.push({ par: row[0], vencimiento: excelSerialToDate(row[1]), inflacionMensual: infl });
     }
   }
-  monitorPesosCache = { bonos, breakeven };
+  const vivoE = PreciosVivo.estado();
+  monitorPesosCache = { bonos, breakeven: (vivoE && vivoE.monitorViejo) ? [] : breakeven };   // la inflación implícita sale de precios del Monitor: con Monitor viejo no se muestra
   return monitorPesosCache;
 }
 const MONITOR_PESOS_TIPO_LABEL = { 'Tasa Fija': 'LECAP/BONCAP', 'CER': 'Bono CER', 'TAMAR': 'Bono TAMAR', 'Dual': 'Bono Dual' };
 function renderMonitorTablePesos(dataOriginal) {
   const box = document.getElementById('monitorTableBox');
   const countEl = document.getElementById('monitorCount');
-  const todos = (dataOriginal && dataOriginal.bonos) || [];
+  const todosConOcultos = (dataOriginal && dataOriginal.bonos) || [];
+  const todos = todosConOcultos.filter(b => !b.sinVivo);   // los que no se pueden valuar hoy no se listan con guiones: se explican en la nota
+  const ocultos = todosConOcultos.length - todos.length;
   const porTipo = monitorPesosTipoActual === 'todos' ? todos : todos.filter(b => b.tipo === monitorPesosTipoActual);
   const data = monitorFiltrarPlazo(monitorFiltrar(porTipo, ['ticker']), 'vencimiento');
   const breakeven = (dataOriginal && dataOriginal.breakeven) || [];
-  if (!data.length) { box.innerHTML = '<p class="loading-msg">' + (monitorBuscarTexto || monitorPlazoActual !== 'todos' || monitorPesosTipoActual !== 'todos' ? 'Ningún bono coincide con ese filtro.' : 'No hay bonos en pesos vigentes en este momento.') + '</p>'; if (countEl) countEl.textContent = ''; return; }
+  if (!data.length) {
+    const sinDato = ocultos && todosConOcultos.some(b => b.sinVivo && (monitorPesosTipoActual === 'todos' || b.tipo === monitorPesosTipoActual));
+    box.innerHTML = '<p class="loading-msg">' + (sinDato ? 'Estos bonos no tienen precio de hoy en este momento.' : (monitorBuscarTexto || monitorPlazoActual !== 'todos' || monitorPesosTipoActual !== 'todos' ? 'Ningún bono coincide con ese filtro.' : 'No hay bonos en pesos vigentes en este momento.')) + '</p>' + (sinDato ? monitorNotaVivo('pesos') : '');
+    if (countEl) countEl.textContent = '';
+    return;
+  }
   const sorted = data.slice().sort((a, b) => {
     let va = a[monitorSortCol], vb = b[monitorSortCol];
     if (va instanceof Date) va = va.getTime();
@@ -3086,7 +3146,7 @@ function renderMonitorTablePesos(dataOriginal) {
   });
   if (countEl) countEl.textContent = sorted.length + ' en pesos';
   const col = (key, label) => `<th class="${monitorSortCol === key ? 'sorted' + (monitorSortAsc ? ' asc' : '') : ''}" onclick="setMonitorSort('${key}')">${label}</th>`;
-  const hayCER = sorted.some(b => b.real);
+  const hayCER = sorted.some(b => b.real && !b.sinVivo);
   const notaTir = hayCER ? '<div class="tool-sub" style="margin-top:8px">💡 <strong>CER + X%</strong> significa que el bono ajusta por inflación (CER) y encima paga ese X% real — no se puede comparar número contra número con la TIR nominal de una LECAP/BONCAP o TAMAR: "CER + 5%" no rinde menos que "28%", son dos unidades distintas. Donde se ve <em>CER est.</em>, es la inflación anual con la que el Monitor valúa ese bono (despejada de su propia valuación nominal, solo disponible para los CER de corto plazo — para los largos el Monitor no proyecta y no se inventa un número). El resultado "≈ nominal" es una estimación: si la inflación real termina siendo otra, el rendimiento nominal cambia.</div>' : '';
   const breakevenHtml = breakeven.length ? `
     <div class="tool-sub" style="margin:18px 0 8px">📊 Inflación mensual breakeven — lo que el mercado está pricing hoy, comparando una Tasa Fija con una CER del mismo vencimiento (no es una encuesta, es lo que paga el mercado):</div>
@@ -3107,14 +3167,14 @@ function renderMonitorTablePesos(dataOriginal) {
           <tr>
             <td class="mono">${tickerLink(b.ticker)} <button type="button" class="cart-add-mini" title="Agregar al carrito" onclick="CARRITO.agregar('${b.ticker}','${escJs(MONITOR_PESOS_TIPO_LABEL[b.tipo] || b.tipo)}')">🛒</button></td>
             <td>${MONITOR_PESOS_TIPO_LABEL[b.tipo] || b.tipo}</td>
-            <td class="mono">${b.precio ? '$' + b.precio.toFixed(3) : '—'}</td>
-            <td class="tir-val">${b.real ? 'CER + ' : ''}${(b.tir * 100).toFixed(2)}%${b.cerEst != null ? `<div style="font-size:0.7em;font-weight:400;color:var(--ink-muted)">CER est. ${(b.cerEst * 100).toFixed(1)}% → ≈ ${(b.tirNominalProy * 100).toFixed(1)}% nominal</div>` : ''}</td>
-            <td class="mono">${!isNaN(b.tna) ? (b.real ? 'CER + ' : '') + (b.tna * 100).toFixed(2) + '%' : '—'}</td>
-            <td class="mono">${b.duration ? b.duration.toFixed(2) : '—'}</td>
+            <td class="mono">${b.sinVivo ? '—' : (b.precio ? '$' + b.precio.toFixed(3) : '—')}</td>
+            <td class="tir-val">${b.sinVivo ? '<span title="Sin precio de hoy: su rendimiento depende de proyecciones del Monitor, que están desactualizadas">—</span>' : (b.real ? 'CER + ' : '') + (b.tir * 100).toFixed(2) + '%'}${(!b.sinVivo && b.cerEst != null) ? `<div style="font-size:0.7em;font-weight:400;color:var(--ink-muted)">CER est. ${(b.cerEst * 100).toFixed(1)}% → ≈ ${(b.tirNominalProy * 100).toFixed(1)}% nominal</div>` : ''}</td>
+            <td class="mono">${b.sinVivo ? '—' : (!isNaN(b.tna) ? (b.real ? 'CER + ' : '') + (b.tna * 100).toFixed(2) + '%' : '—')}</td>
+            <td class="mono">${b.sinVivo ? '—' : (b.duration ? b.duration.toFixed(2) : '—')}</td>
             <td>${formatVto(b.vencimiento)}</td>
           </tr>`).join('')}
       </tbody>
-    </table>${notaTir}${breakevenHtml}`;
+    </table>${monitorNotaVivo('pesos')}${notaTir}${breakevenHtml}`;
 }
 
 async function loadMonitor() {
@@ -3161,6 +3221,11 @@ function setMonitorSort(col) {
   else renderMonitorTable(monitorDataCache[monitorCalifActual] || []);
 }
 loadMonitor();
+getVivo().then(vivoPintarCartel, function () {
+  var el = document.getElementById('vivoCartel');
+  if (el) { el.className = 'vivo-cartel bad'; el.innerHTML = '⛔ <strong>No pudimos traer los datos del mercado.</strong> No mostramos números viejos: probá recargar la página en unos minutos.'; }
+});
+setInterval(function () { if (PreciosVivo.estado()) vivoPintarCartel(); }, 60000);   // el cartel avisa si los precios cargados ya son viejos
 </script>
 
 <script>

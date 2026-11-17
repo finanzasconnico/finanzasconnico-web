@@ -209,7 +209,7 @@
       var offer = num(x.offerPrice), bid = num(x.bidPrice);
       var px = (rueda && offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;   // fuera de rueda, el último operado
       if (!(px > 0)) return;
-      (out[x.symbol] = out[x.symbol] || {})[pata] = { px: px, ult: ult, bid: bid, offer: offer, prev: num(x.previousClosingPrice), vol: num(x.volume), hora: x.tradeHour || null };
+      (out[x.symbol] = out[x.symbol] || {})[pata] = { px: px, ult: ult, bid: bid, offer: offer, prev: num(x.previousClosingPrice), vol: num(x.volume), hora: x.tradeHour || null, via: x._via || null };
     });
     return out;
   }
@@ -221,20 +221,31 @@
   function getPrecios(bonos, opts) {
     opts = opts || {};
     var c = leerCache();
-    if (!opts.force && c && c.ts && (Date.now() - c.ts) < TTL_MS) return Promise.resolve({ ok: true, ts: c.ts, stale: false, data: c.data });
+    if (!opts.force && c && c.ts && (Date.now() - c.ts) < TTL_MS) return Promise.resolve({ ok: true, ts: c.ts, stale: false, data: c.data, fuente: c.fuente || 'BYMA' });
     if (_inflight) return _inflight;
     var wanted = {};
     bonos.forEach(function (b) { candidatos(b).forEach(function (s) { wanted[s] = 1; }); });
+    // Respaldo (data912, ver fcn-letras.js) pedido en paralelo: si BYMA no responde o no publicó nada, ya está listo.
+    var resp = Promise.all([U.d912Get('arg_corp', opts.force), U.d912Get('arg_bonds', opts.force)]).then(function (res) {
+      var data = agrupar(U.d912Filas(res[0]).concat(U.d912Filas(res[1])), wanted);
+      if (!Object.keys(data).length) throw new Error('respaldo sin datos de bonos');
+      return { data: data, fuente: 'data912' };
+    });
+    resp.catch(function () {});
     _inflight = Promise.all([post('public-bonds', '{"page_size":2000}', opts.force), post('negociable-obligations', '{}', opts.force)])
       .then(function (res) {
         var data = agrupar(filas(res[0]).concat(filas(res[1])), wanted);
         if (!Object.keys(data).length) throw new Error('BYMA sin datos de bonos');
-        var o = { ts: Date.now(), data: data };
-        guardarCache(o);
-        return { ok: true, ts: o.ts, stale: false, data: data };
+        return { data: data, fuente: 'BYMA' };
+      })
+      .catch(function (e) { return resp.then(null, function () { throw e; }); })
+      .then(function (o) {
+        var g = { ts: Date.now(), data: o.data, fuente: o.fuente };
+        guardarCache(g);
+        return { ok: true, ts: g.ts, stale: false, data: g.data, fuente: g.fuente };
       })
       .catch(function (e) {
-        if (c && c.data) return { ok: true, ts: c.ts, stale: true, data: c.data, error: String(e && e.message || e) };
+        if (c && c.data) return { ok: true, ts: c.ts, stale: true, data: c.data, fuente: c.fuente || 'BYMA', error: String(e && e.message || e) };
         return { ok: false, ts: null, stale: false, data: {}, error: String(e && e.message || e) };
       })
       .then(function (r) { _inflight = null; return r; });
@@ -247,13 +258,17 @@
     var pref = plazo === 'CI' ? 'ci' : 'h24', alt = plazo === 'CI' ? 'h24' : 'ci';
     var refMon = b.precioMonitor ? b.precioMonitor / (1 + COM_MONITOR) * 100 : null;   // precio Monitor sin comisión, cada 100 VN
     var cands = candidatos(b), i, aviso = '';
+    // Si el precio del Monitor es viejo (más de MAX_EDAD_MONITOR días) puede haberse movido mucho desde entonces: ya no sirve para
+    // validar con 15%. Se acepta hasta 50% de distancia, que igual atrapa el error que importa (precio cada 1 VN en vez de cada 100).
+    var monViejo = !b.liqMonitor || diasEntre(b.liqMonitor, hoy || new Date()) > L.MAX_EDAD_MONITOR;
+    var tol = monViejo ? 0.5 : TOL_PRECIO;
     for (i = 0; i < cands.length; i++) {
       var d = preciosBYMA && preciosBYMA[cands[i]];
       var p = d && (d[pref] || d[alt]);
       if (!p) continue;
       if (!refMon && (p.px < 0.5 || p.px > 250)) continue;        // sin precio de referencia: descartar cotizaciones que no pueden ser USD cada 100 VN
-      if (refMon && Math.abs(p.px / refMon - 1) > TOL_PRECIO) { aviso = 'BYMA difiere más de ' + Math.round(TOL_PRECIO * 100) + '% del Monitor'; continue; }
-      return { px: p.px, fuente: 'BYMA', simbolo: cands[i], hora: p.hora, variacion: p.prev > 0 ? p.px / p.prev - 1 : null, sinOperar: !(p.vol > 0) };
+      if (refMon && Math.abs(p.px / refMon - 1) > tol) { aviso = 'BYMA difiere más de ' + Math.round(tol * 100) + '% del Monitor'; continue; }
+      return { px: p.px, fuente: 'BYMA', via: p.via || null, simbolo: cands[i], hora: p.hora, variacion: p.prev > 0 ? p.px / p.prev - 1 : null, sinOperar: !(p.vol > 0) };
     }
     // El precio del Monitor es de SU fecha. Si entre esa fecha y la liquidación de hoy cayó un pago, ese precio todavía
     // incluía el cobro (cotiza "con cupón") y usarlo daría una TIR absurda: en ese caso no hay precio confiable.

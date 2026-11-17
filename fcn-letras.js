@@ -207,14 +207,48 @@
   // ─────────────────────────────────────────────────────────────────────────
   // POST a BYMA con memoria de 60 s: fcn-bonos.js también pide 'public-bonds' y son ~1 MB; así se baja una sola vez.
   var _memo = {};
+  // BYMA a veces no responde nunca (verificado 17/11/2026: timeout de conexión desde una red argentina, ~19 s hasta que el
+  // navegador se rinde): se corta a los 5 s para poder pasar al respaldo (data912) sin dejar al cliente esperando.
+  var BYMA_TIMEOUT_MS = 5000;
+  function conTimeout(url, init, ms, etiqueta) {
+    var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, timer = null;
+    if (ctl) { init.signal = ctl.signal; timer = setTimeout(function () { ctl.abort(); }, ms); }
+    return fetch(url, init).then(
+      function (r) { if (timer) clearTimeout(timer); if (!r.ok) throw new Error(etiqueta + ' HTTP ' + r.status); return r.json(); },
+      function (e) { if (timer) clearTimeout(timer); throw new Error(etiqueta + ' no responde'); }
+    );
+  }
   function bymaPost(ep, body, force) {
     var k = ep + '|' + body, m = _memo[k];
     if (!force && m && Date.now() - m.ts < 60000) return m.p;          // "Actualizar" (force) siempre vuelve a pedir
-    var p = fetch(BASE + '/' + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
-      .then(function (r) { if (!r.ok) throw new Error('BYMA HTTP ' + r.status); return r.json(); });
+    var p = conTimeout(BASE + '/' + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }, BYMA_TIMEOUT_MS, 'BYMA');
     _memo[k] = { ts: Date.now(), p: p };
     p.catch(function () { if (_memo[k] && _memo[k].p === p) delete _memo[k]; });     // un fallo no se recuerda
     return p;
+  }
+
+  // Respaldo cuando BYMA no responde o todavía no publicó nada: data912.com (API pública que repite las cotizaciones de BYMA:
+  // bid/ask/último/volumen, caché de 30 s, CORS abierto). Devuelve filas con la MISMA forma que BYMA para que el resto del
+  // motor no note la diferencia; cada fila lleva _via para poder decir de dónde salió el precio.
+  var D912 = 'https://data912.com/live/';
+  var _memo912 = {};
+  function d912Get(ep, force) {
+    var m = _memo912[ep];
+    if (!force && m && Date.now() - m.ts < 30000) return m.p;
+    var p = conTimeout(D912 + ep, {}, 8000, 'data912');
+    _memo912[ep] = { ts: Date.now(), p: p };
+    p.catch(function () { if (_memo912[ep] && _memo912[ep].p === p) delete _memo912[ep]; });
+    return p;
+  }
+  function d912Filas(arr) {
+    return (Array.isArray(arr) ? arr : []).map(function (x) {
+      var c = num(x.c), pct = parseFloat(x.pct_change);
+      return {
+        symbol: x.symbol, settlementType: '2', trade: c, closingPrice: c,
+        previousClosingPrice: (isFinite(pct) && c > 0) ? c / (1 + pct / 100) : 0,
+        offerPrice: num(x.px_ask), bidPrice: num(x.px_bid), volume: num(x.v), tradeHour: null, _via: 'data912'
+      };
+    });
   }
   function fetchEndpoint(ep, force) {
     return bymaPost(ep, '{"page_size":2000}', force);    // sin page_size devuelve solo 189 filas y se pierden las S…/T…
@@ -236,7 +270,7 @@
         if (!(px > 0)) return;
         (out[x.symbol] = out[x.symbol] || {})[pata] = {
           px: px, ult: ult, bid: bid, offer: offer, prev: num(x.previousClosingPrice),
-          vol: num(x.volume), hora: x.tradeHour || null
+          vol: num(x.volume), hora: x.tradeHour || null, via: x._via || null
         };
       });
     });
@@ -251,18 +285,29 @@
   function getPrecios(opts) {
     opts = opts || {};
     var c = leerCache();
-    if (!opts.force && c && c.ts && (Date.now() - c.ts) < TTL_MS) return Promise.resolve({ ok: true, ts: c.ts, stale: false, data: c.data });
+    if (!opts.force && c && c.ts && (Date.now() - c.ts) < TTL_MS) return Promise.resolve({ ok: true, ts: c.ts, stale: false, data: c.data, fuente: c.fuente || 'BYMA' });
     if (_inflight) return _inflight;
+    // El respaldo se pide en paralelo (es chico y rápido): si BYMA falla o no publicó nada, ya está listo.
+    var resp = Promise.all([d912Get('arg_notes', opts.force), d912Get('arg_bonds', opts.force)]).then(function (res) {
+      var data = agruparPrecios([{ data: d912Filas(res[0]).concat(d912Filas(res[1])) }]);
+      if (!Object.keys(data).length) throw new Error('respaldo sin datos de letras');
+      return { data: data, fuente: 'data912' };
+    });
+    resp.catch(function () {});
     _inflight = Promise.all([fetchEndpoint('lebacs', opts.force), fetchEndpoint('public-bonds', opts.force)])
       .then(function (res) {
         var data = agruparPrecios(res);
         if (!Object.keys(data).length) throw new Error('BYMA sin datos de letras');
-        var o = { ts: Date.now(), data: data };
-        guardarCache(o);
-        return { ok: true, ts: o.ts, stale: false, data: data };
+        return { data: data, fuente: 'BYMA' };
+      })
+      .catch(function (e) { return resp.then(null, function () { throw e; }); })
+      .then(function (o) {
+        var g = { ts: Date.now(), data: o.data, fuente: o.fuente };
+        guardarCache(g);
+        return { ok: true, ts: g.ts, stale: false, data: g.data, fuente: g.fuente };
       })
       .catch(function (e) {
-        if (c && c.data) return { ok: true, ts: c.ts, stale: true, data: c.data, error: String(e && e.message || e) };
+        if (c && c.data) return { ok: true, ts: c.ts, stale: true, data: c.data, fuente: c.fuente || 'BYMA', error: String(e && e.message || e) };
         return { ok: false, ts: null, stale: false, data: {}, error: String(e && e.message || e) };
       })
       .then(function (r) { _inflight = null; return r; });
@@ -279,7 +324,7 @@
     if (b) {
       var pref = plazo === 'CI' ? 'ci' : 'h24', alt = plazo === 'CI' ? 'h24' : 'ci';
       var p = b[pref] || b[alt];
-      if (p) return { px: p.px, fuente: 'BYMA', hora: p.hora, pata: b[pref] ? pref : alt, variacion: p.prev > 0 ? p.px / p.prev - 1 : null };
+      if (p) return { px: p.px, fuente: 'BYMA', via: p.via || null, hora: p.hora, pata: b[pref] ? pref : alt, variacion: p.prev > 0 ? p.px / p.prev - 1 : null };
     }
     var edad = letra.fechaPrecio ? diasEntre(letra.fechaPrecio, new Date()) : null;
     if (letra.precioMonitor && edad !== null && edad <= MAX_EDAD_MONITOR) return { px: letra.precioMonitor * 100, fuente: 'Monitor', hora: null, pata: null, variacion: null };
@@ -337,7 +382,7 @@
     agruparPrecios: agruparPrecios,
     elegirPrecio: elegirPrecio,
     calcular: calcular,
-    util: { num: num, noAcc: noAcc, fechaCelda: fechaCelda, diasEntre: diasEntre, sumarHabiles: sumarHabiles, esHabil: esHabil, bymaPost: bymaPost, enRueda: enRueda },   // los usa fcn-bonos.js
+    util: { num: num, noAcc: noAcc, fechaCelda: fechaCelda, diasEntre: diasEntre, sumarHabiles: sumarHabiles, esHabil: esHabil, bymaPost: bymaPost, enRueda: enRueda, d912Get: d912Get, d912Filas: d912Filas },   // los usa fcn-bonos.js
     fechaOperacion: fechaOperacion,
     enRueda: enRueda,
     fechaLiquidacion: function (hoy, plazo) { var op = fechaOperacion(hoy); return plazo === 'CI' ? op : sumarHabiles(op, 1); },
