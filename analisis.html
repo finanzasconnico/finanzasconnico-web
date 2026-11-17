@@ -2523,12 +2523,14 @@ function rentaArmarARS(ingreso, frecuencia) {
   // Con menos de 20 días al vencimiento la ganancia es tan chica (ej.: 0,6% en 13 días) que para "cobrar" un monto razonable habría
   // que poner cientos de millones: no sirve como escalón de una renta.
   var todos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0 && (l.diasVivo === undefined || l.diasVivo >= 20); });
-  // Primero las letras de tasa fija (cobro cierto); un bono CER (cobro estimado) solo se usa si en ese período no vence ninguna letra.
-  var candidatos = todos.filter(function (l) { return !l.estimado; }), candidatosCER = todos.filter(function (l) { return l.estimado; });
+  // Tres niveles: 1) letras con cronograma conocido (cobro cierto); 2) letras que cotizan pero todavía no están en la planilla
+  // (su valor final se estima); 3) bonos CER y TAMAR (cobro estimado). Un nivel solo se usa si el anterior no cubre ese período.
+  var candidatos = todos.filter(function (l) { return !l.estimado; }), candidatosCER = todos.filter(function (l) { return l.estimado && l.prioridad === 1; }),
+    candidatosVar = todos.filter(function (l) { return l.estimado && l.prioridad !== 1; });
   var hoy = rotHoy(), usados = {}, filas = [];
   buckets.forEach(function (mesesBucket) {
     var mejor = null, mejorDist = Infinity;
-    [candidatos, candidatosCER].forEach(function (lista) {
+    [candidatos, candidatosCER, candidatosVar].forEach(function (lista) {
       if (mejor) return;
       lista.forEach(function (c) {
         if (usados[c.ticker] || mesesBucket.indexOf(c.vto.getMonth() + 1) < 0) return;
@@ -2544,7 +2546,7 @@ function rentaArmarARS(ingreso, frecuencia) {
     var nominal = objetivo / gananciaPorVN;
     var monto = nominal * precio; // capital a invertir hoy (se recupera entero al vencimiento)
     var cobroTotal = nominal * mejor.vf; // lo que efectivamente acredita el bróker ese día (capital + ganancia)
-    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, cobroTotal: cobroTotal, limitado: false, estimado: !!mejor.estimado });
+    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, cobroTotal: cobroTotal, limitado: false, estimado: !!mejor.estimado, nivel: mejor.prioridad });
     usados[mejor.ticker] = true;
   });
   filas.sort(function (a, b) { return a.fecha - b.fecha; });
@@ -2557,7 +2559,14 @@ function rentaFilaHtml(f) {
   var sub = esc(f.emisor || '') + (f.limitado ? ' · ajustado a la lámina/VN mínimo' : '');
   if (f.moneda === 'ars') {
     sub += '<br>' + (f.estimado ? '≈ Ganás unos ' : 'Ganás ') + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha) + ' · ese día el bróker te acredita ' + (f.estimado ? 'unos ' : '') + fmt(f.cobroTotal) + ' en total (tu capital + la ganancia) — reinvertí el capital en una letra nueva para seguir cobrando este monto el próximo período';
-    if (f.estimado) sub += '<br><strong>⚠ Estimado:</strong> es un bono CER, ajusta por inflación y no tiene un cobro fijo. Calculamos con la inflación que hoy descuenta el mercado; si resulta mayor, cobrás más, y si es menor, cobrás menos.';
+    if (f.estimado) {
+      var tipoTxt = String(f.emisor || '');
+      sub += '<br><strong>⚠ Estimado:</strong> ' + (f.nivel === 1
+        ? 'esta letra todavía no está en nuestra planilla de cronogramas, así que no conocemos su valor final exacto: lo calculamos con lo que hoy rinden las letras de plazo parecido.'
+        : tipoTxt === 'Bono TAMAR'
+          ? 'es un bono a tasa variable (TAMAR): paga intereses todos los meses y la tasa cambia. Mostramos la ganancia total hasta el vencimiento, calculada con lo que hoy rinden las letras de plazo parecido.'
+          : 'es un bono CER, ajusta por inflación y no tiene un cobro fijo. Calculamos con la inflación que hoy descuenta el mercado; si resulta mayor, cobrás más, y si es menor, cobrás menos.');
+    }
   } else {
     sub += '<br>Cobrás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha);
   }
@@ -2642,7 +2651,7 @@ function rentaRenderTengo(box, capital, fmt) {
 }
 function rentaNotaCER(filas) {
   var n = filas.filter(function (f) { return f.estimado; }).length;
-  return n ? '<br><br>📌 <strong>' + n + (n === 1 ? ' línea es un bono CER' : ' líneas son bonos CER') + '</strong> (marcadas "≈ Estimado"): se usan solo en los meses donde no vence ninguna LECAP/BONCAP. Ajustan por inflación, así que su cobro no es fijo — es una aproximación con la inflación que hoy descuenta el mercado.' : '';
+  return n ? '<br><br>📌 <strong>' + n + (n === 1 ? ' línea tiene' : ' líneas tienen') + ' cobro estimado</strong> (marcadas "≈ Estimado"): se usan solo en los meses donde no vence ninguna LECAP/BONCAP con cronograma conocido. Son bonos CER (ajustan por inflación), TAMAR (tasa variable) o letras nuevas todavía sin cronograma — su cobro no es fijo, es una aproximación con lo que hoy descuenta el mercado.' : '';
 }
 function rentaRender() {
   var box = document.getElementById('rentaResult');

@@ -53,7 +53,15 @@
   // Pagan capital ajustado por inflación al vencimiento, sin cupones. Su cobro real depende de la inflación que haya, así que
   // en cerComoLetras() se ESTIMA con lo que hoy descuenta el mercado (ver ahí). No se usa el cobro proyectado de la hoja
   // del Monitor porque es de la fecha del Monitor: con el precio de hoy daría ganancias sin sentido.
-  var RE_HOJA_CER = /^(TZX\w+|TX\d+|X\d{2}[A-Z]\d)$/;
+  // También los bonos TAMAR (TMF27, TML27, TMG27…): pagan interés todos los meses con tasa variable. Y las LECAPs/BONCAPs que cotizan
+  // pero todavía no tienen hoja en el Monitor (ej.: S26F7): de esas solo se conoce el vencimiento (sale del ticker), no el valor final.
+  var RE_HOJA_CER = /^(TZX\w+|TX\d+|X\d{2}[A-Z]\d|TM[A-Z]\d{2})$/;
+  var MES_LETRA = { E: 0, F: 1, M: 2, A: 3, Y: 4, J: 5, L: 6, G: 7, S: 8, O: 9, N: 10, D: 11 };
+  function vtoDeTicker(t) {       // S26F7 → 26/02/2027
+    var m = /^[ST](\d{1,2})([A-Z])(\d)$/.exec(t);
+    if (!m || MES_LETRA[m[2]] === undefined) return null;
+    return new Date(2020 + +m[3], MES_LETRA[m[2]], +m[1]);
+  }
   function cerDesdeLibro(XLSX, wb, hoy) {
     var out = [];
     (wb.SheetNames || []).forEach(function (n) {
@@ -67,24 +75,31 @@
           else if (k === 'fecha de vencimiento' && vto === null) vto = U.fechaCelda(r[j + 1]);
         }
       });
-      if (tipo === 'cer' && interes === 0 && vto && diasEntre(hoy, vto) > 0) out.push({ ticker: n, vto: vto });
+      if (!vto || diasEntre(hoy, vto) <= 0) return;
+      if (tipo === 'cer' && interes === 0) out.push({ ticker: n, vto: vto, tipo: 'Bono CER', prioridad: 2 });
+      else if (tipo === 'tamar') out.push({ ticker: n, vto: vto, tipo: 'Bono TAMAR', prioridad: 2 });
     });
     return out;
   }
-  function cerPrecios(lista) {
-    if (!lista.length) return Promise.resolve({});
+  // → { px: {ticker: precio c/100}, extra: [letras que cotizan y no tienen hoja en el Monitor] }
+  function cerPrecios(lista, letrasConocidas, hoy) {
     return Promise.all([U.d912Get('arg_bonds'), U.d912Get('arg_notes')]).then(function (res) {
-      var by = {}, rueda = L.enRueda(new Date());
+      var by = {}, rueda = L.enRueda(new Date()), extra = [];
       U.d912Filas(res[0]).concat(U.d912Filas(res[1])).forEach(function (x) { by[x.symbol] = x; });
-      var out = {};
-      lista.forEach(function (b) {
+      Object.keys(by).forEach(function (sym) {
+        if (!L.RE_LETRA.test(sym) || letrasConocidas[sym]) return;
+        var vto = vtoDeTicker(sym);
+        if (vto && diasEntre(hoy, vto) > 0) extra.push({ ticker: sym, vto: vto, tipo: sym.charAt(0) === 'S' ? 'LECAP' : 'BONCAP', prioridad: 1 });
+      });
+      var todas = lista.concat(extra), out = {};
+      todas.forEach(function (b) {
         var x = by[b.ticker]; if (!x) return;
         var ult = x.trade, offer = x.offerPrice;
         var px = (rueda && offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;
         if (px > 0) out[b.ticker] = px;
       });
-      return out;
-    }).catch(function () { return {}; });
+      return { px: out, extra: extra };
+    }).catch(function () { return { px: {}, extra: [] }; });
   }
 
   function armar(XLSX, wb, opts) {
@@ -92,7 +107,8 @@
     var bonos = B.bonosDesdeLibro(XLSX, wb, hoy).bonos;
     var letras = L.letrasDesdeLibro(XLSX, wb, hoy);
     var cerBase = cerDesdeLibro(XLSX, wb, hoy);
-    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts), cerPrecios(cerBase)]).then(function (res) {
+    var conocidas = {}; letras.forEach(function (l) { conocidas[l.ticker] = 1; });
+    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts), cerPrecios(cerBase, conocidas, hoy)]).then(function (res) {
       var rb = res[0], rl = res[1], i;
 
       // ── antigüedad real del Monitor: la fecha de liquidación guardada en cada hoja (las celdas solo dicen "Updated at 17:11")
@@ -139,9 +155,9 @@
       // ── bonos CER de pago único (solo con curva de letras vivas: de ahí sale la estimación)
       var liqHoy = L.fechaLiquidacion(new Date(), PLAZO);
       out.cer = {};
-      cerBase.forEach(function (b) {
-        var px = res[2][b.ticker], dias = diasEntre(liqHoy, b.vto);
-        if (px > 0 && dias > 0) out.cer[b.ticker] = { px: px, vto: b.vto, dias: dias };
+      cerBase.concat(res[2].extra).forEach(function (b) {
+        var px = res[2].px[b.ticker], dias = diasEntre(liqHoy, b.vto);
+        if (px > 0 && dias > 0) out.cer[b.ticker] = { px: px, vto: b.vto, dias: dias, tipo: b.tipo, prioridad: b.prioridad };
       });
 
       var ts = Math.max(bonosOk && rb.ts ? rb.ts : 0, letrasOk && rl.ts ? rl.ts : 0) || null;
@@ -237,7 +253,7 @@
     }
     return Object.keys(est.cer).map(function (t) {
       var c = est.cer[t], p = c.px / 100, te = tea(c.dias);
-      return { ticker: t, tipo: 'Bono CER', vto: c.vto, vf: p * Math.pow(1 + te, c.dias / 365), precioMonitor: p, vivo: true, diasVivo: c.dias, estimado: true, teaEstimada: te };
+      return { ticker: t, tipo: c.tipo, prioridad: c.prioridad, vto: c.vto, vf: p * Math.pow(1 + te, c.dias / 365), precioMonitor: p, vivo: true, diasVivo: c.dias, estimado: true, teaEstimada: te };
     });
   }
 
