@@ -18,7 +18,7 @@
   'use strict';
   var L = global.FCNLetras, B = global.FCNBonos;
   if (!L || !B) throw new Error('fcn-vivo.js necesita fcn-letras.js y fcn-bonos.js cargados antes');
-  var diasEntre = L.diasEntre;
+  var U = L.util, diasEntre = L.diasEntre;
 
   var COM_BONO = 0.5;      // % — el precio del Monitor para bonos ya trae 0,5% de comisión
   var COM_LETRA = 0.1;     // % — y 0,1% para letras
@@ -49,11 +49,50 @@
     return pv > 0 ? mac / pv : null;
   }
 
+  // ── Bonos CER de pago único (TZXD6, TZXM7, X29E7…): del Monitor solo se toma ticker y vencimiento; el precio sale de data912.
+  // Pagan capital ajustado por inflación al vencimiento, sin cupones. Su cobro real depende de la inflación que haya, así que
+  // en cerComoLetras() se ESTIMA con lo que hoy descuenta el mercado (ver ahí). No se usa el cobro proyectado de la hoja
+  // del Monitor porque es de la fecha del Monitor: con el precio de hoy daría ganancias sin sentido.
+  var RE_HOJA_CER = /^(TZX\w+|TX\d+|X\d{2}[A-Z]\d)$/;
+  function cerDesdeLibro(XLSX, wb, hoy) {
+    var out = [];
+    (wb.SheetNames || []).forEach(function (n) {
+      if (!RE_HOJA_CER.test(n) || !wb.Sheets[n]) return;
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null }), tipo = null, interes = null, vto = null;
+      rows.forEach(function (r) {
+        for (var j = 0; r && j < r.length - 1; j++) {
+          var k = U.noAcc(r[j]);
+          if (k === 'tipo de tasa' && tipo === null) tipo = U.noAcc(r[j + 1]);
+          else if (k === 'interes anual' && interes === null) interes = r[j + 1];
+          else if (k === 'fecha de vencimiento' && vto === null) vto = U.fechaCelda(r[j + 1]);
+        }
+      });
+      if (tipo === 'cer' && interes === 0 && vto && diasEntre(hoy, vto) > 0) out.push({ ticker: n, vto: vto });
+    });
+    return out;
+  }
+  function cerPrecios(lista) {
+    if (!lista.length) return Promise.resolve({});
+    return Promise.all([U.d912Get('arg_bonds'), U.d912Get('arg_notes')]).then(function (res) {
+      var by = {}, rueda = L.enRueda(new Date());
+      U.d912Filas(res[0]).concat(U.d912Filas(res[1])).forEach(function (x) { by[x.symbol] = x; });
+      var out = {};
+      lista.forEach(function (b) {
+        var x = by[b.ticker]; if (!x) return;
+        var ult = x.trade, offer = x.offerPrice;
+        var px = (rueda && offer > 0 && (!ult || Math.abs(offer / ult - 1) <= 0.03)) ? offer : ult;
+        if (px > 0) out[b.ticker] = px;
+      });
+      return out;
+    }).catch(function () { return {}; });
+  }
+
   function armar(XLSX, wb, opts) {
     var hoy = hoyFecha();
     var bonos = B.bonosDesdeLibro(XLSX, wb, hoy).bonos;
     var letras = L.letrasDesdeLibro(XLSX, wb, hoy);
-    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts)]).then(function (res) {
+    var cerBase = cerDesdeLibro(XLSX, wb, hoy);
+    return Promise.all([B.getPrecios(bonos, opts), L.getPrecios(opts), cerPrecios(cerBase)]).then(function (res) {
       var rb = res[0], rl = res[1], i;
 
       // ── antigüedad real del Monitor: la fecha de liquidación guardada en cada hoja (las celdas solo dicen "Updated at 17:11")
@@ -97,10 +136,18 @@
         if (vivo) out.nLetrasVivo++;
       });
 
+      // ── bonos CER de pago único (solo con curva de letras vivas: de ahí sale la estimación)
+      var liqHoy = L.fechaLiquidacion(new Date(), PLAZO);
+      out.cer = {};
+      cerBase.forEach(function (b) {
+        var px = res[2][b.ticker], dias = diasEntre(liqHoy, b.vto);
+        if (px > 0 && dias > 0) out.cer[b.ticker] = { px: px, vto: b.vto, dias: dias };
+      });
+
       var ts = Math.max(bonosOk && rb.ts ? rb.ts : 0, letrasOk && rl.ts ? rl.ts : 0) || null;
       var via = (rb.ok && rb.fuente) || (rl.ok && rl.fuente) || null;
       est = {
-        bonos: out.bonos, letras: out.letras,
+        bonos: out.bonos, letras: out.letras, cer: out.cer,
         bonosVivo: out.nBonosVivo > 0, letrasVivo: out.nLetrasVivo > 0,
         nBonosTotal: out.nBonosTotal, nBonosVivo: out.nBonosVivo, nLetrasTotal: out.nLetrasTotal, nLetrasVivo: out.nLetrasVivo,
         fuente: via, ts: ts, enRueda: L.enRueda(new Date()),
@@ -172,6 +219,28 @@
     });
   }
 
+  // Bonos CER de pago único, con el mismo formato que una letra (para la escalera de Renta mensual en pesos), con el cobro
+  // ESTIMADO: precio de hoy × (1 + TEA)^(años), donde TEA es el rendimiento que hoy dan las LECAPs/BONCAP de plazo parecido
+  // (interpolado entre las más cercanas; más allá de la última se usa la última). Es decir: "si la inflación termina siendo la
+  // que hoy descuenta el mercado". Si es mayor, el CER paga más; si es menor, menos.
+  function cerComoLetras() {
+    if (!est || !est.letrasVivo || !est.cer) return [];
+    var curva = Object.keys(est.letras).map(function (t) { return { d: est.letras[t].dias, tea: est.letras[t].tea }; })
+      .filter(function (p) { return p.d > 0 && isFinite(p.tea); }).sort(function (a, b) { return a.d - b.d; });
+    if (!curva.length) return [];
+    function tea(d) {
+      if (d <= curva[0].d) return curva[0].tea;
+      for (var i = 1; i < curva.length; i++) {
+        if (d <= curva[i].d) { var a = curva[i - 1], b = curva[i]; return a.tea + (b.tea - a.tea) * (d - a.d) / (b.d - a.d); }
+      }
+      return curva[curva.length - 1].tea;
+    }
+    return Object.keys(est.cer).map(function (t) {
+      var c = est.cer[t], p = c.px / 100, te = tea(c.dias);
+      return { ticker: t, tipo: 'Bono CER', vto: c.vto, vf: p * Math.pow(1 + te, c.dias / 365), precioMonitor: p, vivo: true, diasVivo: c.dias, estimado: true, teaEstimada: te };
+    });
+  }
+
   // Fila de la tabla de bonos en pesos. LECAP/BONCAP: recalculada en vivo. CER/TAMAR/Dual/otras: no se puede
   // recalcular → si el Monitor está viejo se marca sinVivo (la tabla muestra "—" y lo explica).
   function aplicarFilaPesos(b) {
@@ -209,7 +278,7 @@
 
   global.PreciosVivo = {
     cargar: cargar, estado: estado, cartel: cartel,
-    aplicarDB: aplicarDB, aplicarFilaBono: aplicarFilaBono, aplicarLetras: aplicarLetras, aplicarFilaPesos: aplicarFilaPesos,
+    aplicarDB: aplicarDB, aplicarFilaBono: aplicarFilaBono, aplicarLetras: aplicarLetras, cerComoLetras: cerComoLetras, aplicarFilaPesos: aplicarFilaPesos,
     COM_BONO: COM_BONO, COM_LETRA: COM_LETRA, PLAZO: PLAZO
   };
 })(typeof window !== 'undefined' ? window : globalThis);

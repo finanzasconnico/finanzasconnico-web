@@ -2414,7 +2414,8 @@ function ensureRentaLetras() {
   rentaLetrasCargando = getMonitorWorkbook().then(function (wb) {
     var base = FCNLetras.letrasDesdeLibro(XLSX, wb, rotHoy());
     // precio vivo de cada letra (una letra sin precio de hoy no se ofrece); con Monitor viejo y sin vivo, queda vacía
-    return getVivo().then(function () { rentaLetrasCache = PreciosVivo.aplicarLetras(base); return rentaLetrasCache; });
+    // + los bonos CER de pago único (TZXD6, TZXM7…) con su cobro ESTIMADO: llenan los meses en que no vence ninguna letra
+    return getVivo().then(function () { rentaLetrasCache = PreciosVivo.aplicarLetras(base).concat(PreciosVivo.cerComoLetras()); return rentaLetrasCache; });
   }).catch(function () { rentaLetrasCache = []; return []; });
   return rentaLetrasCargando;
 }
@@ -2519,16 +2520,21 @@ function rentaArmarUSD(ingreso, frecuencia) {
 function rentaArmarARS(ingreso, frecuencia) {
   var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
   var buckets = rentaBuckets(frecMeses);
-  // Con menos de 30 días al vencimiento la ganancia es tan chica (ej.: 0,6% en 13 días) que para "cobrar" un monto razonable habría
+  // Con menos de 20 días al vencimiento la ganancia es tan chica (ej.: 0,6% en 13 días) que para "cobrar" un monto razonable habría
   // que poner cientos de millones: no sirve como escalón de una renta.
-  var candidatos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0 && (l.diasVivo === undefined || l.diasVivo >= 30); });
+  var todos = (rentaLetrasCache || []).filter(function (l) { return l.vf > 0 && l.precioMonitor > 0 && (l.diasVivo === undefined || l.diasVivo >= 20); });
+  // Primero las letras de tasa fija (cobro cierto); un bono CER (cobro estimado) solo se usa si en ese período no vence ninguna letra.
+  var candidatos = todos.filter(function (l) { return !l.estimado; }), candidatosCER = todos.filter(function (l) { return l.estimado; });
   var hoy = rotHoy(), usados = {}, filas = [];
   buckets.forEach(function (mesesBucket) {
     var mejor = null, mejorDist = Infinity;
-    candidatos.forEach(function (c) {
-      if (usados[c.ticker] || mesesBucket.indexOf(c.vto.getMonth() + 1) < 0) return;
-      var dist = Math.abs(c.vto.getTime() - hoy.getTime());
-      if (dist < mejorDist) { mejorDist = dist; mejor = c; }
+    [candidatos, candidatosCER].forEach(function (lista) {
+      if (mejor) return;
+      lista.forEach(function (c) {
+        if (usados[c.ticker] || mesesBucket.indexOf(c.vto.getMonth() + 1) < 0) return;
+        var dist = Math.abs(c.vto.getTime() - hoy.getTime());
+        if (dist < mejorDist) { mejorDist = dist; mejor = c; }
+      });
     });
     if (!mejor) return;
     var objetivo = ingreso * frecMeses; // ganancia deseada para ese cobro, NO el total que se recibe
@@ -2538,7 +2544,7 @@ function rentaArmarARS(ingreso, frecuencia) {
     var nominal = objetivo / gananciaPorVN;
     var monto = nominal * precio; // capital a invertir hoy (se recupera entero al vencimiento)
     var cobroTotal = nominal * mejor.vf; // lo que efectivamente acredita el bróker ese día (capital + ganancia)
-    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, cobroTotal: cobroTotal, limitado: false });
+    filas.push({ ticker: mejor.ticker, emisor: mejor.tipo, moneda: 'ars', nominal: nominal, precioBase: mejor.precioMonitor, fecha: mejor.vto, monto: monto, cobroReal: objetivo, cobroTotal: cobroTotal, limitado: false, estimado: !!mejor.estimado });
     usados[mejor.ticker] = true;
   });
   filas.sort(function (a, b) { return a.fecha - b.fecha; });
@@ -2550,7 +2556,8 @@ function rentaFilaHtml(f) {
   var fmt = f.moneda === 'ars' ? rotARS : rotUSD;
   var sub = esc(f.emisor || '') + (f.limitado ? ' · ajustado a la lámina/VN mínimo' : '');
   if (f.moneda === 'ars') {
-    sub += '<br>Ganás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha) + ' · ese día el bróker te acredita ' + fmt(f.cobroTotal) + ' en total (tu capital + la ganancia) — reinvertí el capital en una letra nueva para seguir cobrando este monto el próximo período';
+    sub += '<br>' + (f.estimado ? '≈ Ganás unos ' : 'Ganás ') + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha) + ' · ese día el bróker te acredita ' + (f.estimado ? 'unos ' : '') + fmt(f.cobroTotal) + ' en total (tu capital + la ganancia) — reinvertí el capital en una letra nueva para seguir cobrando este monto el próximo período';
+    if (f.estimado) sub += '<br><strong>⚠ Estimado:</strong> es un bono CER, ajusta por inflación y no tiene un cobro fijo. Calculamos con la inflación que hoy descuenta el mercado; si resulta mayor, cobrás más, y si es menor, cobrás menos.';
   } else {
     sub += '<br>Cobrás ' + fmt(f.cobroReal) + ' el ' + fmtDateAR(f.fecha);
   }
@@ -2629,9 +2636,13 @@ function rentaRenderTengo(box, capital, fmt) {
   var filasHtml = r.filas.map(rentaFilaHtml).join('');
   var aviso = res.limitado ? '<div class="renta-sin-cobertura">⚠️ Con ese monto, alguna ON pide una lámina mínima más grande de lo que alcanza para repartir parejo: el armado usa ' + fmt(res.total) + ' en total. Probá con un monto mayor o elegí otra frecuencia.</div>' : '';
   var sinCob = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos meses quedarían sin cobro.</div>' : '';
-  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos cada LECAP/BONCAP paga todo junto al vencimiento: lo que ves es la <strong>ganancia</strong>; el capital vuelve entero en cada fecha y hay que reinvertirlo para seguir cobrando. Con pocas letras vigentes es normal que haya meses sin cobro.</div>' : '';
+  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos cada LECAP/BONCAP paga todo junto al vencimiento: lo que ves es la <strong>ganancia</strong>; el capital vuelve entero en cada fecha y hay que reinvertirlo para seguir cobrando. Con pocas letras vigentes es normal que haya meses sin cobro.' + rentaNotaCER(r.filas) + '</div>' : '';
   var notaUsd = rentaMonedaActual === 'usd' ? '<div class="rot-note" style="margin-top:10px">Elegimos las ONs de mejor calidad y rendimiento que pagan en cada mes y repartimos tu plata para que cada cobro sea parecido. Es renta de cupones: tu capital sigue invertido hasta que cada bono amortice o venza. Los importes salen del cronograma real de cada ON, así que pueden variar un poco entre meses.</div>' : '';
   box.innerHTML = head + calHtml + '<div class="cart-chart-title">Dónde invertir ese dinero</div>' + filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(res.total) + '</span></div>' + aviso + sinCob + notaArs + notaUsd;
+}
+function rentaNotaCER(filas) {
+  var n = filas.filter(function (f) { return f.estimado; }).length;
+  return n ? '<br><br>📌 <strong>' + n + (n === 1 ? ' línea es un bono CER' : ' líneas son bonos CER') + '</strong> (marcadas "≈ Estimado"): se usan solo en los meses donde no vence ninguna LECAP/BONCAP. Ajustan por inflación, así que su cobro no es fijo — es una aproximación con la inflación que hoy descuenta el mercado.' : '';
 }
 function rentaRender() {
   var box = document.getElementById('rentaResult');
@@ -2646,12 +2657,12 @@ function rentaRender() {
   }
   if (!(ingreso > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto querés cobrar.</p>'; return; }
   var r = rentaMonedaActual === 'ars' ? rentaArmarARS(ingreso, rentaFrecuenciaActual) : rentaArmarUSD(ingreso, rentaFrecuenciaActual);
-  if (!r.filas.length) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos que cubran ese plan con los datos de hoy. Probá con otra frecuencia' + (rentaMonedaActual === 'ars' ? ' — en pesos solo hay ' + ((rentaLetrasCache || []).length) + ' LECAPs/BONCAPs vigentes en este momento' : '') + '.</p>'; return; }
+  if (!r.filas.length) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos que cubran ese plan con los datos de hoy. Probá con otra frecuencia' + (rentaMonedaActual === 'ars' ? ' — en pesos solo hay ' + ((rentaLetrasCache || []).length) + ' instrumentos vigentes en este momento' : '') + '.</p>'; return; }
   var fmt = rentaMonedaActual === 'ars' ? rotARS : rotUSD;
   var total = r.filas.reduce(function (s, f) { return s + f.monto; }, 0);
   var filasHtml = r.filas.map(rentaFilaHtml).join('');
   var sinCobHtml = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos cobros quedarían sin cubrir por ahora.</div>' : '';
-  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos no existen cupones periódicos como en dólares: cada LECAP/BONCAP paga todo junto al vencimiento. Este total es el <strong>capital</strong> a invertir hoy — se recupera entero en cada fecha de cobro, y hay que reinvertirlo en una letra nueva para que la ganancia siga llegando el período siguiente.</div>' : '';
+  var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos no existen cupones periódicos como en dólares: cada LECAP/BONCAP paga todo junto al vencimiento. Este total es el <strong>capital</strong> a invertir hoy — se recupera entero en cada fecha de cobro, y hay que reinvertirlo en una letra nueva para que la ganancia siga llegando el período siguiente.' + rentaNotaCER(r.filas) + '</div>' : '';
   box.innerHTML = filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(total) + '</span></div>' + notaArs + sinCobHtml;
 }
 const RENTA_DEFAULTS = { cobrar: { usd: 500, ars: 1000000 }, tengo: { usd: 15000, ars: 15000000 } };
