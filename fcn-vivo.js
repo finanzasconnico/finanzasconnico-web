@@ -190,6 +190,9 @@
     if (!est) return { nivel: 'info', html: 'Trayendo precios del mercado…' };
     var vivo = est.bonosVivo || est.letrasVivo;
     var origen = est.fuente === 'data912' ? 'data912.com (BYMA no respondió)' : 'BYMA';
+    // Solo una parte con precio de hoy: se dice cuál, para no mostrar "en vivo" a secas cuando faltan los bonos
+    if (est.letrasVivo && !est.bonosVivo) return { nivel: 'warn', html: '⚠️ <strong>Solo pudimos traer los precios de las letras en pesos.</strong> Los de bonos y ONs en dólares no están disponibles ahora' + (est.monitorViejo ? ' y no mostramos los guardados porque son del ' + fDM(est.asOf) + ' (hace ' + est.edadMonitor + ' días)' : '') + '. Probá de nuevo en unos minutos.' };
+    if (est.bonosVivo && !est.letrasVivo) return { nivel: 'warn', html: '⚠️ <strong>Solo pudimos traer los precios de bonos y ONs en dólares.</strong> Los de las letras en pesos no están disponibles ahora' + (est.monitorViejo ? ' y no mostramos los guardados porque son del ' + fDM(est.asOf) + ' (hace ' + est.edadMonitor + ' días)' : '') + '. Probá de nuevo en unos minutos.' };
     if (vivo) {
       // Con la página abierta mucho rato los precios cargados se van quedando viejos
       var min = est.ts ? Math.floor((Date.now() - est.ts) / 60000) : 0;

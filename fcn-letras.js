@@ -235,7 +235,9 @@
   function d912Get(ep, force) {
     var m = _memo912[ep];
     if (!force && m && Date.now() - m.ts < 30000) return m.p;
-    var p = conTimeout(D912 + ep, {}, 8000, 'data912');
+    // data912 tarda 2,5 a 5 s cuando no tiene la respuesta en caché (medido 17/11) y a veces más: timeout largo y un reintento.
+    var intento = function () { return conTimeout(D912 + ep, {}, 15000, 'data912'); };
+    var p = intento().catch(function () { return intento(); });
     _memo912[ep] = { ts: Date.now(), p: p };
     p.catch(function () { if (_memo912[ep] && _memo912[ep].p === p) delete _memo912[ep]; });
     return p;
