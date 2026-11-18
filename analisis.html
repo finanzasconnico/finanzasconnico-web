@@ -2416,9 +2416,12 @@ let rentaMonedaActual = 'usd', rentaFrecuenciaActual = 'trimestral', rentaModoAc
 // Tres formas de repartir el capital en pesos (17/11/2026). "Parejo" iguala la GANANCIA de cada vencimiento y por eso manda casi todo el
 // capital a las letras más cortas (ganan poco en términos anuales); las otras dos reparten el capital sin forzar esa igualdad.
 const RENTA_ESTRATEGIAS = {
-  parejo: { nombre: 'Cobro parejo', desc: 'Lo mismo en cada cobro. Para lograrlo, buena parte del capital va a vencimientos cortos, que rinden menos.' },
-  equilibrado: { nombre: 'Equilibrado', desc: 'Mismo capital en cada vencimiento: cobrás montos distintos mes a mes, pero rinde más y seguís cobrando mes a mes.' },
-  maximo: { nombre: 'Máximo rendimiento', desc: 'Todo en las 3 letras de mayor tasa con cobro seguro. Rinde lo máximo, pero cobrás en pocas fechas y recién más adelante.' }
+  parejo: { nombre: 'Cobro parejo', desc: 'Lo mismo en cada cobro. Para lograrlo, buena parte del capital va a vencimientos cortos, que rinden menos.',
+    descUsd: 'Busca que cada cobro sea parecido, con las ONs de mejor calificación disponibles.' },
+  equilibrado: { nombre: 'Equilibrado', desc: 'Mismo capital en cada vencimiento: cobrás montos distintos mes a mes, pero rinde más y seguís cobrando mes a mes.',
+    descUsd: 'Las mismas ONs, pero con el mismo capital en cada una: los cobros varían un poco entre fechas y rinde algo más.' },
+  maximo: { nombre: 'Máximo rendimiento', desc: 'Todo en las 3 letras de mayor tasa con cobro seguro. Rinde lo máximo, pero cobrás en pocas fechas y recién más adelante.',
+    descUsd: 'Elige las ONs que más rinden, sin priorizar la calificación (siempre A o mejor): cobrás en todas las fechas, pero con más riesgo de crédito.' }
 };
 let rentaLetrasCache = null, rentaLetrasCargando = null, rentaListo = false;
 let rentaPreciosManual = {}; // ticker -> precio editado a mano, pisa el precio del Monitor solo en pantalla
@@ -2493,12 +2496,18 @@ function rentaCandidatosUSD() {
 // pague ahí, sin repetir emisor salvo que no quede otra opción; el nominal se dimensiona para que
 // ESE cupón (el real, con su fecha) dé el monto pedido, y si un ticker cubre más de un bucket en el
 // año (ej. semestral) se marcan los dos como resueltos con la misma tenencia.
-function rentaArmarUSD(ingreso, frecuencia) {
+function rentaArmarUSD(ingreso, frecuencia, estrategia) {
+  estrategia = estrategia || rentaEstrategia;
   var frecMeses = RENTA_FREQ_MESES[frecuencia] || 3;
   var buckets = rentaBuckets(frecMeses);
   var candidatos = rentaCandidatosUSD();
-  candidatos.sort(function (a, b) { return (RENTA_GRADO_RANK[a.grado] - RENTA_GRADO_RANK[b.grado]) || (b.tir - a.tir); });
-  var hoy = rotHoy(), cubiertos = {}, vistos = {}, filas = [];
+  // Parejo y Equilibrado: primero la mejor calificación y después la TIR. Máximo rendimiento: solo la TIR (más riesgo de crédito), pero sin
+  // las ONs por debajo de A ni las que rinden más de 20 %: a esa altura la TIR no es rendimiento sino el mercado descontando un posible
+  // default (17/11/2026: San Miguel cotizaba a 56 con 34 % de TIR y TanGo Energy 23 %, y metidas en el promedio inflaban todo el cálculo).
+  if (estrategia === 'maximo') candidatos = candidatos.filter(function (c) { return c.grado !== 'menorA' && c.tir <= 20; });
+  candidatos.sort(estrategia === 'maximo' ? function (a, b) { return b.tir - a.tir; }
+    : function (a, b) { return (RENTA_GRADO_RANK[a.grado] - RENTA_GRADO_RANK[b.grado]) || (b.tir - a.tir); });
+  var hoy = rotHoy(), cubiertos = {}, vistos = {}, sel = [];
   buckets.forEach(function (mesesBucket, bi) {
     if (cubiertos[bi]) return;
     for (var pase = 0; pase < 2 && !cubiertos[bi]; pase++) {
@@ -2510,14 +2519,7 @@ function rentaArmarUSD(ingreso, frecuencia) {
         if (!paga) continue;
         var prox = rentaProximoCuponEnMeses(c.ticker, hoy, mesesBucket);
         if (!prox) continue;
-        var objetivo = ingreso * frecMeses;
-        var nominal = objetivo * 100 / prox.cuponPor100;
-        var limitado = nominal < c.laminaMin;
-        if (limitado) nominal = c.laminaMin;
-        var precio = rentaPrecio(c.ticker, c.precio);
-        var monto = nominal * precio;
-        var cobroReal = prox.cuponPor100 * (nominal / 100);
-        filas.push({ ticker: c.ticker, emisor: c.emisor, moneda: 'usd', nominal: nominal, precioBase: c.precio, fecha: prox.date, monto: monto, cobroReal: cobroReal, limitado: limitado });
+        sel.push({ c: c, prox: prox });
         buckets.forEach(function (mb2, bi2) {
           if (cubiertos[bi2]) return;
           for (var k2 = 0; k2 < c.meses.length; k2++) { if (mb2.indexOf(c.meses[k2]) >= 0) { cubiertos[bi2] = true; break; } }
@@ -2527,9 +2529,28 @@ function rentaArmarUSD(ingreso, frecuencia) {
       }
     }
   });
+  // Dimensionado. Parejo: el nominal que hace que ESE cupón valga exactamente "objetivo". Equilibrado/Máximo: mismo capital en cada ON,
+  // escalado para que el cupón promedio por cobro sea "objetivo" (por eso en el modo "Tengo X" el total termina siendo X).
+  var objetivo = ingreso * frecMeses;
+  var items = sel.map(function (s) {
+    var precio = rentaPrecio(s.c.ticker, s.c.precio), cpv = s.prox.cuponPor100;
+    return { c: s.c, prox: s.prox, precio: precio, cpv: cpv, monto: estrategia === 'parejo' ? (objetivo * 100 / cpv) * precio : 1 };
+  });
+  if (items.length && estrategia !== 'parejo') {
+    var cuponMedio = items.reduce(function (t, it) { return t + it.monto / it.precio * it.cpv / 100; }, 0) / items.length;
+    items.forEach(function (it) { it.monto *= objetivo / cuponMedio; });
+  }
+  var filas = items.map(function (it) {
+    var nominal = it.monto / it.precio, limitado = nominal < it.c.laminaMin;
+    if (limitado) nominal = it.c.laminaMin;
+    return { ticker: it.c.ticker, emisor: it.c.emisor, moneda: 'usd', nominal: nominal, precioBase: it.c.precio, fecha: it.prox.date, monto: nominal * it.precio, cobroReal: it.cpv * (nominal / 100), limitado: limitado, tir: it.c.tir, grado: it.c.grado };
+  });
+  var montoTotal = filas.reduce(function (t, f) { return t + f.monto; }, 0);
+  var tirPond = montoTotal > 0 ? filas.reduce(function (t, f) { return t + f.monto * f.tir; }, 0) / montoTotal : 0;   // en %, ponderada por capital
+  var pctAlta = montoTotal > 0 ? filas.reduce(function (t, f) { return t + (f.grado === 'AAA' || f.grado === 'AA' ? f.monto : 0); }, 0) / montoTotal : 0;
   filas.sort(function (a, b) { return a.fecha - b.fecha; });
   var sinCobertura = buckets.filter(function (mb, bi) { return !cubiertos[bi]; }).map(function (mb) { return mb[0]; });
-  return { filas: filas, sinCobertura: sinCobertura };
+  return { filas: filas, sinCobertura: sinCobertura, tir: tirPond, pctAlta: pctAlta };
 }
 // En pesos no hay cupón: una LECAP/BONCAP devuelve TODO junto al vencimiento (capital + interés).
 // Si dimensionáramos el nominal para que ESE pago total fuera el ingreso pedido, "cobrarías" tu
@@ -2666,28 +2687,37 @@ function rentaCalendario12(filas, moneda) {
 // El rendimiento es la tasa efectiva anual de cada letra ponderada por el capital que lleva; la ganancia anual supone reinvertir lo que
 // va venciendo a tasas parecidas (el 12-meses de arriba solo cuenta el primer vencimiento de cada letra, por eso queda más bajo).
 function rentaOpcionesHtml(capital, fmt) {
+  var usd = rentaMonedaActual === 'usd', armar = usd ? rentaArmarUSD : rentaArmarARS;
   var info = Object.keys(RENTA_ESTRATEGIAS).map(function (k) {
-    var res = rentaResolverPorCapital(capital, function (i, f) { return rentaArmarARS(i, f, k); }, rentaFrecuenciaActual);
+    var res = rentaResolverPorCapital(capital, function (i, f) { return armar(i, f, k); }, rentaFrecuenciaActual);
     if (!res || !res.r.filas.length) return null;
-    var cal = rentaCalendario12(res.r.filas, 'ars'), activos = cal.filter(function (m) { return m.total > 0.5; });
+    var cal = rentaCalendario12(res.r.filas, rentaMonedaActual), activos = cal.filter(function (m) { return m.total > 0.5; });
     var tots = activos.map(function (m) { return m.total; });
-    return { k: k, tea: res.r.tea, min: tots.length ? Math.min.apply(null, tots) : 0, max: tots.length ? Math.max.apply(null, tots) : 0, n: activos.length, primero: activos.length ? CART_MESES_ABR[activos[0].m] : null };
+    // rend: rendimiento anual en % (pesos: tasa efectiva anual de cada letra; dólares: TIR de cada ON), ponderado por el capital de cada posición
+    return { k: k, rend: usd ? res.r.tir : res.r.tea * 100, alta: res.r.pctAlta, cupones: cal.reduce(function (s, m) { return s + m.total; }, 0),
+      min: tots.length ? Math.min.apply(null, tots) : 0, max: tots.length ? Math.max.apply(null, tots) : 0, n: activos.length, primero: activos.length ? CART_MESES_ABR[activos[0].m] : null };
   });
-  var base = info[0] ? info[0].tea : null;
+  var base = info[0] ? info[0].rend : null;
   var cards = info.map(function (o) {
     if (!o) return '';
-    var meta = RENTA_ESTRATEGIAS[o.k], anual = capital * o.tea;
+    var meta = RENTA_ESTRATEGIAS[o.k];
     var cobro = o.n >= 2 && o.max - o.min > 0.01 * o.max ? 'entre ' + fmt(o.min) + ' y ' + fmt(o.max) : fmt(o.max) + (o.n > 1 ? ' cada vez' : '');
-    var delta = (o.k !== 'parejo' && base != null && o.tea > base) ? '<div class="renta-opcion-delta">+' + fmtNum((o.tea - base) * 100, 1) + ' puntos más que el cobro parejo</div>' : '';
+    var delta = (o.k !== 'parejo' && base != null && o.rend - base >= 0.05) ? '<div class="renta-opcion-delta">+' + fmtNum(o.rend - base, 1) + ' puntos más que el cobro parejo</div>' : '';
+    var renta = usd
+      ? '≈ <b>' + fmt(o.cupones) + '</b> en cupones en los próximos 12 meses (' + fmtNum(o.cupones / capital * 100, 1) + '% de lo invertido)'
+      : '≈ <b>' + fmt(capital * o.rend / 100) + '</b> al año · ' + fmt(capital * o.rend / 1200) + ' por mes';
+    var calidad = usd ? '<div class="renta-opcion-det">Calificación: <b>' + fmtNum(o.alta * 100, 0) + '%</b> del capital en ONs AAA/AA.</div>' : '';
     return '<button type="button" class="renta-opcion' + (o.k === rentaEstrategia ? ' activa' : '') + '" aria-pressed="' + (o.k === rentaEstrategia) + '" onclick="RENTA.setEstrategia(\'' + o.k + '\')">' +
       '<div class="renta-opcion-nombre">' + meta.nombre + '</div>' +
-      '<div class="renta-opcion-tea">' + fmtNum(o.tea * 100, 1) + '%<small> anual</small></div>' + delta +
-      '<div class="renta-opcion-det">≈ <b>' + fmt(anual) + '</b> al año · ' + fmt(anual / 12) + ' por mes</div>' +
+      '<div class="renta-opcion-tea">' + fmtNum(o.rend, 1) + '%<small> anual</small></div>' + delta +
+      '<div class="renta-opcion-det">' + renta + '</div>' + calidad +
       '<div class="renta-opcion-det">Cobrás <b>' + o.n + (o.n === 1 ? ' vez' : ' veces') + '</b> en el año: ' + cobro + '. Primer cobro: ' + o.primero + '.</div>' +
-      '<div class="renta-opcion-det">' + meta.desc + '</div></button>';
+      '<div class="renta-opcion-det">' + (usd ? meta.descUsd : meta.desc) + '</div></button>';
   }).join('');
-  return '<div class="cart-chart-title">Tres formas de repartir tu plata</div><div class="renta-opciones">' + cards + '</div>' +
-    '<div class="renta-opciones-nota">Rendimiento anual = promedio de la tasa efectiva anual de cada letra, ponderado por lo que invertís en cada una. La ganancia al año supone que reinvertís lo que vence a tasas parecidas. Más rendimiento significa vencimientos más largos: la plata queda inmovilizada más tiempo y, si necesitás venderla antes, el precio de mercado puede ser menor al valor final. En los bonos CER y TAMAR la tasa es una estimación, no un cobro fijo.</div>';
+  var nota = usd
+    ? 'Rendimiento anual = TIR de cada ON (con los precios de hoy, comisión incluida), ponderada por lo que invertís en cada una. Los cupones son los del cronograma real de cada ON; tu capital sigue invertido hasta que cada bono amortice o venza. Una TIR más alta suele reflejar más riesgo de crédito del emisor: si el emisor no paga, perdés cupones y capital.'
+    : 'Rendimiento anual = promedio de la tasa efectiva anual de cada letra, ponderado por lo que invertís en cada una. La ganancia al año supone que reinvertís lo que vence a tasas parecidas. Más rendimiento significa vencimientos más largos: la plata queda inmovilizada más tiempo y, si necesitás venderla antes, el precio de mercado puede ser menor al valor final. En los bonos CER y TAMAR la tasa es una estimación, no un cobro fijo.';
+  return '<div class="cart-chart-title">Tres formas de repartir tu plata</div><div class="renta-opciones">' + cards + '</div><div class="renta-opciones-nota">' + nota + '</div>';
 }
 function rentaRenderTengo(box, capital, fmt) {
   var armar = rentaMonedaActual === 'ars' ? rentaArmarARS : rentaArmarUSD;
@@ -2713,7 +2743,7 @@ function rentaRenderTengo(box, capital, fmt) {
   var sinCob = r.sinCobertura.length ? '<div class="renta-sin-cobertura">⚠️ No encontramos, con los datos de hoy, un instrumento que pague en ' + r.sinCobertura.map(function (m) { return RENTA_MESES_NOM[m - 1]; }).join(', ') + '. Esos meses quedarían sin cobro.</div>' : '';
   var notaArs = rentaMonedaActual === 'ars' ? '<div class="renta-sin-cobertura" style="background:rgba(28,140,95,0.08);border-color:var(--jade)">💡 En pesos cada LECAP/BONCAP paga todo junto al vencimiento: lo que ves es la <strong>ganancia</strong>; el capital vuelve entero en cada fecha y hay que reinvertirlo para seguir cobrando. Con pocas letras vigentes es normal que haya meses sin cobro.' + rentaNotaCER(r.filas) + '</div>' : '';
   var notaUsd = rentaMonedaActual === 'usd' ? '<div class="rot-note" style="margin-top:10px">Elegimos las ONs de mejor calidad y rendimiento que pagan en cada mes y repartimos tu plata para que cada cobro sea parecido. Es renta de cupones: tu capital sigue invertido hasta que cada bono amortice o venza. Los importes salen del cronograma real de cada ON, así que pueden variar un poco entre meses.</div>' : '';
-  var opciones = rentaMonedaActual === 'ars' ? rentaOpcionesHtml(capital, fmt) : '';
+  var opciones = rentaOpcionesHtml(capital, fmt);
   box.innerHTML = opciones + head + calHtml + '<div class="cart-chart-title">Dónde invertir ese dinero</div>' + filasHtml + '<div class="renta-total">Total a invertir<span>' + fmt(res.total) + '</span></div>' + aviso + sinCob + notaArs + notaUsd;
 }
 function rentaNotaCER(filas) {
@@ -2732,7 +2762,7 @@ function rentaRender() {
     return;
   }
   if (!(ingreso > 0)) { box.innerHTML = '<p class="loading-msg">Ingresá cuánto querés cobrar.</p>'; return; }
-  var r = rentaMonedaActual === 'ars' ? rentaArmarARS(ingreso, rentaFrecuenciaActual, 'parejo') : rentaArmarUSD(ingreso, rentaFrecuenciaActual); // "quiero cobrar X" siempre es el reparto parejo
+  var r = rentaMonedaActual === 'ars' ? rentaArmarARS(ingreso, rentaFrecuenciaActual, 'parejo') : rentaArmarUSD(ingreso, rentaFrecuenciaActual, 'parejo'); // "quiero cobrar X" siempre es el reparto parejo
   if (!r.filas.length) { box.innerHTML = '<p class="loading-msg">No encontramos instrumentos que cubran ese plan con los datos de hoy. Probá con otra frecuencia' + (rentaMonedaActual === 'ars' ? ' — en pesos solo hay ' + ((rentaLetrasCache || []).length) + ' instrumentos vigentes en este momento' : '') + '.</p>'; return; }
   var fmt = rentaMonedaActual === 'ars' ? rotARS : rotUSD;
   var total = r.filas.reduce(function (s, f) { return s + f.monto; }, 0);
